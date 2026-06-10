@@ -1,5 +1,5 @@
 import { footer, site } from "@/lib/content";
-import Icon from "./Icon";
+import Mascot from "./Mascot";
 
 export default function Footer() {
   return (
@@ -8,11 +8,9 @@ export default function Footer() {
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}
           <div className="lg:col-span-2">
-            <a href="#top" className="flex items-center gap-2.5" aria-label={site.name}>
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand text-white">
-                <Icon name="graduation" className="h-5 w-5" />
-              </span>
-              <span className="font-display text-lg font-extrabold tracking-tight text-ink">
+            <a href="#top" className="flex items-center gap-2" aria-label={site.name}>
+              <Mascot face={false} className="h-10 w-10" title="" />
+              <span className="font-display text-lg font-bold tracking-tight text-ink">
                 {site.name}
               </span>
             </a>

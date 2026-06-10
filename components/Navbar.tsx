@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { nav, site } from "@/lib/content";
 import Icon from "./Icon";
+import Mascot from "./Mascot";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -39,11 +40,9 @@ export default function Navbar() {
     >
       <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5 sm:px-8">
         {/* Brand */}
-        <a href="#top" className="flex items-center gap-2.5" aria-label={site.name}>
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand text-white shadow-sm">
-            <Icon name="graduation" className="h-5 w-5" />
-          </span>
-          <span className="font-display text-lg font-extrabold tracking-tight text-ink">
+        <a href="#top" className="flex items-center gap-2" aria-label={site.name}>
+          <Mascot face={false} className="h-10 w-10" title="" />
+          <span className="font-display text-lg font-bold tracking-tight text-ink">
             {site.name}
           </span>
         </a>

@@ -1,14 +1,26 @@
 /**
- * "Wardy" — Ward Academy's friendly sparkle-star mascot.
- * A rounded 4-point star (ties to the AI "sparkle" motif) with a warm little
- * face. Pure SVG, scales with the parent via className. Decorative only.
+ * "Wardy" — Ward Academy's identity mark: a friendly purple flower.
+ * ("Ward" / ورد means roses/flowers — the heart of the brand.)
+ *
+ * One source of truth for the flower shape:
+ *  - face={true}  → the smiling mascot (hero, signup)
+ *  - face={false} → a clean flower mark for the logo (navbar, footer, favicon)
+ *
+ * Pure SVG, indigo petals + amber center + coral cheeks — on-palette.
  */
 type Props = {
   className?: string;
+  face?: boolean;
   title?: string;
 };
 
-export default function Mascot({ className = "", title = "Wardy, the Ward Academy buddy" }: Props) {
+const PETAL_ROTATIONS = [0, 72, 144, 216, 288];
+
+export default function Mascot({
+  className = "",
+  face = true,
+  title = "Ward Academy flower",
+}: Props) {
   return (
     <svg
       viewBox="0 0 200 200"
@@ -18,56 +30,60 @@ export default function Mascot({ className = "", title = "Wardy, the Ward Academ
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        <linearGradient id="wardy-body" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id="wardy-petal" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#6366f1" />
-          <stop offset="55%" stopColor="#4f46e5" />
           <stop offset="100%" stopColor="#4338ca" />
         </linearGradient>
+        <radialGradient id="wardy-center" cx="0.5" cy="0.4" r="0.7">
+          <stop offset="0%" stopColor="#fcd34d" />
+          <stop offset="100%" stopColor="#fbbf24" />
+        </radialGradient>
       </defs>
 
-      {/* soft glow */}
-      <circle cx="100" cy="104" r="78" fill="#4f46e5" opacity="0.12" />
+      {/* petals */}
+      <g fill="url(#wardy-petal)">
+        {PETAL_ROTATIONS.map((deg) => (
+          <ellipse
+            key={deg}
+            cx="100"
+            cy="54"
+            rx="27"
+            ry="40"
+            transform={`rotate(${deg} 100 100)`}
+          />
+        ))}
+      </g>
 
-      {/* body — plump 4-point sparkle */}
-      <path
-        d="M100 18
-           C 116 72, 128 84, 182 100
-           C 128 116, 116 128, 100 182
-           C 84 128, 72 116, 18 100
-           C 72 84, 84 72, 100 18 Z"
-        fill="url(#wardy-body)"
-      />
+      {/* flower center */}
+      <circle cx="100" cy="100" r="34" fill="url(#wardy-center)" />
+      <circle cx="100" cy="100" r="34" fill="none" stroke="#f59e0b" strokeOpacity="0.35" strokeWidth="2" />
 
-      {/* cheeks */}
-      <circle cx="74" cy="116" r="8" fill="#fb7185" opacity="0.75" />
-      <circle cx="126" cy="116" r="8" fill="#fb7185" opacity="0.75" />
+      {face && (
+        <>
+          {/* cheeks */}
+          <circle cx="80" cy="107" r="6" fill="#fb7185" opacity="0.8" />
+          <circle cx="120" cy="107" r="6" fill="#fb7185" opacity="0.8" />
+          {/* eyes */}
+          <circle cx="88" cy="94" r="8.5" fill="#ffffff" />
+          <circle cx="112" cy="94" r="8.5" fill="#ffffff" />
+          <circle cx="90" cy="95" r="4" fill="#3730a3" />
+          <circle cx="114" cy="95" r="4" fill="#3730a3" />
+          <circle cx="91.5" cy="93.5" r="1.4" fill="#ffffff" />
+          <circle cx="115.5" cy="93.5" r="1.4" fill="#ffffff" />
+          {/* smile */}
+          <path
+            d="M89 108 Q100 119 111 108"
+            fill="none"
+            stroke="#3730a3"
+            strokeWidth="4"
+            strokeLinecap="round"
+          />
 
-      {/* eyes */}
-      <circle cx="84" cy="98" r="13" fill="#ffffff" />
-      <circle cx="116" cy="98" r="13" fill="#ffffff" />
-      <circle cx="87" cy="100" r="5.5" fill="#1e293b" />
-      <circle cx="119" cy="100" r="5.5" fill="#1e293b" />
-      <circle cx="89" cy="98" r="1.8" fill="#ffffff" />
-      <circle cx="121" cy="98" r="1.8" fill="#ffffff" />
-
-      {/* smile */}
-      <path
-        d="M85 120 Q100 134 115 120"
-        fill="none"
-        stroke="#ffffff"
-        strokeWidth="5"
-        strokeLinecap="round"
-      />
-
-      {/* little sparkles orbiting */}
-      <path
-        d="M158 44 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 z"
-        fill="#fbbf24"
-      />
-      <path
-        d="M44 150 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2 z"
-        fill="#fb7185"
-      />
+          {/* little sparkles — the brand's "magic" accent (mascot only) */}
+          <path d="M162 50 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 z" fill="#fbbf24" />
+          <path d="M40 150 l2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5 z" fill="#fb7185" />
+        </>
+      )}
     </svg>
   );
 }
