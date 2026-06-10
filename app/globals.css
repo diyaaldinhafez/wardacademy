@@ -9,7 +9,7 @@
 @theme {
   /* Fonts (wired up in app/layout.tsx via next/font) */
   --font-sans: var(--font-inter);
-  --font-display: var(--font-jakarta);
+  --font-display: var(--font-fredoka);
 
   /* Brand — Indigo: knowledge, trust, modern */
   --color-brand-50: #eef2ff;
@@ -104,6 +104,30 @@ body {
   animation: float-slower 12s ease-in-out infinite;
 }
 
+/* Playful doodle motion — gentle wiggle & spin for decorative stickers */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-7deg); }
+  50% { transform: rotate(7deg); }
+}
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.animate-wiggle { animation: wiggle 3.5s ease-in-out infinite; }
+.animate-spin-slow { animation: spin-slow 18s linear infinite; }
+.animate-bob { animation: bob 4s ease-in-out infinite; }
+
+/* Playful "pop" on hover for cards/buttons that opt in */
+.hover-pop {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+}
+.hover-pop:hover {
+  transform: translateY(-6px);
+}
+
 /* Scroll-reveal: elements start hidden, .is-visible reveals them */
 .reveal {
   opacity: 0;
@@ -123,8 +147,14 @@ body {
     scroll-behavior: auto;
   }
   .animate-float-slow,
-  .animate-float-slower {
+  .animate-float-slower,
+  .animate-wiggle,
+  .animate-spin-slow,
+  .animate-bob {
     animation: none;
+  }
+  .hover-pop {
+    transition: none;
   }
   .reveal {
     opacity: 1;

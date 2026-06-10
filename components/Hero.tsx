@@ -14,6 +14,22 @@ export default function Hero() {
         <div className="animate-float-slow absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-amber-100/60 blur-3xl" />
       </div>
 
+      {/* Playful floating stickers */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 hidden sm:block">
+        <span className="animate-wiggle absolute left-[8%] top-24 grid h-12 w-12 place-items-center rounded-2xl bg-amber text-white shadow-md">
+          <Icon name="star" className="h-6 w-6" />
+        </span>
+        <span className="animate-bob absolute right-[9%] top-32 grid h-12 w-12 place-items-center rounded-2xl bg-coral text-white shadow-md">
+          <Icon name="sparkles" className="h-6 w-6" />
+        </span>
+        <span className="animate-spin-slow absolute left-[12%] top-[58%] grid h-11 w-11 place-items-center rounded-full bg-mint text-white shadow-md">
+          <Icon name="burst" className="h-6 w-6" />
+        </span>
+        <span className="animate-wiggle absolute right-[12%] top-[60%] text-brand-300">
+          <Icon name="squiggle" className="h-10 w-10" />
+        </span>
+      </div>
+
       <div className="relative mx-auto max-w-6xl px-5 pb-20 pt-14 sm:px-8 sm:pb-28 sm:pt-20">
         <div className="mx-auto max-w-3xl text-center">
           {/* Eyebrow */}
@@ -26,8 +42,10 @@ export default function Hero() {
           <h1 className="mt-6 font-display text-4xl font-extrabold leading-[1.08] tracking-tight text-ink sm:text-6xl">
             {hero.titleLines.map((line) =>
               line === hero.highlight ? (
-                <span key={line} className="relative text-brand sm:whitespace-nowrap">
-                  {line}
+                <span key={line} className="relative inline-block sm:whitespace-nowrap">
+                  <span className="bg-gradient-to-r from-brand via-brand-500 to-coral bg-clip-text text-transparent">
+                    {line}
+                  </span>
                   <svg
                     aria-hidden
                     viewBox="0 0 300 24"
@@ -60,7 +78,7 @@ export default function Hero() {
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <a
               href="#signup"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand px-7 py-4 text-base font-semibold text-white shadow-lg shadow-brand/30 transition-all hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-xl sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand px-7 py-4 text-base font-semibold text-white shadow-lg shadow-brand/30 transition-all hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-xl active:scale-95 sm:w-auto"
             >
               {hero.primaryCta}
               <Icon name="arrow-right" className="h-5 w-5" />
