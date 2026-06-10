@@ -73,13 +73,13 @@ export const features = {
       icon: "teacher",
       title: "Teacher-led, AI-supported",
       body: "A real teacher plans, reviews and approves everything. AI saves time; the teacher guarantees the quality.",
-      accent: "amber",
+      accent: "brand",
     },
     {
       icon: "shield-eye",
       title: "Guardian visibility",
       body: "A read-only view of your child's progress, scores and reports — for every child you care for, all in one place.",
-      accent: "brand",
+      accent: "coral",
     },
   ],
 } as const;

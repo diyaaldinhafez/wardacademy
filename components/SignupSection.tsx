@@ -116,7 +116,7 @@ export default function SignupSection() {
 
               <button
                 type="submit"
-                className="mt-1 inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand px-7 py-4 text-base font-semibold text-white shadow-lg shadow-brand/30 transition-all hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-xl active:scale-[0.98]"
+                className="brand-gradient mt-1 inline-flex w-full items-center justify-center gap-2 rounded-full px-7 py-4 text-base font-semibold text-white shadow-lg shadow-brand/30 transition-all hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.98]"
               >
                 {signup.submit}
                 <Icon name="arrow-right" className="h-5 w-5" />

@@ -1,6 +1,7 @@
 import { ai } from "@/lib/content";
 import Icon, { type IconName } from "./Icon";
 import Reveal from "./Reveal";
+import Spark from "./Spark";
 
 export default function AISection() {
   return (
@@ -17,7 +18,7 @@ export default function AISection() {
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-semibold text-amber-300">
-            <Icon name="sparkles" className="h-4 w-4" />
+            <Spark className="h-3.5 w-3.5" />
             {ai.eyebrow}
           </span>
           <h2 className="mt-6 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">

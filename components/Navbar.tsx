@@ -63,7 +63,7 @@ export default function Navbar() {
         {/* Desktop CTA */}
         <a
           href="#signup"
-          className="hidden items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand/25 transition-all hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-lg md:inline-flex"
+          className="brand-gradient hidden items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand/25 transition-all hover:-translate-y-0.5 hover:shadow-lg md:inline-flex"
         >
           {nav.cta}
           <Icon name="arrow-right" className="h-4 w-4" />
@@ -98,7 +98,7 @@ export default function Navbar() {
             <a
               href="#signup"
               onClick={() => setOpen(false)}
-              className="mt-2 inline-flex items-center justify-center gap-2 rounded-full bg-brand px-5 py-3 text-base font-semibold text-white shadow-md"
+              className="brand-gradient mt-2 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-base font-semibold text-white shadow-md"
             >
               {nav.cta}
               <Icon name="arrow-right" className="h-4 w-4" />

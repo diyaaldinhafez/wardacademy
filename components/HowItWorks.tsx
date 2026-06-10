@@ -1,12 +1,12 @@
 import { howItWorks } from "@/lib/content";
 import Reveal from "./Reveal";
 
-/** Step colors stay within the brand palette: indigo → coral → amber → indigo. */
+/** Steps alternate the two primaries: indigo / coral. */
 const stepColors = [
   "bg-brand text-white ring-brand-100",
   "bg-coral text-white ring-coral-100",
-  "bg-amber-600 text-white ring-amber-100",
   "bg-brand text-white ring-brand-100",
+  "bg-coral text-white ring-coral-100",
 ];
 
 export default function HowItWorks() {
@@ -29,7 +29,7 @@ export default function HowItWorks() {
           {/* Connecting line on large screens */}
           <div
             aria-hidden
-            className="absolute left-0 right-0 top-7 hidden h-px bg-gradient-to-r from-brand-200 via-coral-300 to-amber-300 lg:block"
+            className="absolute left-0 right-0 top-8 hidden h-px bg-gradient-to-r from-brand via-brand-400 to-coral lg:block"
           />
           {howItWorks.steps.map((step, i) => (
             <Reveal as="li" key={step.number} delay={i * 70} className="group relative">

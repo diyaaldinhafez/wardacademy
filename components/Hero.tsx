@@ -1,6 +1,7 @@
 import { hero } from "@/lib/content";
 import Icon from "./Icon";
 import Mascot from "./Mascot";
+import Spark from "./Spark";
 
 export default function Hero() {
   return (
@@ -20,7 +21,7 @@ export default function Hero() {
           {/* ---- Left: copy ---- */}
           <div className="text-center lg:text-left">
             <span className="inline-flex items-center gap-2 rounded-full border border-brand/15 bg-white/70 px-4 py-1.5 text-sm font-semibold text-brand shadow-sm backdrop-blur">
-              <Icon name="star" className="h-4 w-4 text-amber-600" />
+              <Spark className="h-3.5 w-3.5 text-amber-600" />
               {hero.eyebrow}
             </span>
 
@@ -61,7 +62,7 @@ export default function Hero() {
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row lg:justify-start sm:justify-center">
               <a
                 href="#signup"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand px-7 py-4 text-base font-semibold text-white shadow-lg shadow-brand/30 transition-all hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-xl active:scale-95 sm:w-auto"
+                className="brand-gradient inline-flex w-full items-center justify-center gap-2 rounded-full px-7 py-4 text-base font-semibold text-white shadow-lg shadow-brand/30 transition-all hover:-translate-y-0.5 hover:shadow-xl active:scale-95 sm:w-auto"
               >
                 {hero.primaryCta}
                 <Icon name="arrow-right" className="h-5 w-5" />
@@ -124,7 +125,7 @@ function LetterBubbles() {
         Hi!
       </span>
       <span className="animate-wiggle absolute -right-7 bottom-10 grid h-12 w-12 place-items-center rounded-2xl bg-brand text-white shadow-md">
-        <Icon name="check" className="h-6 w-6" />
+        <Spark className="h-6 w-6" />
       </span>
     </div>
   );
