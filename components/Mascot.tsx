@@ -36,10 +36,22 @@ export default function Mascot({
         </linearGradient>
       </defs>
 
+      {/* soft halo behind the spark (mascot only) */}
+      {face && <circle cx="100" cy="104" r="82" fill="#6366f1" opacity="0.12" />}
+
       <path d={SPARK} fill="url(#wardy-grad)" />
 
       {face && (
         <>
+          {/* little companion sparkles */}
+          <path
+            d="M152 40 l3.2 9 9 3.2 -9 3.2 -3.2 9 -3.2 -9 -9 -3.2 9 -3.2 z"
+            fill="#fbbf24"
+          />
+          <path
+            d="M48 140 l2.8 8 8 2.8 -8 2.8 -2.8 8 -2.8 -8 -8 -2.8 8 -2.8 z"
+            fill="#fb7185"
+          />
           {/* cheeks */}
           <circle cx="80" cy="108" r="6" fill="#ffffff" opacity="0.55" />
           <circle cx="120" cy="108" r="6" fill="#ffffff" opacity="0.55" />
