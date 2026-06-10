@@ -184,6 +184,74 @@ export const signup = {
   reassurance: "No payment required · Free trial · You can cancel anytime",
 } as const;
 
+/**
+ * Multi-step enrolment flow — VISUAL ONLY (no storage, no account, no AI).
+ * Register → Book a trial → Quick check → Done.
+ */
+export const enroll = {
+  steps: ["Register", "Book a trial", "Quick check"],
+  back: "Back",
+  continue: "Continue",
+  booking: {
+    heading: "Pick a time for the free trial",
+    subheading: "Choose a slot that suits you — times show in your local timezone.",
+    dayLabel: "Choose a day",
+    timeLabel: "Choose a time",
+    days: [
+      { day: "Mon", date: "Jun 15" },
+      { day: "Tue", date: "Jun 16" },
+      { day: "Wed", date: "Jun 17" },
+      { day: "Thu", date: "Jun 18" },
+      { day: "Fri", date: "Jun 19" },
+    ],
+    times: ["4:00 PM", "5:00 PM", "6:00 PM", "7:00 PM"],
+    hint: "Select a day and a time to continue",
+  },
+  quiz: {
+    heading: "A quick warm-up",
+    subheading:
+      "3 little questions to help find the right starting level — just for fun, no pressure!",
+    questions: [
+      {
+        q: "Choose the correct word: She ___ to school every day.",
+        options: [
+          { text: "go", correct: false },
+          { text: "goes", correct: true },
+          { text: "going", correct: false },
+        ],
+      },
+      {
+        q: "Pick the opposite of “happy”.",
+        options: [
+          { text: "sad", correct: true },
+          { text: "fast", correct: false },
+          { text: "big", correct: false },
+        ],
+      },
+      {
+        q: "Complete the sentence: I have two ___.",
+        options: [
+          { text: "cat", correct: false },
+          { text: "cats", correct: true },
+          { text: "cates", correct: false },
+        ],
+      },
+    ],
+    next: "Next",
+    finish: "Finish",
+  },
+  done: {
+    heading: "You're all set! 🎉",
+    body: "Thank you! Here's what happens next — a teacher from Ward Academy will take it from here.",
+    points: [
+      "Free trial session booked",
+      "Quick check shared with the teacher",
+      "We'll confirm by email shortly",
+    ],
+    note: "Nothing was charged. You can change your time anytime.",
+  },
+} as const;
+
 export const footer = {
   tagline: "Confident English for young learners — teacher-led, AI-supported.",
   columns: [
