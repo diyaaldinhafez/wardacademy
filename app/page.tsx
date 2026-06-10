@@ -6,6 +6,7 @@ import AISection from "@/components/AISection";
 import Safety from "@/components/Safety";
 import SignupSection from "@/components/SignupSection";
 import Footer from "@/components/Footer";
+import WaveDivider from "@/components/WaveDivider";
 
 export default function Home() {
   return (
@@ -21,7 +22,9 @@ export default function Home() {
         <Hero />
         <Features />
         <HowItWorks />
+        <WaveDivider topColor="#fff1e3" bottomColor="#3730a3" />
         <AISection />
+        <WaveDivider topColor="#3730a3" bottomColor="#fff8f1" flip />
         <Safety />
         <SignupSection />
       </main>
