@@ -9,7 +9,7 @@ export default function Safety() {
         <div className="grid items-center gap-12 lg:grid-cols-12">
           {/* Left: heading */}
           <Reveal className="lg:col-span-5">
-            <span className="inline-flex items-center gap-2 rounded-full border border-mint/30 bg-mint-100 px-4 py-1.5 text-sm font-semibold text-mint-600">
+            <span className="inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand-100 px-4 py-1.5 text-sm font-semibold text-brand">
               <Icon name="lock" className="h-4 w-4" />
               {safety.eyebrow}
             </span>

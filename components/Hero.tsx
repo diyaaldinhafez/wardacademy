@@ -114,13 +114,13 @@ export default function Hero() {
 function LetterBubbles() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 hidden sm:block">
-      <span className="animate-wiggle absolute -left-6 top-4 grid h-12 w-12 place-items-center rounded-2xl bg-coral font-display text-xl font-bold text-white shadow-md">
+      <span className="animate-wiggle absolute -left-6 top-4 grid h-12 w-12 place-items-center rounded-2xl bg-brand font-display text-xl font-bold text-white shadow-md">
         A
       </span>
-      <span className="animate-bob absolute -right-4 top-10 grid h-11 w-11 place-items-center rounded-2xl bg-amber font-display text-lg font-bold text-white shadow-md">
+      <span className="animate-bob absolute -right-4 top-10 grid h-11 w-11 place-items-center rounded-2xl bg-coral font-display text-lg font-bold text-white shadow-md">
         Bb
       </span>
-      <span className="animate-float-slow absolute -left-8 top-1/2 grid h-11 w-11 place-items-center rounded-full bg-mint font-display text-base font-bold text-white shadow-md">
+      <span className="animate-float-slow absolute -left-8 top-1/2 grid h-11 w-11 place-items-center rounded-2xl bg-coral font-display text-base font-bold text-white shadow-md">
         Hi!
       </span>
       <span className="animate-wiggle absolute -right-7 bottom-10 grid h-12 w-12 place-items-center rounded-2xl bg-brand text-white shadow-md">
@@ -137,7 +137,7 @@ function HeroPreview() {
       {/* Header: label + approved chip */}
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm font-semibold text-ink-muted">{p.label}</span>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-mint-100 px-2.5 py-1 text-xs font-semibold text-mint-600">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand">
           <Icon name="check-badge" className="h-3.5 w-3.5" />
           {p.approved}
         </span>
@@ -155,7 +155,7 @@ function HeroPreview() {
               key={opt.text}
               className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-sm font-medium ${
                 opt.correct
-                  ? "border-mint/40 bg-mint-100 text-mint-600"
+                  ? "border-brand/30 bg-brand-50 text-brand"
                   : "border-ink/10 bg-white text-ink-soft"
               }`}
             >
@@ -172,7 +172,7 @@ function HeroPreview() {
         <span className="font-display text-sm font-bold text-brand">{p.progressValue}</span>
       </div>
       <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-brand-100">
-        <div className="h-full w-3/4 rounded-full bg-gradient-to-r from-brand to-mint" />
+        <div className="h-full w-3/4 rounded-full bg-gradient-to-r from-brand to-coral" />
       </div>
     </div>
   );

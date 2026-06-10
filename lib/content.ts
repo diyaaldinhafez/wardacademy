@@ -67,19 +67,19 @@ export const features = {
       icon: "chart",
       title: "Progress tracking & clear reports",
       body: "Attendance, scores and strengths by skill — shown honestly (\"6 of 8\"), with a friendly summary after every session.",
-      accent: "mint",
+      accent: "coral",
     },
     {
       icon: "teacher",
       title: "Teacher-led, AI-supported",
       body: "A real teacher plans, reviews and approves everything. AI saves time; the teacher guarantees the quality.",
-      accent: "coral",
+      accent: "amber",
     },
     {
       icon: "shield-eye",
       title: "Guardian visibility",
       body: "A read-only view of your child's progress, scores and reports — for every child you care for, all in one place.",
-      accent: "amber",
+      accent: "brand",
     },
   ],
 } as const;

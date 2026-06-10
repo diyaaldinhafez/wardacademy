@@ -66,7 +66,7 @@ export default function Mascot({ className = "", title = "Wardy, the Ward Academ
       />
       <path
         d="M44 150 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2 z"
-        fill="#34d399"
+        fill="#fb7185"
       />
     </svg>
   );

@@ -16,10 +16,7 @@ export type IconName =
   | "menu"
   | "close"
   | "check"
-  | "star"
-  | "squiggle"
-  | "burst"
-  | "loop";
+  | "star";
 
 type Props = SVGProps<SVGSVGElement> & { name: IconName };
 
@@ -75,19 +72,6 @@ const paths: Record<IconName, React.ReactNode> = {
   check: <path d="m5 12 4.5 4.5L19 7" />,
   star: (
     <path d="m12 4 2.3 4.7 5.2.8-3.8 3.7.9 5.1-4.6-2.4-4.6 2.4.9-5.1L4.5 9.5l5.2-.8z" />
-  ),
-  // --- decorative doodles ---
-  squiggle: (
-    <path d="M3 14c2-4 4-4 6 0s4 4 6 0 4-4 6 0" strokeWidth={2.5} />
-  ),
-  burst: (
-    <>
-      <path d="M12 3v4M12 17v4M3 12h4M17 12h4" strokeWidth={2.5} />
-      <path d="M5.5 5.5 8 8M16 16l2.5 2.5M18.5 5.5 16 8M8 16l-2.5 2.5" strokeWidth={2.5} />
-    </>
-  ),
-  loop: (
-    <path d="M5 12c0-2 1.5-3.5 3.5-3.5S12 10 12 12s1.5 3.5 3.5 3.5S19 14 19 12" strokeWidth={2.5} />
   ),
 };
 

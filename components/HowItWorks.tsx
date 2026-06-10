@@ -1,12 +1,12 @@
 import { howItWorks } from "@/lib/content";
 import Reveal from "./Reveal";
 
-/** Bright, distinct color per step — playful but coordinated. */
+/** Step colors stay within the brand palette: indigo → coral → amber → indigo. */
 const stepColors = [
   "bg-brand text-white ring-brand-100",
   "bg-coral text-white ring-coral-100",
   "bg-amber-600 text-white ring-amber-100",
-  "bg-mint-600 text-white ring-mint-100",
+  "bg-brand text-white ring-brand-100",
 ];
 
 export default function HowItWorks() {

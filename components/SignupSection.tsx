@@ -136,7 +136,7 @@ export default function SignupSection() {
 function SuccessMessage() {
   return (
     <div className="flex flex-col items-center py-8 text-center">
-      <span className="grid h-16 w-16 place-items-center rounded-full bg-mint-100 text-mint-600">
+      <span className="grid h-16 w-16 place-items-center rounded-full bg-brand-100 text-brand">
         <Icon name="check" className="h-8 w-8" />
       </span>
       <h3 className="mt-5 font-display text-2xl font-extrabold text-ink">
@@ -171,7 +171,7 @@ function Field({ id, label, placeholder, type, autoComplete }: FieldProps) {
         type={type}
         placeholder={placeholder}
         autoComplete={autoComplete}
-        className="w-full rounded-xl border border-ink/15 bg-white px-4 py-3 text-base text-ink placeholder:text-ink-faint transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+        className="w-full rounded-2xl border border-ink/15 bg-white px-4 py-3 text-base text-ink placeholder:text-ink-faint transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
       />
     </div>
   );
@@ -195,7 +195,7 @@ function SelectField({ id, label, placeholder, options }: SelectFieldProps) {
           id={id}
           name={id}
           defaultValue=""
-          className="w-full appearance-none rounded-xl border border-ink/15 bg-white px-4 py-3 pr-10 text-base text-ink transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+          className="w-full appearance-none rounded-2xl border border-ink/15 bg-white px-4 py-3 pr-10 text-base text-ink transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
         >
           <option value="" disabled>
             {placeholder}
