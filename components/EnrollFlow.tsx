@@ -21,7 +21,7 @@ import ShareRow from "./ShareRow";
  */
 type Phase = "register" | "registered" | "booking" | "booked" | "test";
 
-export default function EnrollFlow() {
+export default function EnrollFlow({ initialGoal }: { initialGoal?: string }) {
   const [phase, setPhase] = useState<Phase>("register");
   const [day, setDay] = useState<string | null>(null);
   const [time, setTime] = useState<string | null>(null);
@@ -54,7 +54,9 @@ export default function EnrollFlow() {
     <div className="rounded-3xl border border-ink/5 bg-white p-6 shadow-xl shadow-brand/5 sm:p-9">
       <Stepper current={stepIndex} />
 
-      {phase === "register" && <RegisterStep onSubmit={handleRegister} />}
+      {phase === "register" && (
+        <RegisterStep onSubmit={handleRegister} initialGoal={initialGoal} />
+      )}
 
       {phase === "registered" && (
         <Interstitial
@@ -130,7 +132,13 @@ function Stepper({ current }: { current: number }) {
 
 /* ---- Step 1: Register ----------------------------------------------- */
 
-function RegisterStep({ onSubmit }: { onSubmit: (e: FormEvent<HTMLFormElement>) => void }) {
+function RegisterStep({
+  onSubmit,
+  initialGoal,
+}: {
+  onSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  initialGoal?: string;
+}) {
   const r = enroll.register;
   const f = r.fields;
   return (
@@ -160,7 +168,7 @@ function RegisterStep({ onSubmit }: { onSubmit: (e: FormEvent<HTMLFormElement>) 
           <Select id="englishLevel" f={f.englishLevel} options={r.options.englishLevels} full />
           <Select id="speaking" f={f.speaking} options={r.options.comfort} />
           <Select id="reading" f={f.reading} options={r.options.comfort} />
-          <Select id="goal" f={f.goal} options={r.options.goals} full />
+          <Select id="goal" f={f.goal} options={r.options.goals} defaultValue={initialGoal} full />
           <TextArea id="notes" f={f.notes} full />
         </div>
       </section>
@@ -425,17 +433,19 @@ function Select({
   f,
   options,
   full,
+  defaultValue = "",
 }: {
   id: string;
   f: FieldCopy;
   options: readonly string[];
   full?: boolean;
+  defaultValue?: string;
 }) {
   return (
     <div className={`flex flex-col gap-1.5 ${full ? "sm:col-span-2" : ""}`}>
       <label htmlFor={id} className="text-sm font-semibold text-ink">{f.label}</label>
       <div className="relative">
-        <select id={id} name={id} defaultValue="" className="w-full appearance-none rounded-2xl border border-ink/15 bg-white px-4 py-3 pr-10 text-base text-ink transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30">
+        <select id={id} name={id} defaultValue={defaultValue} className="w-full appearance-none rounded-2xl border border-ink/15 bg-white px-4 py-3 pr-10 text-base text-ink transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30">
           <option value="" disabled>{f.placeholder}</option>
           {options.map((opt) => (
             <option key={opt} value={opt}>{opt}</option>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { hero } from "@/lib/content";
 import Icon from "./Icon";
 import Mascot from "./Mascot";
@@ -60,13 +61,13 @@ export default function Hero() {
             </p>
 
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row lg:justify-start sm:justify-center">
-              <a
-                href="#signup"
+              <Link
+                href="/enroll"
                 className="brand-gradient inline-flex w-full items-center justify-center gap-2 rounded-full px-7 py-4 text-base font-semibold text-white shadow-lg shadow-brand/30 transition-all hover:-translate-y-0.5 hover:shadow-xl active:scale-95 sm:w-auto"
               >
                 {hero.primaryCta}
                 <Icon name="arrow-right" className="h-5 w-5" />
-              </a>
+              </Link>
               <a
                 href="#how-it-works"
                 className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-ink/15 bg-white/80 px-7 py-4 text-base font-semibold text-ink transition-all hover:-translate-y-0.5 hover:border-brand/30 hover:text-brand active:scale-95 sm:w-auto"

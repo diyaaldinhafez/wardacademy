@@ -185,6 +185,23 @@ export const signup = {
 } as const;
 
 /**
+ * Homepage "starter" — one playful, one-tap question (foot-in-the-door) that
+ * hooks attention and routes to /enroll with the goal pre-filled.
+ */
+export const starter = {
+  eyebrow: "Start in 10 seconds",
+  heading: "What would your child love to do in English?",
+  subheading: "Pick one to begin — it only takes a tap.",
+  options: [
+    { key: "speaking", emoji: "💬", label: "Chat with confidence", goal: "Build speaking confidence" },
+    { key: "school", emoji: "📚", label: "Do great at school", goal: "Support school English class" },
+    { key: "general", emoji: "🎮", label: "Enjoy games, shows & books", goal: "Improve general English" },
+    { key: "exam", emoji: "🎯", label: "Get ready for an exam", goal: "Prepare for an exam" },
+  ],
+  cta: "Or just book a free trial",
+} as const;
+
+/**
  * Multi-step enrolment flow — VISUAL ONLY (no storage, no account, no real AI).
  * Register → (confirm) → Book a trial → (confirm) → Placement test → Result.
  * The "AI-generated test", "shareable link" and "teacher dashboard" are
@@ -399,7 +416,7 @@ export const footer = {
       title: "Trust",
       links: [
         { label: "Safety", href: "#safety" },
-        { label: "Book a free trial", href: "#signup" },
+        { label: "Book a free trial", href: "/enroll" },
       ],
     },
   ],

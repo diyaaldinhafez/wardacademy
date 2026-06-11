@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { nav, site } from "@/lib/content";
 import Icon from "./Icon";
 import Mascot from "./Mascot";
@@ -61,13 +62,13 @@ export default function Navbar() {
         </div>
 
         {/* Desktop CTA */}
-        <a
-          href="#signup"
+        <Link
+          href="/enroll"
           className="brand-gradient hidden items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand/25 transition-all hover:-translate-y-0.5 hover:shadow-lg md:inline-flex"
         >
           {nav.cta}
           <Icon name="arrow-right" className="h-4 w-4" />
-        </a>
+        </Link>
 
         {/* Mobile toggle */}
         <button
@@ -95,14 +96,14 @@ export default function Navbar() {
                 {link.label}
               </a>
             ))}
-            <a
-              href="#signup"
+            <Link
+              href="/enroll"
               onClick={() => setOpen(false)}
               className="brand-gradient mt-2 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-base font-semibold text-white shadow-md"
             >
               {nav.cta}
               <Icon name="arrow-right" className="h-4 w-4" />
-            </a>
+            </Link>
           </div>
         </div>
       )}

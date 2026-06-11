@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { footer, site } from "@/lib/content";
 import Mascot from "./Mascot";
 
@@ -26,16 +27,24 @@ export default function Footer() {
                 {col.title}
               </h3>
               <ul className="mt-2 space-y-1">
-                {col.links.map((link) => (
-                  <li key={link.href}>
-                    <a
-                      href={link.href}
-                      className="inline-flex min-h-11 items-center text-sm font-medium text-ink-soft transition-colors hover:text-brand"
-                    >
-                      {link.label}
-                    </a>
-                  </li>
-                ))}
+                {col.links.map((link) => {
+                  const cls =
+                    "inline-flex min-h-11 items-center text-sm font-medium text-ink-soft transition-colors hover:text-brand";
+                  const internal = link.href.startsWith("/");
+                  return (
+                    <li key={link.href}>
+                      {internal ? (
+                        <Link href={link.href} className={cls}>
+                          {link.label}
+                        </Link>
+                      ) : (
+                        <a href={link.href} className={cls}>
+                          {link.label}
+                        </a>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ))}
