@@ -1,25 +1,27 @@
 import type { Metadata } from "next";
-import { Inter, Fredoka, Cairo } from "next/font/google";
+import { Nunito, Baloo_2, IBM_Plex_Sans_Arabic } from "next/font/google";
 import "./globals.css";
 import LanguageProvider from "@/components/LanguageProvider";
 
-const inter = Inter({
-  variable: "--font-inter",
+// English body — Nunito (clean, friendly)
+const nunito = Nunito({
+  variable: "--font-nunito",
   subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
   display: "swap",
 });
 
-// Fredoka — rounded & friendly: warm for young learners, still clean for parents
-const fredoka = Fredoka({
-  variable: "--font-fredoka",
+// English display — Baloo 2 (round, confident)
+const baloo = Baloo_2({
+  variable: "--font-baloo",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["500", "600", "700", "800"],
   display: "swap",
 });
 
-// Cairo — friendly rounded Arabic; used for both headings & body when lang=ar
-const cairo = Cairo({
-  variable: "--font-cairo",
+// Arabic UI (display + body) — IBM Plex Sans Arabic
+const plexArabic = IBM_Plex_Sans_Arabic({
+  variable: "--font-ar",
   subsets: ["arabic", "latin"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
@@ -41,7 +43,7 @@ export default function RootLayout({
     <html
       lang="ar"
       dir="rtl"
-      className={`${inter.variable} ${fredoka.variable} ${cairo.variable} h-full antialiased`}
+      className={`${nunito.variable} ${baloo.variable} ${plexArabic.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-cream text-ink">
         <LanguageProvider>{children}</LanguageProvider>

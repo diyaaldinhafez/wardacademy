@@ -2,7 +2,7 @@
 
 import Icon, { type IconName } from "./Icon";
 import Reveal from "./Reveal";
-import Spark from "./Spark";
+import Mascot from "./Mascot";
 import { useT } from "./LanguageProvider";
 
 /**
@@ -22,8 +22,8 @@ export default function Features() {
     <section id="features" className="bg-cream py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
-          <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
-            <Spark className="h-6 w-6" />
+          <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-100">
+            <Mascot className="h-7 w-7" title="" />
           </span>
           <h2 className="font-display text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
             {features.heading}

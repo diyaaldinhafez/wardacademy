@@ -1,47 +1,53 @@
 @import "tailwindcss";
 
 /* ===========================================================================
-   Ward Academy — "Sunny Scholar" theme
-   Bright, cohesive palette: trustworthy for guardians, warm for young learners.
-   Tailwind v4 design tokens — these generate utilities like bg-brand,
-   text-coral, from-amber, etc.
+   Ward Academy — design system ("Platycodon violet")
+   Purple is the hero. The flower is the brand mark; the spark marks AI only.
+   Warm touch = apricot; growth/teacher-approved = leaf. Neutrals are
+   violet-tinted "dusk" inks. Token values map the existing utilities
+   (bg-brand, text-coral, etc.) onto the new palette.
    =========================================================================== */
 @theme {
   /* Fonts (wired up in app/layout.tsx via next/font) */
-  --font-sans: var(--font-inter);
-  --font-display: var(--font-fredoka);
+  --font-sans: var(--font-nunito);
+  --font-display: var(--font-baloo);
 
-  /* PRIMARY 1 — Indigo: knowledge, trust, modern */
-  --color-brand-50: #eef2ff;
-  --color-brand-100: #e0e7ff;
-  --color-brand-200: #c7d2fe;
-  --color-brand-300: #a5b4fc;
-  --color-brand-400: #818cf8;
-  --color-brand-500: #6366f1;
-  --color-brand: #4f46e5;
-  --color-brand-600: #4f46e5;
-  --color-brand-700: #4338ca;
-  --color-brand-800: #3730a3;
+  /* HERO — Ward Purple (Platycodon) */
+  --color-brand-50: #f6f3fe;
+  --color-brand-100: #ede7fd;
+  --color-brand-200: #dcd0fa;
+  --color-brand-300: #c0a9f2;
+  --color-brand-400: #9f7de7;
+  --color-brand-500: #7f55d9;
+  --color-brand: #7f55d9; /* primary */
+  --color-brand-600: #6840bd; /* hover / text-on-soft */
+  --color-brand-700: #533099;
+  --color-brand-800: #3d2371; /* deep — dark sections */
+  --color-brand-900: #29174e;
 
-  /* PRIMARY 2 — Coral: warmth, energy, play */
-  --color-coral-100: #ffe4e6;
-  --color-coral-300: #fda4af;
-  --color-coral: #fb7185;
-  --color-coral-600: #e11d61;
+  /* WARM TOUCH — Apricot (rewards / warmth) — maps the old "coral" + "amber" */
+  --color-coral-100: #ffeedc;
+  --color-coral-300: #ffcb94;
+  --color-coral: #ffb46b;
+  --color-coral-600: #c97a2b;
+  --color-amber-100: #ffeedc;
+  --color-amber-300: #ffcb94;
+  --color-amber: #ffb46b;
+  --color-amber-600: #c97a2b;
 
-  /* Secondary accent (sparkle/highlight only) — Amber */
-  --color-amber-100: #fef3c7;
-  --color-amber-300: #fcd34d;
-  --color-amber: #fbbf24;
-  --color-amber-600: #d97706;
+  /* GROWTH / TEACHER-APPROVED — Leaf */
+  --color-leaf-100: #ddf3e7;
+  --color-leaf-300: #9fd9bd;
+  --color-leaf: #2e9e6b;
+  --color-leaf-700: #1e7a50;
 
-  /* Surfaces & text */
-  --color-cream: #fff8f1;
-  --color-cream-deep: #fff1e3;
-  --color-ink: #1e293b;
-  --color-ink-soft: #475569;
-  --color-ink-muted: #64748b; /* functional muted text — passes AA on cream */
-  --color-ink-faint: #94a3b8; /* decorative only */
+  /* Surfaces & "dusk" inks (violet-tinted; no pure gray) */
+  --color-cream: #f9f8fc; /* airy page bg (ink-50) */
+  --color-cream-deep: #f6f3fe; /* soft purple wash (purple-50) */
+  --color-ink: #221d33; /* strong / headings */
+  --color-ink-soft: #453e5c; /* body */
+  --color-ink-muted: #767093; /* muted (AA) */
+  --color-ink-faint: #9c96b5; /* faint / placeholders */
 }
 
 :root {
@@ -52,13 +58,13 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Arabic: use Cairo for both display & body, and a little more line-height */
+/* Arabic: IBM Plex Sans Arabic for both display & body, generous leading */
 html[lang="ar"] {
-  --font-display: var(--font-cairo);
-  --font-sans: var(--font-cairo);
+  --font-display: var(--font-ar);
+  --font-sans: var(--font-ar);
 }
 html[lang="ar"] body {
-  line-height: 1.7;
+  line-height: 1.8;
 }
 
 /* Mirror directional (arrow) icons under RTL */
@@ -66,12 +72,12 @@ html[dir="rtl"] .rtl-flip {
   transform: scaleX(-1);
 }
 
-/* The brand "confidence" gradient — used on primary actions & the logo spark */
+/* Brand "bloom" gradient (purple-led) — primary actions & brand moments */
 .brand-gradient {
-  background-image: linear-gradient(110deg, #4f46e5 0%, #6366f1 45%, #fb7185 100%);
+  background-image: linear-gradient(135deg, #9f7de7 0%, #6840bd 100%);
 }
 .brand-gradient:hover {
-  filter: brightness(1.07);
+  filter: brightness(1.05);
 }
 
 /* Keep sticky-navbar from covering section headings when navigating anchors */

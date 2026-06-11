@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Icon from "./Icon";
 import Mascot from "./Mascot";
-import Spark from "./Spark";
 import { useT } from "./LanguageProvider";
 
 export default function Hero() {
@@ -25,7 +24,7 @@ export default function Hero() {
           {/* ---- Left: copy ---- */}
           <div className="text-center lg:text-start">
             <span className="inline-flex items-center gap-2 rounded-full border border-brand/15 bg-white/70 px-4 py-1.5 text-sm font-semibold text-brand shadow-sm backdrop-blur">
-              <Spark className="h-3.5 w-3.5 text-amber-600" />
+              <Mascot className="h-4 w-4" title="" />
               {hero.eyebrow}
             </span>
 
@@ -33,7 +32,7 @@ export default function Hero() {
               {hero.titleLines.map((line) =>
                 line === hero.highlight ? (
                   <span key={line} className="relative inline-block">
-                    <span className="bg-gradient-to-r from-brand via-brand-500 to-coral bg-clip-text text-transparent">
+                    <span className="bg-gradient-to-r from-brand-400 via-brand to-brand-700 bg-clip-text text-transparent">
                       {line}
                     </span>
                     <svg
@@ -128,8 +127,8 @@ function LetterBubbles() {
       <span className="animate-float-slow absolute -left-8 top-1/2 grid h-11 w-11 place-items-center rounded-2xl bg-coral font-display text-base font-bold text-white shadow-md">
         Hi!
       </span>
-      <span className="animate-wiggle absolute -right-7 bottom-10 grid h-12 w-12 place-items-center rounded-2xl bg-brand text-white shadow-md">
-        <Spark className="h-6 w-6" />
+      <span className="animate-wiggle absolute -right-7 bottom-10 grid h-12 w-12 place-items-center rounded-2xl bg-leaf text-white shadow-md">
+        <Icon name="check" className="h-6 w-6" />
       </span>
     </div>
   );
@@ -143,7 +142,7 @@ function HeroPreview() {
       {/* Header: label + approved chip */}
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm font-semibold text-ink-muted">{p.label}</span>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-leaf-100 px-2.5 py-1 text-xs font-semibold text-leaf-700">
           <Icon name="check-badge" className="h-3.5 w-3.5" />
           {p.approved}
         </span>
@@ -161,7 +160,7 @@ function HeroPreview() {
               key={opt.text}
               className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-sm font-medium ${
                 opt.correct
-                  ? "border-brand/30 bg-brand-50 text-brand"
+                  ? "border-leaf-300 bg-leaf-100 text-leaf-700"
                   : "border-ink/10 bg-white text-ink-soft"
               }`}
             >
@@ -178,7 +177,7 @@ function HeroPreview() {
         <span className="font-display text-sm font-bold text-brand">{p.progressValue}</span>
       </div>
       <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-brand-100">
-        <div className="h-full w-3/4 rounded-full bg-gradient-to-r from-brand to-coral" />
+        <div className="h-full w-3/4 rounded-full bg-gradient-to-r from-brand-400 to-brand" />
       </div>
     </div>
   );

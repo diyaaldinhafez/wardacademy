@@ -1,10 +1,11 @@
 /**
- * "Wardy" — Ward Academy's identity mark: a 4-point spark (Gemini-style),
- * filled with the brand "confidence" gradient (indigo → violet → coral).
+ * "Wardy" — Ward Academy's brand mark: the Platycodon (balloon flower) with the
+ * AI spark emerging from it. ("Ward" / ورد = flowers.) The child's growth is the
+ * hero; the spark supports and illuminates — it never surrounds or replaces.
  *
- * One source of truth:
- *  - face={true}  → the friendly mascot (hero, signup)
- *  - face={false} → the clean spark for the logo (navbar, footer, favicon)
+ * One source for the mark, used as mascot, logo and favicon. The `face`/`title`
+ * props are kept for call-site compatibility; the flower carries the personality
+ * (the design system uses no faces).
  */
 type Props = {
   className?: string;
@@ -12,66 +13,49 @@ type Props = {
   title?: string;
 };
 
-const SPARK =
-  "M100 16 C 116 72 128 84 184 100 C 128 116 116 128 100 184 C 84 128 72 116 16 100 C 72 84 84 72 100 16 Z";
+const PETAL =
+  "M50,50 C38,46 30,34 33,22 C35,12 42,6 50,2 C58,6 65,12 67,22 C70,34 62,46 50,50 Z";
+const ROT = [0, 72, 144, 216, 288];
 
-export default function Mascot({
-  className = "",
-  face = true,
-  title = "Ward Academy spark",
-}: Props) {
+export default function Mascot({ className = "", title = "Ward Academy" }: Props) {
   return (
     <svg
-      viewBox="0 0 200 200"
+      viewBox="0 0 132 132"
       className={className}
       role="img"
       aria-label={title}
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        <linearGradient id="wardy-grad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#4f46e5" />
-          <stop offset="50%" stopColor="#8b5cf6" />
-          <stop offset="100%" stopColor="#fb7185" />
+        <linearGradient id="wardy-petal" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#9F7DE7" />
+          <stop offset="1" stopColor="#6840BD" />
+        </linearGradient>
+        <linearGradient id="wardy-spark" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#F3EDFF" />
+          <stop offset="0.55" stopColor="#C8ABFF" />
+          <stop offset="1" stopColor="#A57CFF" />
         </linearGradient>
       </defs>
 
-      {/* soft halo behind the spark (mascot only) */}
-      {face && <circle cx="100" cy="104" r="82" fill="#6366f1" opacity="0.12" />}
+      {/* flower */}
+      <g transform="translate(16 32)">
+        <g fill="url(#wardy-petal)">
+          {ROT.map((deg) => (
+            <path key={deg} d={PETAL} transform={`rotate(${deg} 50 50)`} />
+          ))}
+        </g>
+        <circle cx="50" cy="50" r="9" fill="#F3EDFF" />
+        <circle cx="50" cy="50" r="3.5" fill="#7F55D9" />
+      </g>
 
-      <path d={SPARK} fill="url(#wardy-grad)" />
-
-      {face && (
-        <>
-          {/* little companion sparkles */}
-          <path
-            d="M152 40 l3.2 9 9 3.2 -9 3.2 -3.2 9 -3.2 -9 -9 -3.2 9 -3.2 z"
-            fill="#fbbf24"
-          />
-          <path
-            d="M48 140 l2.8 8 8 2.8 -8 2.8 -2.8 8 -2.8 -8 -8 -2.8 8 -2.8 z"
-            fill="#fb7185"
-          />
-          {/* cheeks */}
-          <circle cx="80" cy="108" r="6" fill="#ffffff" opacity="0.55" />
-          <circle cx="120" cy="108" r="6" fill="#ffffff" opacity="0.55" />
-          {/* eyes */}
-          <circle cx="88" cy="95" r="8.5" fill="#ffffff" />
-          <circle cx="112" cy="95" r="8.5" fill="#ffffff" />
-          <circle cx="90" cy="96" r="4" fill="#3730a3" />
-          <circle cx="114" cy="96" r="4" fill="#3730a3" />
-          <circle cx="91.5" cy="94.5" r="1.4" fill="#ffffff" />
-          <circle cx="115.5" cy="94.5" r="1.4" fill="#ffffff" />
-          {/* smile */}
-          <path
-            d="M89 109 Q100 120 111 109"
-            fill="none"
-            stroke="#ffffff"
-            strokeWidth="4.5"
-            strokeLinecap="round"
-          />
-        </>
-      )}
+      {/* the AI spark, emerging from the flower */}
+      <path
+        d="M104 8 C104.9 13.8 108 16.9 113.8 17.8 C108 18.7 104.9 21.8 104 27.6 C103.1 21.8 100 18.7 94.2 17.8 C100 16.9 103.1 13.8 104 8 Z"
+        fill="url(#wardy-spark)"
+      />
+      <circle cx="88" cy="30" r="2.6" fill="#C8ABFF" />
+      <circle cx="114" cy="36" r="1.8" fill="#DCD0FA" />
     </svg>
   );
 }
