@@ -13,148 +13,47 @@ export const site = {
   secondaryCta: "See how it works",
 };
 
-export const nav = {
-  links: [
-    { label: "How it works", href: "#how-it-works" },
-    { label: "Why Ward", href: "#features" },
-    { label: "AI & teacher", href: "#ai" },
-    { label: "Safety", href: "#safety" },
-  ],
+/**
+ * Landing page copy — rebuilt from the Ward Academy Design System landing kit.
+ * Sections: nav · hero · how-it-works · trust (draft → approved) · five skills ·
+ * final CTA · footer. Bilingual (Arabic lives in lib/i18n.ts).
+ */
+export const landing = {
+  brand: "Ward Academy",
+  nav: ["How it works", "Teachers", "Pricing"],
   cta: "Book a free trial",
-};
-
-export const hero = {
-  eyebrow: "English for ages 8–15",
-  titleLines: ["English your child", "learns with", "confidence."],
-  highlight: "confidence.",
-  subtitle:
-    "Teacher-led lessons, supported by AI. Your child gets original, level-matched practice that a real teacher reviews and approves — so progress is real and you can see it.",
-  primaryCta: "Book a free trial",
-  secondaryCta: "See how it works",
-  trustNote: "Free trial session · No payment required · Guardian stays in the loop",
-  stats: [
-    { value: "8–15", label: "Ages we teach" },
-    { value: "1-to-1", label: "Personal attention" },
-    { value: "100%", label: "Teacher-approved work" },
-  ],
-  preview: {
-    label: "Today's practice",
-    approved: "Teacher approved",
-    question: "Choose the correct word:",
-    sentence: "She ___ to school every day.",
-    options: [
-      { text: "go", correct: false },
-      { text: "goes", correct: true },
-      { text: "going", correct: false },
-    ],
-    progressLabel: "This week's progress",
-    progressValue: "6 of 8",
+  login: "Log in",
+  hero: {
+    title: "Your child's English journey, blooming step by step",
+    sub: "Live 1:1 sessions with a real teacher — AI assists the teacher, never replaces them. Ages 9–13.",
+    note: "Free trial session · no commitment",
   },
-};
-
-export const features = {
-  heading: "Everything your child needs to move forward",
-  subheading:
-    "A complete learning loop around the lesson — so the teacher can focus on teaching, and you can focus on watching your child grow.",
-  cards: [
-    {
-      icon: "sparkles",
-      title: "Original AI practice, matched to their level",
-      body: "Fresh exercises generated for your child's exact level and goals — never copied, always relevant and engaging.",
-      accent: "brand",
-    },
-    {
-      icon: "chart",
-      title: "Progress tracking & clear reports",
-      body: "Attendance, scores and strengths by skill — shown honestly (\"6 of 8\"), with a friendly summary after every session.",
-      accent: "coral",
-    },
-    {
-      icon: "teacher",
-      title: "Teacher-led, AI-supported",
-      body: "A real teacher plans, reviews and approves everything. AI saves time; the teacher guarantees the quality.",
-      accent: "brand",
-    },
-    {
-      icon: "shield-eye",
-      title: "Guardian visibility",
-      body: "A read-only view of your child's progress, scores and reports — for every child you care for, all in one place.",
-      accent: "coral",
-    },
-  ],
-};
-
-export const howItWorks = {
-  heading: "How it works",
-  subheading: "Four simple steps from hello to confident learning.",
-  steps: [
-    {
-      number: "01",
-      title: "Register",
-      body: "You fill in a short form and give consent. Takes a couple of minutes.",
-    },
-    {
-      number: "02",
-      title: "Free trial session",
-      body: "Pick a time that suits you. Your child meets their teacher one-to-one.",
-    },
-    {
-      number: "03",
-      title: "Personalized plan",
-      body: "After a quick placement, the teacher builds a plan made for your child.",
-    },
-    {
-      number: "04",
-      title: "Learn with follow-up",
-      body: "Lessons, practice and reports — with progress you can actually see.",
-    },
-  ],
-};
-
-export const ai = {
-  eyebrow: "AI, done responsibly",
-  heading: "AI helps. The teacher guarantees quality.",
-  body: "Every exercise and assessment is generated as a draft. A real teacher reviews and approves it before it ever reaches your child. Nothing automatic is sent unchecked — that is our promise.",
-  pipeline: [
-    {
-      title: "AI generates",
-      body: "Original exercises and assessments, matched to your child's level and goals.",
-      icon: "sparkles",
-    },
-    {
-      title: "Teacher reviews & approves",
-      body: "A real teacher checks every draft for quality and fit — and approves it.",
-      icon: "check-badge",
-    },
-    {
-      title: "Your child learns",
-      body: "Only approved, teacher-trusted work reaches your child. Always.",
-      icon: "graduation",
-    },
-  ],
-};
-
-export const safety = {
-  eyebrow: "Built for peace of mind",
-  heading: "Safe by design, for children and parents",
-  body: "Ward Academy is built around the guardian — you stay in the loop on everything your child does.",
-  points: [
-    {
-      icon: "teacher",
-      title: "Teacher-led",
-      body: "A qualified teacher leads every step. Technology supports them — it never replaces them.",
-    },
-    {
-      icon: "shield-eye",
-      title: "Guardian in the loop",
-      body: "No private adult-to-child channel. You register, you consent, and you can always see what's happening.",
-    },
-    {
-      icon: "lock",
-      title: "Child-safe & private",
-      body: "We collect only what we need, store data in the EU (GDPR), and keep your family's information protected.",
-    },
-  ],
+  how: {
+    title: "How it works",
+    steps: [
+      { t: "A gentle placement test", d: "We meet your child where they really are — one short, fun session, zero pressure." },
+      { t: "One teacher, all the way", d: "Live 1:1 sessions with a teacher who knows your child by name and tends their progress week by week." },
+      { t: "An honest Bloom Report", d: "Real numbers: what they truly mastered, and what still needs time and care." },
+    ],
+  },
+  trust: {
+    title: "AI assists. The teacher guarantees.",
+    sub: "Everything the AI produces — homework, exercises, reports — stays a draft until the teacher reviews and approves it. Nothing reaches your child or you without human eyes.",
+    draft: "AI draft — awaiting teacher approval",
+    approved: "Teacher-approved",
+    draftCap: "A draft looks like this",
+    approvedCap: "Approved looks like this",
+  },
+  skills: {
+    title: "Five petals = five skills",
+    sub: "Listening, Speaking, Reading, Writing and Vocabulary — your child's flower blooms petal by petal with real progress.",
+    items: ["Listening", "Speaking", "Reading", "Writing", "Vocabulary"],
+  },
+  final: {
+    title: "Start with a free trial session",
+    sub: "Meet the teacher and see the platform from the inside.",
+  },
+  footer: "Ward Academy © 2026 · Parental consent required for every account",
 };
 
 export const signup = {
@@ -402,25 +301,3 @@ export const teacher = {
   shareTestLabel: "Share test link",
 };
 
-export const footer = {
-  tagline: "Confident English for young learners — teacher-led, AI-supported.",
-  columns: [
-    {
-      title: "Learn",
-      links: [
-        { label: "How it works", href: "#how-it-works" },
-        { label: "Why Ward", href: "#features" },
-        { label: "AI & teacher", href: "#ai" },
-      ],
-    },
-    {
-      title: "Trust",
-      links: [
-        { label: "Safety", href: "#safety" },
-        { label: "Book a free trial", href: "/enroll" },
-      ],
-    },
-  ],
-  note: "Built for guardians and young learners.",
-  legal: "Hosted in the EU · GDPR-aware · Guardian-anchored.",
-};

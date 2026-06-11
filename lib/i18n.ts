@@ -1,42 +1,22 @@
 /**
- * Bilingual dictionary (Arabic + English) for the landing page and enrolment
- * flow. Arabic is the default; the language switcher toggles content + dir + font.
+ * Bilingual dictionary (Arabic + English). Arabic is the default; the switcher
+ * toggles content + dir + font. English (`en`) reuses content.ts (the EN source);
+ * Arabic (`ar`) mirrors the exact shape.
  *
- * English (`en`) reuses the existing copy from content.ts (the single EN source).
- * Arabic (`ar`) mirrors the exact shape. Note: the English-learning CONTENT
- * itself (the placement-test questions and the hero exercise sentence/options)
- * stays in English in both languages — only the surrounding UI is translated.
- *
- * Internal pages (/teacher, /brand) stay English and read content.ts directly.
+ * The English-learning CONTENT itself (placement-test questions) stays English in
+ * both languages — only surrounding UI is translated. Internal pages
+ * (/teacher, /brand) stay English and read content.ts directly.
  */
-import {
-  site,
-  nav,
-  hero,
-  features,
-  howItWorks,
-  ai,
-  safety,
-  signup,
-  starter,
-  enroll,
-  footer,
-} from "./content";
+import { site, landing, signup, starter, enroll } from "./content";
 
 export type Lang = "ar" | "en";
 
 const en = {
   site,
-  nav,
-  hero,
-  features,
-  howItWorks,
-  ai,
-  safety,
+  landing,
   signup: { heading: signup.heading, subheading: signup.subheading },
   starter,
   enroll,
-  footer,
   ui: {
     langName: "EN",
     backHome: "Back to home",
@@ -54,127 +34,42 @@ const ar: Dict = {
     primaryCta: "احجز جلسة تجريبية مجانية",
     secondaryCta: "كيف تعمل المنصّة",
   },
-  nav: {
-    links: [
-      { label: "كيف تعمل", href: "#how-it-works" },
-      { label: "لماذا Ward", href: "#features" },
-      { label: "الذكاء والمعلّم", href: "#ai" },
-      { label: "الأمان", href: "#safety" },
-    ],
-    cta: "احجز جلسة مجانية",
-  },
-  hero: {
-    eyebrow: "إنجليزيةٌ للأعمار 8–15",
-    titleLines: ["إنجليزيةٌ يتعلّمها طفلك", "بثقة."],
-    highlight: "بثقة.",
-    subtitle:
-      "دروسٌ بقيادة المعلّم ومدعومةٌ بالذكاء الاصطناعي. يحصل طفلك على تمارين أصليةٍ مناسبةٍ لمستواه، يراجعها معلّمٌ حقيقيٌّ ويعتمدها — فالتقدّم حقيقيٌّ وأنت تراه.",
-    primaryCta: "احجز جلسة تجريبية مجانية",
-    secondaryCta: "كيف تعمل المنصّة",
-    trustNote: "جلسة تجريبية مجانية · بلا دفع · وليّ الأمر في الصورة دائماً",
-    stats: [
-      { value: "8–15", label: "الأعمار التي نعلّمها" },
-      { value: "1-to-1", label: "اهتمامٌ فرديّ" },
-      { value: "100%", label: "عملٌ معتمَدٌ من المعلّم" },
-    ],
-    preview: {
-      label: "تمرين اليوم",
-      approved: "معتمَد من المعلّم",
-      question: "اختر الكلمة الصحيحة:",
-      sentence: "She ___ to school every day.",
-      options: [
-        { text: "go", correct: false },
-        { text: "goes", correct: true },
-        { text: "going", correct: false },
-      ],
-      progressLabel: "تقدّم هذا الأسبوع",
-      progressValue: "6 من 8",
+  landing: {
+    brand: "أكاديمية وَرد",
+    nav: ["كيف نعمل", "المعلّمون", "الأسعار"],
+    cta: "احجز جلسة تجريبية مجانية",
+    login: "تسجيل الدخول",
+    hero: {
+      title: "رحلة ابنك مع الإنجليزية تتفتّح خطوة بخطوة",
+      sub: "معلّم خاص في جلسات فردية مباشرة، وذكاء اصطناعي يساعد المعلّم — لا يحلّ مكانه. لأعمار ٩ إلى ١٣.",
+      note: "جلسة تجريبية مجانية · بلا التزام",
     },
-  },
-  features: {
-    heading: "كل ما يحتاجه طفلك ليتقدّم",
-    subheading:
-      "حلقةٌ تعليميةٌ متكاملةٌ حول الدرس — ليتفرّغ المعلّم للتعليم، وتتفرّغ أنت لمتابعة نموّ طفلك.",
-    cards: [
-      {
-        icon: "sparkles",
-        title: "تمارين أصليّة بالذكاء الاصطناعي، مناسبةٌ لمستواه",
-        body: "تمارين جديدةٌ تُولَّد لمستوى طفلك وأهدافه بالضبط — لا نسخ، دائماً مفيدةٌ وممتعة.",
-        accent: "brand",
-      },
-      {
-        icon: "chart",
-        title: "تتبّع التقدّم وتقارير واضحة",
-        body: "الحضور والدرجات ونقاط القوّة حسب المهارة — معروضةٌ بصدق («6 من 8»)، مع ملخّصٍ ودودٍ بعد كل جلسة.",
-        accent: "coral",
-      },
-      {
-        icon: "teacher",
-        title: "بقيادة المعلّم، بدعم الذكاء",
-        body: "معلّمٌ حقيقيٌّ يخطّط ويراجع ويعتمد كل شيء. الذكاء يوفّر الوقت، والمعلّم يضمن الجودة.",
-        accent: "brand",
-      },
-      {
-        icon: "shield-eye",
-        title: "اطّلاع وليّ الأمر",
-        body: "لوحةٌ للقراءة فقط لتقدّم طفلك ودرجاته وتقاريره — لكل طفلٍ ترعاه، في مكانٍ واحد.",
-        accent: "coral",
-      },
-    ],
-  },
-  howItWorks: {
-    heading: "كيف تعمل",
-    subheading: "أربع خطواتٍ بسيطة من الترحيب إلى التعلّم بثقة.",
-    steps: [
-      { number: "01", title: "سجّل", body: "تملأ نموذجاً قصيراً وتمنح الموافقة. دقيقتان فقط." },
-      { number: "02", title: "جلسة تجريبية مجانية", body: "اختر وقتاً يناسبك. يلتقي طفلك بمعلّمه وجهاً لوجه." },
-      { number: "03", title: "خطّة مخصّصة", body: "بعد تحديدٍ سريعٍ للمستوى، يبني المعلّم خطّةً مصمّمةً لطفلك." },
-      { number: "04", title: "تعلّم مع متابعة", body: "دروسٌ وتمارين وتقارير — بتقدّمٍ تراه فعلاً." },
-    ],
-  },
-  ai: {
-    eyebrow: "ذكاءٌ اصطناعيٌّ بمسؤولية",
-    heading: "الذكاء يساعد. والمعلّم يضمن الجودة.",
-    body: "كل تمرينٍ وتقييمٍ يُولَّد كمسوّدة. يراجعه معلّمٌ حقيقيٌّ ويعتمده قبل أن يصل طفلك. لا يصل شيءٌ آليٌّ دون مراجعة — هذا وعدنا.",
-    pipeline: [
-      {
-        title: "الذكاء يولّد",
-        body: "تمارين وتقييماتٌ أصلية، مناسبةٌ لمستوى طفلك وأهدافه.",
-        icon: "sparkles",
-      },
-      {
-        title: "المعلّم يراجع ويعتمد",
-        body: "معلّمٌ حقيقيٌّ يفحص كل مسوّدةٍ للجودة والملاءمة ثم يعتمدها.",
-        icon: "check-badge",
-      },
-      {
-        title: "طفلك يتعلّم",
-        body: "لا يصل طفلك إلا عملٌ معتمَدٌ موثوقٌ من المعلّم. دائماً.",
-        icon: "graduation",
-      },
-    ],
-  },
-  safety: {
-    eyebrow: "راحة بالٍ بالتصميم",
-    heading: "آمنٌ بالتصميم، للأطفال والآباء",
-    body: "Ward Academy مبنيٌّ حول وليّ الأمر — تبقى مطّلعاً على كل ما يفعله طفلك.",
-    points: [
-      {
-        icon: "teacher",
-        title: "بقيادة المعلّم",
-        body: "معلّمٌ مؤهّلٌ يقود كل خطوة. التقنية تخدمه ولا تستبدله أبداً.",
-      },
-      {
-        icon: "shield-eye",
-        title: "وليّ الأمر في الصورة",
-        body: "لا قناة خاصّةً بين بالغٍ وطفل. أنت تسجّل، وتمنح الموافقة، وترى ما يجري دائماً.",
-      },
-      {
-        icon: "lock",
-        title: "آمنٌ للطفل وخصوصيّ",
-        body: "نجمع فقط ما نحتاجه، ونخزّن البيانات في الاتحاد الأوروبي (GDPR)، ونحمي معلومات عائلتك.",
-      },
-    ],
+    how: {
+      title: "كيف نعمل؟",
+      steps: [
+        { t: "اختبار تحديد مستوى لطيف", d: "نتعرّف على مستوى ابنك الحقيقي في جلسة قصيرة ممتعة — بلا توتر." },
+        { t: "معلّم واحد يرافقه", d: "جلسات فردية مباشرة مع معلّم يعرف ابنك بالاسم، ويرعى تقدّمه أسبوعاً بأسبوع." },
+        { t: "تقرير تفتّح صادق", d: "تصلكم أرقام حقيقية: ما الذي أتقنه فعلاً، وما الذي يحتاج وقتاً ورعاية." },
+      ],
+    },
+    trust: {
+      title: "الذكاء الاصطناعي يساعد… والمعلّم يضمن",
+      sub: "كل ما ينتجه الذكاء الاصطناعي — واجب، تمرين، تقرير — يبقى مسودة حتى يراجعه المعلّم ويعتمده. لا يصل لابنك أو إليكم شيء لم تره عين بشرية.",
+      draft: "مسودة ذكية — بانتظار موافقة المعلّم",
+      approved: "اعتمدها المعلّم",
+      draftCap: "هكذا تبدو المسودة",
+      approvedCap: "وهكذا يبدو المعتمد",
+    },
+    skills: {
+      title: "خمس بتلات = خمس مهارات",
+      sub: "الاستماع، المحادثة، القراءة، الكتابة، والمفردات — زهرة ابنك تتفتّح بتلةً بتلة مع تقدّمه الحقيقي.",
+      items: ["الاستماع", "المحادثة", "القراءة", "الكتابة", "المفردات"],
+    },
+    final: {
+      title: "ابدؤوا بجلسة تجريبية مجانية",
+      sub: "تعرّفوا على المعلّم، وشاهدوا كيف تعمل المنصة من الداخل.",
+    },
+    footer: "أكاديمية وَرد © ٢٠٢٦ · موافقة وليّ الأمر شرط لكل حساب",
   },
   signup: {
     heading: "احجز جلسة طفلك التجريبية المجانية",
@@ -312,28 +207,6 @@ const ar: Dict = {
       linkMessage: "هذا اختبار تحديد المستوى من Ward Academy لطفلنا: ",
       resultMessage: "أكمل طفلنا اختبار تحديد المستوى في Ward Academy! 🌟 ",
     },
-  },
-  footer: {
-    tagline: "إنجليزيةٌ بثقة لمتعلّمين صغار — بقيادة المعلّم ومدعومةٌ بالذكاء.",
-    columns: [
-      {
-        title: "تعلّم",
-        links: [
-          { label: "كيف تعمل", href: "#how-it-works" },
-          { label: "لماذا Ward", href: "#features" },
-          { label: "الذكاء والمعلّم", href: "#ai" },
-        ],
-      },
-      {
-        title: "ثقة",
-        links: [
-          { label: "الأمان", href: "#safety" },
-          { label: "احجز جلسة مجانية", href: "/enroll" },
-        ],
-      },
-    ],
-    note: "صُمِّم لأولياء الأمور والمتعلّمين الصغار.",
-    legal: "مستضافٌ في الاتحاد الأوروبي · متوافقٌ مع GDPR · مرتكزٌ على وليّ الأمر.",
   },
   ui: {
     langName: "ع",
