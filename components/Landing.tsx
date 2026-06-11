@@ -123,7 +123,7 @@ export default function Landing() {
       <header id="top">
         <div className={shell}>
           <div className="grid items-center gap-10 rounded-b-[32px] bg-gradient-to-b from-brand-50 to-white py-12 sm:py-14 lg:grid-cols-[1.15fr_0.85fr]">
-            <div className="flex flex-col gap-5 text-center lg:text-start">
+            <div className="flex flex-col gap-5 text-center lg:text-start lg:ps-10">
               <h1 className="font-display text-[clamp(28px,5.2vw,46px)] font-bold leading-[1.3] text-brand-900">
                 {L.hero.title}
               </h1>
@@ -140,7 +140,7 @@ export default function Landing() {
               </div>
             </div>
             <div className="flex justify-center">
-              <Mascot className="h-44 w-44 drop-shadow-[0_8px_30px_rgba(127,85,217,0.25)] sm:h-56 sm:w-56" title="" />
+              <Mascot className="hero-flower h-44 w-44 drop-shadow-[0_8px_30px_rgba(127,85,217,0.25)] sm:h-56 sm:w-56" title="" />
             </div>
           </div>
         </div>

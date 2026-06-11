@@ -49,13 +49,14 @@ export default function Mascot({ className = "", title = "Ward Academy" }: Props
         <circle cx="50" cy="50" r="3.5" fill="#7F55D9" />
       </g>
 
-      {/* the AI spark, emerging from the flower */}
+      {/* the AI spark, emerging from the flower (animatable via .wardy-spark) */}
       <path
+        className="wardy-spark"
         d="M104 8 C104.9 13.8 108 16.9 113.8 17.8 C108 18.7 104.9 21.8 104 27.6 C103.1 21.8 100 18.7 94.2 17.8 C100 16.9 103.1 13.8 104 8 Z"
         fill="url(#wardy-spark)"
       />
-      <circle cx="88" cy="30" r="2.6" fill="#C8ABFF" />
-      <circle cx="114" cy="36" r="1.8" fill="#DCD0FA" />
+      <circle className="wardy-spark" cx="88" cy="30" r="2.6" fill="#C8ABFF" />
+      <circle className="wardy-spark" cx="114" cy="36" r="1.8" fill="#DCD0FA" />
     </svg>
   );
 }
