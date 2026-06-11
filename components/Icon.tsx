@@ -16,7 +16,11 @@ export type IconName =
   | "menu"
   | "close"
   | "check"
-  | "star";
+  | "star"
+  | "link"
+  | "chat"
+  | "clock"
+  | "user";
 
 type Props = SVGProps<SVGSVGElement> & { name: IconName };
 
@@ -72,6 +76,28 @@ const paths: Record<IconName, React.ReactNode> = {
   check: <path d="m5 12 4.5 4.5L19 7" />,
   star: (
     <path d="m12 4 2.3 4.7 5.2.8-3.8 3.7.9 5.1-4.6-2.4-4.6 2.4.9-5.1L4.5 9.5l5.2-.8z" />
+  ),
+  link: (
+    <>
+      <path d="M9.5 14.5 14.5 9.5" />
+      <path d="M11 6.5 12.2 5.3a4 4 0 0 1 5.5 5.5l-1.2 1.2" />
+      <path d="M13 17.5l-1.2 1.2a4 4 0 0 1-5.5-5.5l1.2-1.2" />
+    </>
+  ),
+  chat: (
+    <path d="M5 6.5h14v8.5H10l-4 3.5v-3.5H5z" />
+  ),
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </>
+  ),
+  user: (
+    <>
+      <circle cx="12" cy="8" r="3.5" />
+      <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
+    </>
   ),
 };
 
