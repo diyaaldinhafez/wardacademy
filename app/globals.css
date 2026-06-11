@@ -151,19 +151,27 @@ body {
 .animate-spin-slow { animation: spin-slow 18s linear infinite; }
 .animate-bob { animation: bob 4s ease-in-out infinite; }
 
-/* Hero flower: gentle float + a soft twinkle on its AI sparks */
+/* Hero flower: livelier float + AI sparks that emerge & rise from the flower */
 @keyframes wardy-twinkle {
-  0%, 100% { opacity: 0.7; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.18); }
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
 }
-.hero-flower { animation: bob 6s ease-in-out infinite; }
-.hero-flower .wardy-spark {
+/* small sparkles rise up-and-out from the flower, then fade — looping emission */
+@keyframes wardy-emit {
+  0% { opacity: 0; transform: translate(-3px, 4px) scale(0.3); }
+  35% { opacity: 1; transform: translate(0, 0) scale(1.1); }
+  70% { opacity: 0.9; transform: translate(3px, -4px) scale(1); }
+  100% { opacity: 0; transform: translate(7px, -9px) scale(0.5); }
+}
+.hero-flower { animation: bob 3.4s ease-in-out infinite; }
+.hero-flower .wardy-spark,
+.hero-flower .wardy-emit {
   transform-box: fill-box;
   transform-origin: center;
-  animation: wardy-twinkle 2.8s ease-in-out infinite;
 }
-.hero-flower .wardy-spark:nth-of-type(2) { animation-delay: 0.5s; }
-.hero-flower .wardy-spark:nth-of-type(3) { animation-delay: 1s; }
+.hero-flower .wardy-spark { animation: wardy-twinkle 2.2s ease-in-out infinite; }
+.hero-flower .wardy-emit { animation: wardy-emit 2.4s ease-out infinite; }
+.hero-flower .wardy-emit:last-of-type { animation-delay: 1.2s; }
 
 /* Playful "pop" on hover for cards/buttons that opt in */
 .hover-pop {
@@ -197,7 +205,8 @@ body {
   .animate-spin-slow,
   .animate-bob,
   .hero-flower,
-  .hero-flower .wardy-spark {
+  .hero-flower .wardy-spark,
+  .hero-flower .wardy-emit {
     animation: none;
   }
   .hover-pop {

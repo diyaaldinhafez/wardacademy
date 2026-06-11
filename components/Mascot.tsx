@@ -55,8 +55,8 @@ export default function Mascot({ className = "", title = "Ward Academy" }: Props
         d="M104 8 C104.9 13.8 108 16.9 113.8 17.8 C108 18.7 104.9 21.8 104 27.6 C103.1 21.8 100 18.7 94.2 17.8 C100 16.9 103.1 13.8 104 8 Z"
         fill="url(#wardy-spark)"
       />
-      <circle className="wardy-spark" cx="88" cy="30" r="2.6" fill="#C8ABFF" />
-      <circle className="wardy-spark" cx="114" cy="36" r="1.8" fill="#DCD0FA" />
+      <circle className="wardy-emit" cx="88" cy="30" r="2.6" fill="#C8ABFF" />
+      <circle className="wardy-emit" cx="114" cy="36" r="1.8" fill="#DCD0FA" />
     </svg>
   );
 }
