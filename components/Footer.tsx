@@ -1,8 +1,13 @@
+"use client";
+
 import Link from "next/link";
-import { footer, site } from "@/lib/content";
 import Mascot from "./Mascot";
+import { useT } from "./LanguageProvider";
 
 export default function Footer() {
+  const t = useT();
+  const footer = t.footer;
+  const site = t.site;
   return (
     <footer className="border-t border-ink/10 bg-cream">
       <div className="mx-auto max-w-6xl px-5 py-14 sm:px-8">

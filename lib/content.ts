@@ -11,7 +11,7 @@ export const site = {
   tagline: "Confident English, teacher-led & AI-supported",
   primaryCta: "Book a free trial",
   secondaryCta: "See how it works",
-} as const;
+};
 
 export const nav = {
   links: [
@@ -21,7 +21,7 @@ export const nav = {
     { label: "Safety", href: "#safety" },
   ],
   cta: "Book a free trial",
-} as const;
+};
 
 export const hero = {
   eyebrow: "English for ages 8–15",
@@ -50,7 +50,7 @@ export const hero = {
     progressLabel: "This week's progress",
     progressValue: "6 of 8",
   },
-} as const;
+};
 
 export const features = {
   heading: "Everything your child needs to move forward",
@@ -82,7 +82,7 @@ export const features = {
       accent: "coral",
     },
   ],
-} as const;
+};
 
 export const howItWorks = {
   heading: "How it works",
@@ -109,7 +109,7 @@ export const howItWorks = {
       body: "Lessons, practice and reports — with progress you can actually see.",
     },
   ],
-} as const;
+};
 
 export const ai = {
   eyebrow: "AI, done responsibly",
@@ -132,7 +132,7 @@ export const ai = {
       icon: "graduation",
     },
   ],
-} as const;
+};
 
 export const safety = {
   eyebrow: "Built for peace of mind",
@@ -155,7 +155,7 @@ export const safety = {
       body: "We collect only what we need, store data in the EU (GDPR), and keep your family's information protected.",
     },
   ],
-} as const;
+};
 
 export const signup = {
   eyebrow: "Start today",
@@ -182,7 +182,7 @@ export const signup = {
   successDetail:
     "We've noted your interest. A teacher from Ward Academy will reach out to arrange your free trial session.",
   reassurance: "No payment required · Free trial · You can cancel anytime",
-} as const;
+};
 
 /**
  * Homepage "starter" — one playful, one-tap question (foot-in-the-door) that
@@ -199,7 +199,7 @@ export const starter = {
     { key: "exam", emoji: "🎯", label: "Get ready for an exam", goal: "Prepare for an exam" },
   ],
   cta: "Or just book a free trial",
-} as const;
+};
 
 /**
  * Multi-step enrolment flow — VISUAL ONLY (no storage, no account, no real AI).
@@ -264,6 +264,7 @@ export const enroll = {
         "Not sure yet — please advise",
       ],
     },
+    yearsWord: "years",
     consentLabel:
       "I am the parent or guardian of this child, and I consent to them taking part in a free trial session.",
     submit: "Continue to booking",
@@ -349,7 +350,7 @@ export const enroll = {
     linkMessage: "Here's the Ward Academy placement test for our child: ",
     resultMessage: "Our child finished the Ward Academy placement test! 🌟 ",
   },
-} as const;
+};
 
 /**
  * Teacher dashboard — VISUAL DEMO with sample data only (no backend).
@@ -399,7 +400,7 @@ export const teacher = {
     not_started: "Not started",
   },
   shareTestLabel: "Share test link",
-} as const;
+};
 
 export const footer = {
   tagline: "Confident English for young learners — teacher-led, AI-supported.",
@@ -422,4 +423,4 @@ export const footer = {
   ],
   note: "Built for guardians and young learners.",
   legal: "Hosted in the EU · GDPR-aware · Guardian-anchored.",
-} as const;
+};

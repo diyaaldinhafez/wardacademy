@@ -1,5 +1,7 @@
-import { howItWorks } from "@/lib/content";
+"use client";
+
 import Reveal from "./Reveal";
+import { useT } from "./LanguageProvider";
 
 /** Steps alternate the two primaries: indigo / coral. */
 const stepColors = [
@@ -10,6 +12,7 @@ const stepColors = [
 ];
 
 export default function HowItWorks() {
+  const howItWorks = useT().howItWorks;
   return (
     <section
       id="how-it-works"
@@ -33,7 +36,7 @@ export default function HowItWorks() {
           />
           {howItWorks.steps.map((step, i) => (
             <Reveal as="li" key={step.number} delay={i * 70} className="group relative">
-              <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
+              <div className="flex flex-col items-center text-center lg:items-start lg:text-start">
                 <span
                   className={`relative z-10 grid h-16 w-16 place-items-center rounded-2xl font-display text-xl font-bold shadow-md ring-4 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110 ${stepColors[i % stepColors.length]}`}
                 >

@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { enroll } from "@/lib/content";
 import Icon from "./Icon";
 import Spark from "./Spark";
 import ShareRow from "./ShareRow";
+import { useT } from "./LanguageProvider";
 
 /**
  * VISUAL ONLY placement test. The "personalized AI generation" is a simulated
@@ -20,6 +20,7 @@ export default function PlacementTest({
   name?: string;
   shareUrl: string;
 }) {
+  const enroll = useT().enroll;
   const t = enroll.test;
   const [phase, setPhase] = useState<Phase>("preparing");
   const [qIndex, setQIndex] = useState(0);
@@ -56,7 +57,7 @@ export default function PlacementTest({
           className="brand-gradient mt-7 inline-flex items-center justify-center gap-2 rounded-full px-7 py-4 text-base font-semibold text-white shadow-lg shadow-brand/30 transition-all hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.98]"
         >
           {t.start}
-          <Icon name="arrow-right" className="h-5 w-5" />
+          <Icon name="arrow-right" className="rtl-flip h-5 w-5" />
         </button>
       </div>
     );
@@ -98,7 +99,7 @@ export default function PlacementTest({
 
         <div className="mt-6 w-full max-w-md">
           <p className="mb-2 text-sm font-semibold text-ink">{enroll.result.shareHeading}</p>
-          <ShareRow url={shareUrl} message={enroll.share.resultMessage} />
+          <ShareRow url={shareUrl} message={enroll.share.resultMessage} labels={enroll.share} />
         </div>
       </div>
     );
@@ -132,7 +133,7 @@ export default function PlacementTest({
                 key={opt}
                 type="button"
                 onClick={() => setAnswers((a) => a.map((v, idx) => (idx === qIndex ? i : v)))}
-                className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left text-base font-medium transition-all ${
+                className={`flex items-center justify-between rounded-xl border px-4 py-3 text-start text-base font-medium transition-all ${
                   isPicked
                     ? "border-brand bg-brand-50 text-brand"
                     : "border-ink/12 bg-white text-ink hover:border-brand/40"
@@ -177,7 +178,7 @@ export default function PlacementTest({
           className="brand-gradient inline-flex flex-1 items-center justify-center gap-2 rounded-full px-7 py-3.5 text-base font-semibold text-white shadow-lg shadow-brand/30 transition-all enabled:hover:-translate-y-0.5 enabled:hover:shadow-xl enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {last ? t.finish : t.next}
-          <Icon name="arrow-right" className="h-5 w-5" />
+          <Icon name="arrow-right" className="rtl-flip h-5 w-5" />
         </button>
       </div>
     </div>

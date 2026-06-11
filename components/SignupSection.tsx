@@ -1,7 +1,9 @@
+"use client";
+
 import Link from "next/link";
-import { starter } from "@/lib/content";
 import Icon from "./Icon";
 import Mascot from "./Mascot";
+import { useT } from "./LanguageProvider";
 
 /**
  * Homepage starter: one playful, one-tap question that hooks the visitor and
@@ -9,6 +11,7 @@ import Mascot from "./Mascot";
  * Register → Book → Placement flow lives on the dedicated /enroll page.
  */
 export default function SignupSection() {
+  const starter = useT().starter;
   return (
     <section
       id="signup"
@@ -41,7 +44,7 @@ export default function SignupSection() {
             <Link
               key={o.key}
               href={`/enroll?goal=${o.key}`}
-              className="group flex items-center gap-4 rounded-2xl border border-ink/10 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md"
+              className="group flex items-center gap-4 rounded-2xl border border-ink/10 bg-white p-4 text-start shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md"
             >
               <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-cream text-2xl">
                 {o.emoji}
@@ -51,7 +54,7 @@ export default function SignupSection() {
               </span>
               <Icon
                 name="arrow-right"
-                className="h-5 w-5 text-ink-faint transition-all group-hover:translate-x-0.5 group-hover:text-brand"
+                className="rtl-flip h-5 w-5 text-ink-faint transition-all group-hover:translate-x-0.5 group-hover:text-brand"
               />
             </Link>
           ))}

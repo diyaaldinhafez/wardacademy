@@ -17,7 +17,7 @@ export const metadata: Metadata = {
  */
 export default function TeacherPage() {
   return (
-    <main className="min-h-screen bg-cream px-5 py-10 sm:px-8">
+    <main dir="ltr" className="min-h-screen bg-cream px-5 py-10 sm:px-8">
       <div className="mx-auto max-w-4xl">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2" aria-label="Ward Academy">
@@ -88,7 +88,7 @@ export default function TeacherPage() {
                     <span className="mb-1 block text-right text-xs font-medium text-ink-muted sm:inline sm:pr-2">
                       {teacher.shareTestLabel}
                     </span>
-                    <ShareRow url={url} message={enroll.share.linkMessage} compact />
+                    <ShareRow url={url} message={enroll.share.linkMessage} labels={enroll.share} compact />
                   </div>
                 </div>
               </article>

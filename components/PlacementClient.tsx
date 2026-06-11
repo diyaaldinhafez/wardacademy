@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import Mascot from "./Mascot";
 import PlacementTest from "./PlacementTest";
+import { useT } from "./LanguageProvider";
 
 /**
  * Standalone placement-test page content. Reads the child's first name / level
  * from URL params (no storage) so a shared link greets them by name.
  */
 export default function PlacementClient() {
+  const t = useT();
   const params = useSearchParams();
   const name = params.get("name") ?? undefined;
   // relative link to this test; ShareRow resolves it to absolute at click time
@@ -29,7 +31,7 @@ export default function PlacementClient() {
         </div>
 
         <p className="mt-6 text-center text-xs font-medium text-ink-muted">
-          A short English placement test from Ward Academy — best done by the child.
+          {t.ui.placementPageNote}
         </p>
       </div>
     </main>

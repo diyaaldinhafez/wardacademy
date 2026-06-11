@@ -1,10 +1,13 @@
+"use client";
+
 import Link from "next/link";
-import { hero } from "@/lib/content";
 import Icon from "./Icon";
 import Mascot from "./Mascot";
 import Spark from "./Spark";
+import { useT } from "./LanguageProvider";
 
 export default function Hero() {
+  const hero = useT().hero;
   return (
     <section
       id="top"
@@ -20,7 +23,7 @@ export default function Hero() {
       <div className="relative mx-auto max-w-6xl px-5 pb-20 pt-12 sm:px-8 sm:pb-24 sm:pt-16">
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-8">
           {/* ---- Left: copy ---- */}
-          <div className="text-center lg:text-left">
+          <div className="text-center lg:text-start">
             <span className="inline-flex items-center gap-2 rounded-full border border-brand/15 bg-white/70 px-4 py-1.5 text-sm font-semibold text-brand shadow-sm backdrop-blur">
               <Spark className="h-3.5 w-3.5 text-amber-600" />
               {hero.eyebrow}
@@ -36,7 +39,7 @@ export default function Hero() {
                     <svg
                       aria-hidden
                       viewBox="0 0 300 24"
-                      className="absolute -bottom-2 left-0 h-4 w-full text-amber"
+                      className="absolute -bottom-2 start-0 h-4 w-full text-amber"
                       preserveAspectRatio="none"
                     >
                       <path
@@ -66,7 +69,7 @@ export default function Hero() {
                 className="brand-gradient inline-flex w-full items-center justify-center gap-2 rounded-full px-7 py-4 text-base font-semibold text-white shadow-lg shadow-brand/30 transition-all hover:-translate-y-0.5 hover:shadow-xl active:scale-95 sm:w-auto"
               >
                 {hero.primaryCta}
-                <Icon name="arrow-right" className="h-5 w-5" />
+                <Icon name="arrow-right" className="rtl-flip h-5 w-5" />
               </Link>
               <a
                 href="#how-it-works"
@@ -133,6 +136,7 @@ function LetterBubbles() {
 }
 
 function HeroPreview() {
+  const hero = useT().hero;
   const p = hero.preview;
   return (
     <div className="rounded-3xl border border-ink/5 bg-white p-5 shadow-xl shadow-brand/10 sm:p-6">
@@ -146,7 +150,7 @@ function HeroPreview() {
       </div>
 
       {/* Sample question */}
-      <div className="mt-4 rounded-2xl bg-cream/70 p-4 text-left">
+      <div className="mt-4 rounded-2xl bg-cream/70 p-4 text-start">
         <p className="text-xs font-semibold uppercase tracking-wide text-brand">
           {p.question}
         </p>

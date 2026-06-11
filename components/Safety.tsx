@@ -1,8 +1,11 @@
-import { safety } from "@/lib/content";
+"use client";
+
 import Icon, { type IconName } from "./Icon";
 import Reveal from "./Reveal";
+import { useT } from "./LanguageProvider";
 
 export default function Safety() {
+  const safety = useT().safety;
   return (
     <section id="safety" className="bg-cream py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">

@@ -1,9 +1,12 @@
-import { ai } from "@/lib/content";
+"use client";
+
 import Icon, { type IconName } from "./Icon";
 import Reveal from "./Reveal";
 import Spark from "./Spark";
+import { useT } from "./LanguageProvider";
 
 export default function AISection() {
+  const ai = useT().ai;
   return (
     <section
       id="ai"
@@ -51,11 +54,11 @@ export default function AISection() {
                 {i < ai.pipeline.length - 1 && (
                   <span
                     aria-hidden
-                    className="absolute left-1/2 top-full z-10 -translate-x-1/2 translate-y-1 text-amber-300 md:left-auto md:top-1/2 md:right-[-1.1rem] md:translate-x-0 md:-translate-y-1/2"
+                    className="absolute start-1/2 top-full z-10 -translate-x-1/2 translate-y-1 text-amber-300 md:start-auto md:top-1/2 md:end-[-1.1rem] md:translate-x-0 md:-translate-y-1/2"
                   >
                     <Icon
                       name="arrow-right"
-                      className="h-7 w-7 rotate-90 md:rotate-0"
+                      className="rtl-flip h-7 w-7 rotate-90 md:rotate-0"
                     />
                   </span>
                 )}

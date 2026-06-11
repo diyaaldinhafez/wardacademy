@@ -42,7 +42,7 @@ function Section({ title, kicker, children }: { title: string; kicker: string; c
 
 export default function BrandPage() {
   return (
-    <main className="min-h-screen bg-cream">
+    <main dir="ltr" className="min-h-screen bg-cream">
       <div className="mx-auto max-w-4xl px-5 py-10 sm:px-8">
         {/* header */}
         <div className="flex items-center justify-between">

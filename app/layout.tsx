@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Inter, Fredoka } from "next/font/google";
+import { Inter, Fredoka, Cairo } from "next/font/google";
 import "./globals.css";
+import LanguageProvider from "@/components/LanguageProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -12,6 +13,14 @@ const inter = Inter({
 const fredoka = Fredoka({
   variable: "--font-fredoka",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+// Cairo — friendly rounded Arabic; used for both headings & body when lang=ar
+const cairo = Cairo({
+  variable: "--font-cairo",
+  subsets: ["arabic", "latin"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
 });
@@ -28,13 +37,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+    // Arabic is the default; LanguageProvider updates lang/dir at runtime.
     <html
-      lang="en"
-      dir="ltr"
-      className={`${inter.variable} ${fredoka.variable} h-full antialiased`}
+      lang="ar"
+      dir="rtl"
+      className={`${inter.variable} ${fredoka.variable} ${cairo.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-cream text-ink">
-        {children}
+        <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>
   );

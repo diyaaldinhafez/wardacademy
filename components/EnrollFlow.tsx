@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, type FormEvent, type ReactNode } from "react";
-import { enroll } from "@/lib/content";
 import Icon, { type IconName } from "./Icon";
 import PlacementTest from "./PlacementTest";
 import ShareRow from "./ShareRow";
+import { useT } from "./LanguageProvider";
 
 /**
  * VISUAL ONLY multi-step enrolment prototype.
@@ -21,7 +21,13 @@ import ShareRow from "./ShareRow";
  */
 type Phase = "register" | "registered" | "booking" | "booked" | "test";
 
-export default function EnrollFlow({ initialGoal }: { initialGoal?: string }) {
+export default function EnrollFlow({ goalKey }: { goalKey?: string }) {
+  const tt = useT();
+  const enroll = tt.enroll;
+  // resolve the starter's goal key to the current language's goal option
+  const initialGoal = goalKey
+    ? tt.starter.options.find((o) => o.key === goalKey)?.goal
+    : undefined;
   const [phase, setPhase] = useState<Phase>("register");
   const [day, setDay] = useState<string | null>(null);
   const [time, setTime] = useState<string | null>(null);
@@ -99,6 +105,7 @@ export default function EnrollFlow({ initialGoal }: { initialGoal?: string }) {
 /* ---- Stepper -------------------------------------------------------- */
 
 function Stepper({ current }: { current: number }) {
+  const enroll = useT().enroll;
   return (
     <ol className="mb-8 flex items-center justify-center gap-2 sm:gap-3">
       {enroll.steps.map((label, i) => {
@@ -139,6 +146,7 @@ function RegisterStep({
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
   initialGoal?: string;
 }) {
+  const enroll = useT().enroll;
   const r = enroll.register;
   const f = r.fields;
   return (
@@ -162,7 +170,7 @@ function RegisterStep({
         <div className="mt-4 grid gap-5 sm:grid-cols-2">
           <Field id="studentName" f={f.studentName} type="text" full />
           <Select id="gender" f={f.gender} options={r.options.genders} />
-          <Select id="age" f={f.age} options={r.options.ages.map((a) => `${a} years`)} />
+          <Select id="age" f={f.age} options={r.options.ages.map((a) => `${a} ${r.yearsWord}`)} />
           <Select id="grade" f={f.grade} options={r.options.grades} />
           <Select id="schoolType" f={f.schoolType} options={r.options.schoolTypes} />
           <Select id="englishLevel" f={f.englishLevel} options={r.options.englishLevels} full />
@@ -183,7 +191,7 @@ function RegisterStep({
       <div>
         <button type="submit" className="brand-gradient inline-flex w-full items-center justify-center gap-2 rounded-full px-7 py-4 text-base font-semibold text-white shadow-lg shadow-brand/30 transition-all hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.98]">
           {r.submit}
-          <Icon name="arrow-right" className="h-5 w-5" />
+          <Icon name="arrow-right" className="rtl-flip h-5 w-5" />
         </button>
         <p className="mt-3 text-center text-xs font-medium text-ink-muted">{r.reassurance}</p>
       </div>
@@ -236,6 +244,7 @@ function BookingStep({
   onBack: () => void;
   onNext: () => void;
 }) {
+  const enroll = useT().enroll;
   const b = enroll.booking;
   const ready = Boolean(day && time);
   return (
@@ -296,6 +305,7 @@ function BookedStep({
   onStart: () => void;
   onShareLater: () => void;
 }) {
+  const enroll = useT().enroll;
   const b = enroll.booked;
   return (
     <div className="flex flex-col items-center py-4 text-center">
@@ -313,7 +323,7 @@ function BookedStep({
 
       <p className="mt-4 max-w-md text-base leading-relaxed text-ink-soft">{b.body}</p>
 
-      <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-amber/30 bg-amber-100/60 p-4 text-left">
+      <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-amber/30 bg-amber-100/60 p-4 text-start">
         <Icon name="user" className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
         <p className="text-sm leading-relaxed text-ink-soft">{b.studentNote}</p>
       </div>
@@ -322,7 +332,7 @@ function BookedStep({
         <div className="mt-6 flex w-full max-w-md flex-col gap-3 sm:flex-row">
           <button type="button" onClick={onStart} className="brand-gradient inline-flex flex-1 items-center justify-center gap-2 rounded-full px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-brand/30 transition-all hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.98]">
             {b.startNow}
-            <Icon name="arrow-right" className="h-5 w-5" />
+            <Icon name="arrow-right" className="rtl-flip h-5 w-5" />
           </button>
           <button type="button" onClick={onShareLater} className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-ink/15 bg-white px-6 py-3.5 text-base font-semibold text-ink transition-colors hover:border-brand/30 hover:text-brand">
             <Icon name="link" className="h-5 w-5" />
@@ -332,7 +342,7 @@ function BookedStep({
       ) : (
         <div className="mt-6 w-full max-w-md rounded-2xl border border-ink/10 bg-cream/60 p-4">
           <p className="mb-3 text-sm font-medium text-ink-soft">{enroll.share.linkMessage}</p>
-          <ShareRow url={shareUrl} message={enroll.share.linkMessage} />
+          <ShareRow url={shareUrl} message={enroll.share.linkMessage} labels={enroll.share} />
           <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-ink-muted">
             <Icon name="clock" className="h-3.5 w-3.5" />
             {b.validity}
@@ -378,6 +388,7 @@ function NavButtons({
   nextLabel: string;
   hint?: string;
 }) {
+  const enroll = useT().enroll;
   return (
     <div>
       <div className="flex items-center gap-3">
@@ -386,7 +397,7 @@ function NavButtons({
         </button>
         <button type="button" onClick={onNext} disabled={nextDisabled} className="brand-gradient inline-flex flex-1 items-center justify-center gap-2 rounded-full px-7 py-3.5 text-base font-semibold text-white shadow-lg shadow-brand/30 transition-all enabled:hover:-translate-y-0.5 enabled:hover:shadow-xl enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50">
           {nextLabel}
-          <Icon name="arrow-right" className="h-5 w-5" />
+          <Icon name="arrow-right" className="rtl-flip h-5 w-5" />
         </button>
       </div>
       {hint && <p className="mt-3 text-center text-xs font-medium text-ink-muted">{hint}</p>}
@@ -445,13 +456,13 @@ function Select({
     <div className={`flex flex-col gap-1.5 ${full ? "sm:col-span-2" : ""}`}>
       <label htmlFor={id} className="text-sm font-semibold text-ink">{f.label}</label>
       <div className="relative">
-        <select id={id} name={id} defaultValue={defaultValue} className="w-full appearance-none rounded-2xl border border-ink/15 bg-white px-4 py-3 pr-10 text-base text-ink transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30">
+        <select id={id} name={id} defaultValue={defaultValue} className="w-full appearance-none rounded-2xl border border-ink/15 bg-white px-4 py-3 pe-10 text-base text-ink transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30">
           <option value="" disabled>{f.placeholder}</option>
           {options.map((opt) => (
             <option key={opt} value={opt}>{opt}</option>
           ))}
         </select>
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint">
+        <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-ink-faint">
           <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
             <path d="m6 9 6 6 6-6" />
           </svg>

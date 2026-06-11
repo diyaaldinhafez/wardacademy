@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { enroll } from "@/lib/content";
 import Icon from "./Icon";
+
+type Labels = { copy: string; copied: string; whatsapp: string };
 
 /**
  * Copy-link + Share-on-WhatsApp buttons. Visual sharing only — the link is a
@@ -13,10 +14,12 @@ import Icon from "./Icon";
 export default function ShareRow({
   url,
   message,
+  labels,
   compact = false,
 }: {
   url: string;
   message: string;
+  labels: Labels;
   compact?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
@@ -53,7 +56,7 @@ export default function ShareRow({
         className={`inline-flex items-center justify-center gap-2 rounded-full border border-ink/15 bg-white font-semibold text-ink transition-colors hover:border-brand/40 hover:text-brand ${btn}`}
       >
         <Icon name={copied ? "check" : "link"} className="h-4 w-4" />
-        {copied ? enroll.share.copied : enroll.share.copy}
+        {copied ? labels.copied : labels.copy}
       </button>
       <button
         type="button"
@@ -61,7 +64,7 @@ export default function ShareRow({
         className={`brand-gradient inline-flex items-center justify-center gap-2 rounded-full font-semibold text-white shadow-md transition-all hover:-translate-y-0.5 ${btn}`}
       >
         <Icon name="chat" className="h-4 w-4" />
-        {enroll.share.whatsapp}
+        {labels.whatsapp}
       </button>
     </div>
   );

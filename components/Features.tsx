@@ -1,7 +1,9 @@
-import { features } from "@/lib/content";
+"use client";
+
 import Icon, { type IconName } from "./Icon";
 import Reveal from "./Reveal";
 import Spark from "./Spark";
+import { useT } from "./LanguageProvider";
 
 /**
  * One consistent card treatment (white, soft, rounded-3xl). Only the icon badge
@@ -15,6 +17,7 @@ const badgeByAccent: Record<string, string> = {
 };
 
 export default function Features() {
+  const features = useT().features;
   return (
     <section id="features" className="bg-cream py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
