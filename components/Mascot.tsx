@@ -11,13 +11,14 @@ type Props = {
   className?: string;
   face?: boolean;
   title?: string;
+  spark?: boolean;
 };
 
 const PETAL =
   "M50,50 C38,46 30,34 33,22 C35,12 42,6 50,2 C58,6 65,12 67,22 C70,34 62,46 50,50 Z";
 const ROT = [0, 72, 144, 216, 288];
 
-export default function Mascot({ className = "", title = "Ward Academy" }: Props) {
+export default function Mascot({ className = "", title = "Ward Academy", spark = true }: Props) {
   return (
     <svg
       viewBox="0 0 132 132"
@@ -49,14 +50,18 @@ export default function Mascot({ className = "", title = "Ward Academy" }: Props
         <circle cx="50" cy="50" r="3.5" fill="#7F55D9" />
       </g>
 
-      {/* the AI spark, emerging from the flower (animatable via .wardy-spark) */}
-      <path
-        className="wardy-spark"
-        d="M104 8 C104.9 13.8 108 16.9 113.8 17.8 C108 18.7 104.9 21.8 104 27.6 C103.1 21.8 100 18.7 94.2 17.8 C100 16.9 103.1 13.8 104 8 Z"
-        fill="url(#wardy-spark)"
-      />
-      <circle className="wardy-emit" cx="88" cy="30" r="2.6" fill="#C8ABFF" />
-      <circle className="wardy-emit" cx="114" cy="36" r="1.8" fill="#DCD0FA" />
+      {/* the AI spark — only shown when spark=true (default) */}
+      {spark && (
+        <>
+          <path
+            className="wardy-spark"
+            d="M104 8 C104.9 13.8 108 16.9 113.8 17.8 C108 18.7 104.9 21.8 104 27.6 C103.1 21.8 100 18.7 94.2 17.8 C100 16.9 103.1 13.8 104 8 Z"
+            fill="url(#wardy-spark)"
+          />
+          <circle className="wardy-emit" cx="88" cy="30" r="2.6" fill="#C8ABFF" />
+          <circle className="wardy-emit" cx="114" cy="36" r="1.8" fill="#DCD0FA" />
+        </>
+      )}
     </svg>
   );
 }
