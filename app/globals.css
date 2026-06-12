@@ -206,7 +206,7 @@ body {
   100% { opacity: 1; transform: translate(0, 0) scale(1); }
 }
 
-.bloom-story { animation: bob 3.4s ease-in-out 4s infinite; }
+.bloom-story { animation: bob 3.4s ease-in-out 6.9s infinite; }
 .bloom-story .hb-bud,
 .bloom-story .hb-balloon,
 .bloom-story .hb-burst,
@@ -230,14 +230,15 @@ body {
 .bloom-story .hb-bud { animation: hb-bud 1.15s cubic-bezier(0.22, 0.61, 0.36, 1) 0.1s both; }
 .bloom-story .hb-balloon { animation: hb-balloon 1.15s cubic-bezier(0.22, 0.61, 0.36, 1) 1.15s both; }
 .bloom-story .hb-burst { animation: hb-burst 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) 2.18s both; }
-.bloom-story .hb-petal-anim { animation: hb-petal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; } /* delay set inline, staggered */
-.bloom-story .hb-center { animation: hb-pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 3.15s both; }
+/* The unfurl is deliberately slow — the long journey, petal by petal. */
+.bloom-story .hb-petal-anim { animation: hb-petal 1.5s cubic-bezier(0.22, 0.61, 0.36, 1) both; } /* delay set inline, staggered */
+.bloom-story .hb-center { animation: hb-pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 5.9s both; }
 .bloom-story .hb-spark {
   animation:
-    hb-spark-birth 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 3.45s both,
-    wardy-twinkle 2.2s ease-in-out 4.2s infinite;
+    hb-spark-birth 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 6.3s both,
+    wardy-twinkle 2.2s ease-in-out 7.2s infinite;
 }
-.bloom-story .hb-emit { animation: wardy-emit 2.4s ease-out 4.2s infinite backwards; }
+.bloom-story .hb-emit { animation: wardy-emit 2.4s ease-out 7.2s infinite backwards; }
 
 /* Playful "pop" on hover for cards/buttons that opt in */
 .hover-pop {

@@ -97,14 +97,14 @@ export default function HeroBloom({ className = "", title = "Ward Academy" }: { 
               className="hb-petal-anim"
               d={PETAL}
               fill="url(#hb-petal)"
-              style={{ animationDelay: `${2.3 + i * 0.13}s` }}
+              style={{ animationDelay: `${2.35 + i * 0.65}s` }}
             />
           </g>
         ))}
 
         {/* the flower's heart */}
         <circle className="hb-center" cx="50" cy="50" r="9" fill="#F3EDFF" />
-        <circle className="hb-center" cx="50" cy="50" r="3.5" fill="#7F55D9" style={{ animationDelay: "3.3s" }} />
+        <circle className="hb-center" cx="50" cy="50" r="3.5" fill="#7F55D9" style={{ animationDelay: "6.1s" }} />
       </g>
 
       {/* Act 5 — the AI spark is born from the flower's heart */}
@@ -114,7 +114,7 @@ export default function HeroBloom({ className = "", title = "Ward Academy" }: { 
         fill="url(#hb-spark)"
       />
       <circle className="hb-emit" cx="88" cy="30" r="2.6" fill="#C8ABFF" />
-      <circle className="hb-emit" cx="114" cy="36" r="1.8" fill="#DCD0FA" style={{ animationDelay: "5.4s" }} />
+      <circle className="hb-emit" cx="114" cy="36" r="1.8" fill="#DCD0FA" style={{ animationDelay: "8.4s" }} />
     </svg>
   );
 }
