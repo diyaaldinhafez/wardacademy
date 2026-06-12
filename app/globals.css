@@ -151,7 +151,14 @@ body {
 .animate-spin-slow { animation: spin-slow 18s linear infinite; }
 .animate-bob { animation: bob 4s ease-in-out infinite; }
 
-/* Hero flower: livelier float + AI sparks that emerge & rise from the flower */
+/* ===========================================================================
+   The bloom story — hero flower only, plays ONCE on page load.
+   Timeline: bud (0–1.25s) → balloon inflates (1.15–2.3s) → pop! burst (≈2.2s)
+   → petals unfurl step by step (2.3–3.4s) → heart (3.15s) → the AI spark is
+   born from the flower (3.45s) → ambient float + twinkle/emission loops.
+   Final bloomed state is the CSS base state, so prefers-reduced-motion (and
+   any animation failure) simply shows the finished flower.
+   =========================================================================== */
 @keyframes wardy-twinkle {
   0%, 100% { opacity: 0.75; transform: scale(1); }
   50% { opacity: 1; transform: scale(1.2); }
@@ -163,15 +170,74 @@ body {
   70% { opacity: 0.9; transform: translate(3px, -4px) scale(1); }
   100% { opacity: 0; transform: translate(7px, -9px) scale(0.5); }
 }
-.hero-flower { animation: bob 3.4s ease-in-out infinite; }
-.hero-flower .wardy-spark,
-.hero-flower .wardy-emit {
+
+@keyframes hb-bud {
+  0% { opacity: 0; transform: translateY(16px) scale(0.22); }
+  30% { opacity: 1; transform: translateY(0) scale(0.5) rotate(0deg); }
+  55% { opacity: 1; transform: scale(0.52) rotate(-2.5deg); }
+  82% { opacity: 1; transform: scale(0.55) rotate(2deg); }
+  100% { opacity: 0; transform: scale(0.62) rotate(0deg); }
+}
+@keyframes hb-balloon {
+  0% { opacity: 0; transform: scale(0.55); }
+  18% { opacity: 1; transform: scale(0.68); }
+  45% { opacity: 1; transform: scale(0.78); }
+  72% { opacity: 1; transform: scale(0.86); }
+  88% { opacity: 1; transform: scale(1.06); } /* deep breath before the pop */
+  100% { opacity: 0; transform: scale(1.3); } /* pop! */
+}
+@keyframes hb-burst {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.4); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); }
+}
+@keyframes hb-petal {
+  0% { opacity: 0; transform: scale(0.08); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes hb-pop-in {
+  0% { opacity: 0; transform: scale(0); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes hb-spark-birth {
+  0% { opacity: 0; transform: translate(-34px, 46px) scale(0); }
+  60% { opacity: 1; transform: translate(4px, -4px) scale(1.25); }
+  100% { opacity: 1; transform: translate(0, 0) scale(1); }
+}
+
+.bloom-story { animation: bob 3.4s ease-in-out 4s infinite; }
+.bloom-story .hb-bud,
+.bloom-story .hb-balloon,
+.bloom-story .hb-burst,
+.bloom-story .hb-petal-anim,
+.bloom-story .hb-center,
+.bloom-story .hb-spark,
+.bloom-story .hb-emit {
   transform-box: fill-box;
   transform-origin: center;
 }
-.hero-flower .wardy-spark { animation: wardy-twinkle 2.2s ease-in-out infinite; }
-.hero-flower .wardy-emit { animation: wardy-emit 2.4s ease-out infinite; }
-.hero-flower .wardy-emit:last-of-type { animation-delay: 1.2s; }
+/* bud & balloon grow from their base; petals unfurl from the flower's heart */
+.bloom-story .hb-bud { transform-origin: 50% 92%; }
+.bloom-story .hb-balloon { transform-origin: 50% 90%; }
+.bloom-story .hb-petal-anim { transform-origin: 50% 100%; }
+
+/* transient actors are hidden at rest (base = after the story) */
+.bloom-story .hb-bud,
+.bloom-story .hb-balloon,
+.bloom-story .hb-burst { opacity: 0; }
+
+.bloom-story .hb-bud { animation: hb-bud 1.15s cubic-bezier(0.22, 0.61, 0.36, 1) 0.1s both; }
+.bloom-story .hb-balloon { animation: hb-balloon 1.15s cubic-bezier(0.22, 0.61, 0.36, 1) 1.15s both; }
+.bloom-story .hb-burst { animation: hb-burst 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) 2.18s both; }
+.bloom-story .hb-petal-anim { animation: hb-petal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; } /* delay set inline, staggered */
+.bloom-story .hb-center { animation: hb-pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 3.15s both; }
+.bloom-story .hb-spark {
+  animation:
+    hb-spark-birth 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 3.45s both,
+    wardy-twinkle 2.2s ease-in-out 4.2s infinite;
+}
+.bloom-story .hb-emit { animation: wardy-emit 2.4s ease-out 4.2s infinite backwards; }
 
 /* Playful "pop" on hover for cards/buttons that opt in */
 .hover-pop {
@@ -204,9 +270,14 @@ body {
   .animate-wiggle,
   .animate-spin-slow,
   .animate-bob,
-  .hero-flower,
-  .hero-flower .wardy-spark,
-  .hero-flower .wardy-emit {
+  .bloom-story,
+  .bloom-story .hb-bud,
+  .bloom-story .hb-balloon,
+  .bloom-story .hb-burst,
+  .bloom-story .hb-petal-anim,
+  .bloom-story .hb-center,
+  .bloom-story .hb-spark,
+  .bloom-story .hb-emit {
     animation: none;
   }
   .hover-pop {

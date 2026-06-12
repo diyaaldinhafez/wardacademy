@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Mascot from "./Mascot";
+import HeroBloom from "./HeroBloom";
 import Spark from "./Spark";
 import Button from "./ui/Button";
 import { useT, useLang } from "./LanguageProvider";
@@ -140,7 +141,7 @@ export default function Landing() {
               </div>
             </div>
             <div className="flex justify-center">
-              <Mascot className="hero-flower h-44 w-44 drop-shadow-[0_8px_30px_rgba(127,85,217,0.25)] sm:h-56 sm:w-56" title="" />
+              <HeroBloom className="h-44 w-44 drop-shadow-[0_8px_30px_rgba(127,85,217,0.25)] sm:h-56 sm:w-56" title="" />
             </div>
           </div>
         </div>
