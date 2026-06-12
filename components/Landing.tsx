@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Mascot from "./Mascot";
+import FlowerMark from "./FlowerMark";
 import HeroBloom from "./HeroBloom";
 import Spark from "./Spark";
 import Button from "./ui/Button";
@@ -96,7 +96,7 @@ export default function Landing() {
       <div className={shell}>
         <nav className="flex items-center gap-5 py-4" aria-label="main">
           <Link href="#top" className="flex items-center gap-2.5" aria-label={L.brand}>
-            <Mascot className="h-10 w-10" title="" spark={false} />
+            <FlowerMark className="h-10 w-10" title="" />
             <b className="font-display text-[17px] text-brand-800">{L.brand}</b>
           </Link>
 

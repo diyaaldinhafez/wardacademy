@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import Mascot from "./Mascot";
+import FlowerMark from "./FlowerMark";
 import PlacementTest from "./PlacementTest";
 import { useT } from "./LanguageProvider";
 
@@ -22,7 +22,7 @@ export default function PlacementClient() {
     <main className="min-h-screen bg-gradient-to-b from-cream-deep to-cream px-5 py-10 sm:px-8">
       <div className="mx-auto max-w-2xl">
         <Link href="/" className="mx-auto flex w-fit items-center gap-2" aria-label="Ward Academy">
-          <Mascot face={false} className="h-9 w-9" title="" />
+          <FlowerMark face={false} className="h-9 w-9" title="" />
           <span className="font-display text-lg font-bold text-ink">Ward Academy</span>
         </Link>
 

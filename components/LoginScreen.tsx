@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import Mascot from "./Mascot";
+import FlowerMark from "./FlowerMark";
 import Icon from "./Icon";
 import Button from "./ui/Button";
 import { useT } from "./LanguageProvider";
@@ -25,7 +25,7 @@ export default function LoginScreen() {
     <main className="min-h-screen bg-gradient-to-b from-brand-50 to-white">
       <header className="mx-auto flex max-w-md items-center justify-between px-5 py-4">
         <Link href="/" className="flex items-center gap-2" aria-label="Ward Academy">
-          <Mascot className="h-9 w-9" title="" />
+          <FlowerMark className="h-9 w-9" title="" />
           <span className="font-display text-lg font-bold text-ink">Ward Academy</span>
         </Link>
         <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-soft transition-colors hover:text-brand">
@@ -36,7 +36,7 @@ export default function LoginScreen() {
 
       <div className="mx-auto max-w-md px-5 pb-20">
         <div className="text-center">
-          <Mascot className="mx-auto mb-2 h-16 w-16 drop-shadow" title="" />
+          <FlowerMark className="mx-auto mb-2 h-16 w-16 drop-shadow" title="" />
           <h1 className="font-display text-3xl font-bold text-ink">{L.title}</h1>
           <p className="mx-auto mt-2 max-w-sm text-base text-ink-soft">{L.subtitle}</p>
         </div>
