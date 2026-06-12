@@ -45,8 +45,8 @@ function WhiteFlower() {
   );
 }
 
-/* Landing-only trust pills: "approved" stays deep brand purple here
-   (the in-app leaf green is kept out of the marketing page). */
+/* Trust pills — the system's core pattern: AI draft = dashed violet capsule
+   with the spark; teacher-approved = SOLID LEAF-GREEN capsule with a check. */
 function TrustPill({ kind, children }: { kind: "draft" | "approved"; children: React.ReactNode }) {
   if (kind === "draft") {
     return (
@@ -57,7 +57,7 @@ function TrustPill({ kind, children }: { kind: "draft" | "approved"; children: R
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-brand-700 bg-brand-700 px-3.5 py-1.5 text-xs font-semibold text-white">
+    <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-leaf bg-leaf px-3.5 py-1.5 text-xs font-semibold text-white">
       <svg width="13" height="13" viewBox="0 0 13 13" aria-hidden>
         <path d="M2.5 7l3 3 5-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
