@@ -12,6 +12,7 @@ import { useT } from "./LanguageProvider";
  */
 export default function PlacementClient() {
   const t = useT();
+  const brandName = t.landing.brand;
   const params = useSearchParams();
   const name = params.get("name") ?? undefined;
   // relative link to this test; ShareRow resolves it to absolute at click time
@@ -23,7 +24,7 @@ export default function PlacementClient() {
       <div className="mx-auto max-w-2xl">
         <Link href="/" className="mx-auto flex w-fit items-center gap-2" aria-label="Ward Academy">
           <FlowerMark className="h-9 w-9" title="" />
-          <span className="font-display text-lg font-bold text-ink">Ward Academy</span>
+          <span className="font-display text-lg font-bold text-ink">{brandName}</span>
         </Link>
 
         <div className="mt-8 rounded-3xl border border-ink/5 bg-white p-6 shadow-xl shadow-brand/5 sm:p-9">

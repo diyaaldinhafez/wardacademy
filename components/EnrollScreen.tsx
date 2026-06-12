@@ -12,12 +12,13 @@ import { useT } from "./LanguageProvider";
  */
 export default function EnrollScreen({ goalKey }: { goalKey?: string }) {
   const t = useT();
+  const brandName = t.landing.brand;
   return (
     <main className="min-h-screen bg-gradient-to-b from-cream-deep to-cream">
       <header className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4 sm:px-8">
         <Link href="/" className="flex items-center gap-2" aria-label="Ward Academy">
           <FlowerMark className="h-9 w-9" title="" />
-          <span className="font-display text-lg font-bold text-ink">Ward Academy</span>
+          <span className="font-display text-lg font-bold text-ink">{brandName}</span>
         </Link>
         <Link
           href="/"

@@ -14,6 +14,7 @@ import { useT } from "./LanguageProvider";
 export default function LoginScreen() {
   const t = useT();
   const L = t.login;
+  const brandName = t.landing.brand;
   const [submitted, setSubmitted] = useState(false);
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -26,7 +27,7 @@ export default function LoginScreen() {
       <header className="mx-auto flex max-w-md items-center justify-between px-5 py-4">
         <Link href="/" className="flex items-center gap-2" aria-label="Ward Academy">
           <FlowerMark className="h-9 w-9" title="" />
-          <span className="font-display text-lg font-bold text-ink">Ward Academy</span>
+          <span className="font-display text-lg font-bold text-ink">{brandName}</span>
         </Link>
         <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-soft transition-colors hover:text-brand">
           <Icon name="arrow-right" className="rtl-flip h-4 w-4 rotate-180" />
