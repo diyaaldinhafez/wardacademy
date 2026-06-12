@@ -109,7 +109,7 @@ export default function Landing() {
 
           <div className="ms-auto flex items-center gap-3">
             <LangToggle />
-            <Link href={ENROLL} className="hidden text-sm font-semibold text-ink-soft hover:text-brand sm:inline">
+            <Link href="/login" className="hidden text-sm font-semibold text-ink-soft hover:text-brand sm:inline">
               {L.login}
             </Link>
             <Button href={ENROLL} size="sm">

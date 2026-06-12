@@ -56,6 +56,20 @@ export const landing = {
   footer: "Ward Academy © 2026 · Parental consent required for every account",
 };
 
+/** Login screen — VISUAL ONLY (no auth backend). */
+export const login = {
+  title: "Log in",
+  subtitle: "Welcome back — sign in to your account.",
+  email: { label: "Email", placeholder: "you@example.com" },
+  password: { label: "Password", placeholder: "••••••••" },
+  submit: "Log in",
+  forgot: "Forgot password?",
+  noAccount: "New to Ward Academy?",
+  register: "Book a free trial",
+  demoNote:
+    "This is a preview — accounts aren't live yet. Please book a free trial to get started.",
+};
+
 export const signup = {
   eyebrow: "Start today",
   heading: "Book your child's free trial",

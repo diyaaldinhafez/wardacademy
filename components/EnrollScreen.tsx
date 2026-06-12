@@ -42,10 +42,6 @@ export default function EnrollScreen({ goalKey }: { goalKey?: string }) {
         <div className="mt-8">
           <EnrollFlow goalKey={goalKey} />
         </div>
-
-        <p className="mt-6 text-center text-xs font-medium text-ink-muted">
-          {t.enroll.register.reassurance}
-        </p>
       </div>
     </main>
   );

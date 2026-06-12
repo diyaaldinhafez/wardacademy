@@ -7,13 +7,14 @@
  * both languages — only surrounding UI is translated. Internal pages
  * (/teacher, /brand) stay English and read content.ts directly.
  */
-import { site, landing, signup, starter, enroll } from "./content";
+import { site, landing, login, signup, starter, enroll } from "./content";
 
 export type Lang = "ar" | "en";
 
 const en = {
   site,
   landing,
+  login,
   signup: { heading: signup.heading, subheading: signup.subheading },
   starter,
   enroll,
@@ -70,6 +71,18 @@ const ar: Dict = {
       sub: "تعرّفوا على المعلّم، وشاهدوا كيف تعمل المنصة من الداخل.",
     },
     footer: "أكاديمية وَرد © ٢٠٢٦ · موافقة وليّ الأمر شرط لكل حساب",
+  },
+  login: {
+    title: "تسجيل الدخول",
+    subtitle: "مرحباً بعودتك — ادخل إلى حسابك.",
+    email: { label: "البريد الإلكتروني", placeholder: "you@example.com" },
+    password: { label: "كلمة المرور", placeholder: "••••••••" },
+    submit: "تسجيل الدخول",
+    forgot: "نسيت كلمة المرور؟",
+    noAccount: "جديدٌ في أكاديمية وَرد؟",
+    register: "احجز جلسة تجريبية مجانية",
+    demoNote:
+      "هذه نسخة أوليّة — الحسابات غير مُفعّلة بعد. ابدأ بحجز جلسة تجريبية مجانية.",
   },
   signup: {
     heading: "احجز جلسة طفلك التجريبية المجانية",
