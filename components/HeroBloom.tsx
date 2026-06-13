@@ -1,13 +1,16 @@
+"use client";
+
+import { useEffect, useId, useRef, useState } from "react";
+
 /**
- * HeroBloom — the hero flower telling the brand story ONCE on page load:
- * bud → balloon → pop! → petals unfurl step by step → center → the AI spark
- * is born from the flower's heart → gentle ambient float.
+ * HeroBloom — the hero flower telling the brand story: bud → balloon → pop! →
+ * petals unfurl step by step → center → the AI spark is born → gentle sway.
  *
- * Uses the design system's bud/balloon/bloom progress metaphor and its
- * "things bloom and settle, never snap" motion principle. Pure CSS timeline
- * (see globals.css "bloom story"); honors prefers-reduced-motion by showing
- * the final bloomed state immediately. Used only in the landing hero —
- * everywhere else the static Mascot mark is used.
+ * The bloom plays WHEN THE FLOWER SCROLLS INTO VIEW (not on page load), so the
+ * visitor always watches it grow — even if it starts below the fold. Before it
+ * triggers (and under prefers-reduced-motion / no JS) the full bloomed flower
+ * is shown; the transient bud/balloon/burst are hidden unless the story plays.
+ * Pure CSS timeline lives in globals.css ("bloom story"). Used only here.
  */
 const PETAL =
   "M50,50 C38,46 30,34 33,22 C35,12 42,6 50,2 C58,6 65,12 67,22 C70,34 62,46 50,50 Z";
@@ -24,29 +27,56 @@ const BURST: { dx: number; dy: number; r: number; fill: string }[] = [
 ];
 
 export default function HeroBloom({ className = "", title = "Ward Academy" }: { className?: string; title?: string }) {
+  const ref = useRef<SVGSVGElement>(null);
+  const [bloom, setBloom] = useState(false);
+  // unique gradient ids per instance (the flower is rendered twice across
+  // breakpoints; duplicate ids would cross-reference and break the fill)
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
+  const petal = `hb-petal-${uid}`;
+  const spark = `hb-spark-${uid}`;
+  const bud = `hb-bud-${uid}`;
+  const balloon = `hb-balloon-${uid}`;
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setBloom(true); // play the bloom the moment it's actually seen
+          io.disconnect();
+        }
+      },
+      { threshold: 0.35 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   return (
     <svg
+      ref={ref}
       viewBox="0 0 132 132"
-      className={`bloom-story ${className}`}
+      className={`hero-flower ${bloom ? "bloom-story" : ""} ${className}`}
       role="img"
       aria-label={title}
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        <linearGradient id="hb-petal" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={petal} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#9F7DE7" />
           <stop offset="1" stopColor="#6840BD" />
         </linearGradient>
-        <linearGradient id="hb-spark" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={spark} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#F3EDFF" />
           <stop offset="0.55" stopColor="#C8ABFF" />
           <stop offset="1" stopColor="#A57CFF" />
         </linearGradient>
-        <linearGradient id="hb-bud" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={bud} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#9F7DE7" />
           <stop offset="1" stopColor="#7F55D9" />
         </linearGradient>
-        <linearGradient id="hb-balloon" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={balloon} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#C0A9F2" />
           <stop offset="1" stopColor="#7F55D9" />
         </linearGradient>
@@ -58,7 +88,7 @@ export default function HeroBloom({ className = "", title = "Ward Academy" }: { 
         <g className="hb-bud">
           <path
             d="M50,10 C63,28 70,42 70,57 C70,76 61,90 50,90 C39,90 30,76 30,57 C30,42 37,28 50,10 Z"
-            fill="url(#hb-bud)"
+            fill={`url(#${bud})`}
           />
           <path d="M50,10 C53,32 54,60 50,90" fill="none" stroke="#6840BD" strokeWidth="1.6" opacity="0.55" />
           <path d="M50,10 C42,32 40,60 44,88" fill="none" stroke="#6840BD" strokeWidth="1.3" opacity="0.4" />
@@ -69,7 +99,7 @@ export default function HeroBloom({ className = "", title = "Ward Academy" }: { 
         <g className="hb-balloon">
           <path
             d="M50,12 C68,12 80,30 80,53 C80,75 67,89 50,89 C33,89 20,75 20,53 C20,30 32,12 50,12 Z"
-            fill="url(#hb-balloon)"
+            fill={`url(#${balloon})`}
           />
           <path d="M50,12 C56,36 56,66 50,89" fill="none" stroke="#6840BD" strokeWidth="1.5" opacity="0.45" />
           <path d="M50,12 C40,34 38,64 46,88" fill="none" stroke="#6840BD" strokeWidth="1.3" opacity="0.35" />
@@ -96,7 +126,7 @@ export default function HeroBloom({ className = "", title = "Ward Academy" }: { 
             <path
               className="hb-petal-anim"
               d={PETAL}
-              fill="url(#hb-petal)"
+              fill={`url(#${petal})`}
               style={{ animationDelay: `${2.35 + i * 0.65}s` }}
             />
           </g>
@@ -111,7 +141,7 @@ export default function HeroBloom({ className = "", title = "Ward Academy" }: { 
       <path
         className="hb-spark"
         d="M104 8 C104.9 13.8 108 16.9 113.8 17.8 C108 18.7 104.9 21.8 104 27.6 C103.1 21.8 100 18.7 94.2 17.8 C100 16.9 103.1 13.8 104 8 Z"
-        fill="url(#hb-spark)"
+        fill={`url(#${spark})`}
       />
       <circle className="hb-emit" cx="88" cy="30" r="2.6" fill="#C8ABFF" />
       <circle className="hb-emit" cx="114" cy="36" r="1.8" fill="#DCD0FA" style={{ animationDelay: "8.4s" }} />

@@ -122,6 +122,20 @@ function PeekCard({
   );
 }
 
+/* The hero flower + its soft glow. Rendered once per breakpoint layout. */
+function HeroFlower() {
+  return (
+    <div className="relative grid place-items-center">
+      <div
+        aria-hidden
+        className="absolute h-44 w-44 rounded-full blur-2xl sm:h-52 sm:w-52"
+        style={{ background: "radial-gradient(circle, rgba(127,85,217,0.20), transparent 70%)" }}
+      />
+      <HeroBloom className="relative h-52 w-52 overflow-visible sm:h-60 sm:w-60 lg:h-64 lg:w-64" title="" />
+    </div>
+  );
+}
+
 export default function Landing() {
   const t = useT();
   const L = t.landing;
@@ -209,6 +223,7 @@ export default function Landing() {
 
           <div className={`${shell} relative`}>
             <div className="grid items-center gap-5 pb-12 pt-7 sm:gap-6 sm:py-16 lg:gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+              {/* text column — on mobile the flower + card are interleaved here */}
               <div className="flex flex-col items-center gap-4 text-center sm:gap-5 lg:items-start lg:text-start lg:ps-10">
                 <span className="inline-flex items-center gap-2 rounded-full border border-ink/8 bg-white/80 px-3 py-1.5 shadow-ward-1 backdrop-blur">
                   <Stars />
@@ -217,6 +232,12 @@ export default function Landing() {
                 <h1 className="font-display text-[clamp(28px,5.2vw,46px)] font-bold leading-[1.3] text-brand-900">
                   {L.hero.title}
                 </h1>
+
+                {/* mobile: flower right after the headline (blooms when seen) */}
+                <div className="my-1 lg:hidden">
+                  <HeroFlower />
+                </div>
+
                 <p className="mx-auto max-w-[52ch] text-[17px] leading-[1.8] text-ink-soft lg:mx-0">
                   {L.hero.sub}
                 </p>
@@ -228,18 +249,16 @@ export default function Landing() {
                     {L.hero.note}
                   </span>
                 </div>
+
+                {/* mobile: the Bloom Report glimpse below the CTA */}
+                <div className="mt-2 lg:hidden">
+                  <PeekCard name={L.hero.peek.student} report={L.bloomReport} />
+                </div>
               </div>
 
-              <div className="flex flex-col items-center gap-4">
-                <div className="relative grid place-items-center">
-                  {/* static soft glow (drop-shadow on the animated SVG caused a box artifact on iOS) */}
-                  <div
-                    aria-hidden
-                    className="absolute h-44 w-44 rounded-full blur-2xl sm:h-52 sm:w-52"
-                    style={{ background: "radial-gradient(circle, rgba(127,85,217,0.20), transparent 70%)" }}
-                  />
-                  <HeroBloom className="relative -mb-2 h-52 w-52 overflow-visible sm:h-64 sm:w-64" title="" />
-                </div>
+              {/* desktop: flower + card in the right column */}
+              <div className="hidden flex-col items-center gap-5 lg:flex">
+                <HeroFlower />
                 <PeekCard name={L.hero.peek.student} report={L.bloomReport} />
               </div>
             </div>

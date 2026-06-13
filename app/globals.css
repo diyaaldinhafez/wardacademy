@@ -241,10 +241,13 @@ body {
 .bloom-story .hb-balloon { transform-origin: 50% 90%; }
 .bloom-story .hb-petal-anim { transform-origin: 50% 100%; }
 
-/* transient actors are hidden at rest (base = after the story) */
-.bloom-story .hb-bud,
-.bloom-story .hb-balloon,
-.bloom-story .hb-burst { opacity: 0; }
+/* Transient actors (bud, balloon, burst, emitted sparks) stay hidden unless the
+   bloom story is actively playing — so the resting flower is the full bloom and
+   the story can be (re)triggered when the flower scrolls into view. */
+.hero-flower .hb-bud,
+.hero-flower .hb-balloon,
+.hero-flower .hb-burst,
+.hero-flower .hb-emit { opacity: 0; }
 
 .bloom-story .hb-bud { animation: hb-bud 1.15s cubic-bezier(0.22, 0.61, 0.36, 1) 0.1s both; }
 .bloom-story .hb-balloon { animation: hb-balloon 1.15s cubic-bezier(0.22, 0.61, 0.36, 1) 1.15s both; }
