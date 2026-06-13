@@ -176,7 +176,7 @@ export const landing = {
     student: "Layan",
     skill: "Reading · Speaking",
     caption: "“Let's read Unit 4 together.”",
-    note: "A representation of a session — faces shown abstractly for privacy.",
+    note: "An illustrative image of a live session.",
   },
   outcomes: {
     title: "Families are already seeing the difference",
