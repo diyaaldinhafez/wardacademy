@@ -1,14 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import FlowerMark from "./FlowerMark";
 import HeroBloom from "./HeroBloom";
 import Spark from "./Spark";
+import Icon from "./Icon";
 import Button from "./ui/Button";
+import LangToggle from "./LangToggle";
 import { useT, useLang } from "./LanguageProvider";
 
 const ENROLL = "/enroll";
-const NAV_HREFS = ["#how", "#trust", "#final"];
+const NAV_HREFS = ["#how", "#pricing", "#faq"];
 
 /* Single purple petal (the five-skills mark) */
 function Petal({ i }: { i: number }) {
@@ -45,6 +48,17 @@ function WhiteFlower() {
   );
 }
 
+/* A small leaf-green check for pricing feature rows */
+function FeatureCheck() {
+  return (
+    <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-leaf/15 text-leaf">
+      <svg width="11" height="11" viewBox="0 0 13 13" aria-hidden>
+        <path d="M2.5 7l3 3 5-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
+  );
+}
+
 /* Trust pills — the system's core pattern: AI draft = dashed violet capsule
    with the spark; teacher-approved = SOLID LEAF-GREEN capsule with a check. */
 function TrustPill({ kind, children }: { kind: "draft" | "approved"; children: React.ReactNode }) {
@@ -66,29 +80,12 @@ function TrustPill({ kind, children }: { kind: "draft" | "approved"; children: R
   );
 }
 
-function LangToggle() {
-  const { lang, setLang } = useLang();
-  const btn = (active: boolean) =>
-    `rounded-full px-3 py-[5px] text-xs font-bold transition-colors ${
-      active ? "bg-white text-brand-600 shadow-ward-1" : "text-ink-muted"
-    }`;
-  return (
-    <div className="flex gap-0.5 rounded-full bg-[var(--color-ink-100,#F1EFF7)] p-[3px]" role="group" aria-label="language">
-      <button type="button" onClick={() => setLang("ar")} className={btn(lang === "ar")} aria-pressed={lang === "ar"}>
-        عربي
-      </button>
-      <button type="button" onClick={() => setLang("en")} className={btn(lang === "en")} aria-pressed={lang === "en"}>
-        EN
-      </button>
-    </div>
-  );
-}
-
 export default function Landing() {
   const t = useT();
   const { lang } = useLang();
   const L = t.landing;
   const shell = "mx-auto w-full max-w-[1080px] px-6";
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-white">
@@ -113,11 +110,48 @@ export default function Landing() {
             <Link href="/login" className="hidden text-sm font-semibold text-ink-soft hover:text-brand sm:inline">
               {L.login}
             </Link>
-            <Button href={ENROLL} size="sm">
+            <div className="hidden sm:block">
+              <Button href={ENROLL} size="sm">
+                {L.cta}
+              </Button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              className="grid h-10 w-10 place-items-center rounded-full text-ink-soft transition-colors hover:bg-brand-50 hover:text-brand md:hidden"
+              aria-label={menuOpen ? L.closeMenu : L.menu}
+              aria-expanded={menuOpen}
+            >
+              <Icon name={menuOpen ? "close" : "menu"} className="h-6 w-6" />
+            </button>
+          </div>
+        </nav>
+
+        {/* ---- Mobile menu ---- */}
+        {menuOpen && (
+          <div className="mb-3 grid gap-1 rounded-2xl border border-ink/8 bg-white p-3 shadow-ward-2 md:hidden">
+            {L.nav.map((n, i) => (
+              <a
+                key={n}
+                href={NAV_HREFS[i]}
+                onClick={() => setMenuOpen(false)}
+                className="rounded-xl px-4 py-3 text-sm font-semibold text-ink-soft transition-colors hover:bg-brand-50 hover:text-brand"
+              >
+                {n}
+              </a>
+            ))}
+            <Link
+              href="/login"
+              onClick={() => setMenuOpen(false)}
+              className="rounded-xl px-4 py-3 text-sm font-semibold text-ink-soft transition-colors hover:bg-brand-50 hover:text-brand"
+            >
+              {L.login}
+            </Link>
+            <Button href={ENROLL} size="md" className="mt-1 w-full">
               {L.cta}
             </Button>
           </div>
-        </nav>
+        )}
       </div>
 
       {/* ---- Hero ---- */}
@@ -205,6 +239,115 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ---- Pricing ---- */}
+      <section id="pricing" className={`${shell} pt-16`}>
+        <h2 className="text-center font-display text-[28px] font-bold text-ink">{L.pricing.title}</h2>
+        <p className="mx-auto mt-3 max-w-[64ch] text-center text-[15.5px] leading-[1.8] text-ink-soft">
+          {L.pricing.sub}
+        </p>
+        <div className="mt-8 grid items-start gap-4 sm:grid-cols-3">
+          {L.pricing.plans.map((p) => (
+            <div
+              key={p.name}
+              className={`relative flex flex-col rounded-[24px] p-6 ${
+                p.featured
+                  ? "bg-gradient-to-b from-brand-50 to-white shadow-ward-2 ring-2 ring-brand sm:-mt-3 sm:pb-8"
+                  : "border border-ink/8 bg-white shadow-ward-1"
+              }`}
+            >
+              {p.featured && (
+                <span className="absolute -top-3 start-6 inline-flex items-center gap-1 rounded-full bg-brand px-3 py-1 text-[11px] font-bold text-white shadow-ward-1">
+                  <Spark className="h-3 w-3" />
+                  {L.pricing.badge}
+                </span>
+              )}
+              <b className="font-display text-lg font-bold text-ink">{p.name}</b>
+              <div className="mt-2 flex items-end gap-1">
+                <span className="font-display text-[34px] font-bold leading-none text-brand-700">{p.price}</span>
+                <span className="pb-1 text-xs font-semibold text-ink-muted">{L.pricing.perMonth}</span>
+              </div>
+              <span className="mt-1 text-sm font-semibold text-ink-soft">{p.cadence}</span>
+
+              <ul className="mt-5 grid gap-2.5">
+                {p.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-[13.5px] leading-relaxed text-ink-soft">
+                    <FeatureCheck />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-6">
+                <Button
+                  href={ENROLL}
+                  variant={p.featured ? "primary" : "soft"}
+                  size="md"
+                  className="w-full"
+                >
+                  {L.cta}
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="mt-5 text-center text-xs font-medium text-ink-muted">{L.pricing.note}</p>
+      </section>
+
+      {/* ---- Testimonials ---- */}
+      <section id="reviews" className={`${shell} pt-16`}>
+        <h2 className="text-center font-display text-[28px] font-bold text-ink">{L.testimonials.title}</h2>
+        <p className="mx-auto mt-3 max-w-[64ch] text-center text-[15.5px] leading-[1.8] text-ink-soft">
+          {L.testimonials.sub}
+        </p>
+        <div className="mt-7 grid gap-4 sm:grid-cols-3">
+          {L.testimonials.items.map((tm) => (
+            <figure key={tm.name} className="flex flex-col gap-4 rounded-2xl border border-ink/8 bg-white p-6 shadow-ward-1">
+              <div className="flex gap-0.5 text-amber-500" aria-hidden>
+                {[0, 1, 2, 3, 4].map((s) => (
+                  <Icon key={s} name="star" className="h-4 w-4 fill-current" stroke="none" />
+                ))}
+              </div>
+              <blockquote className="text-[14.5px] leading-[1.85] text-ink-soft">“{tm.quote}”</blockquote>
+              <figcaption className="mt-auto flex items-center gap-3">
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-brand-100 font-display text-sm font-bold text-brand-700">
+                  {tm.name.charAt(0)}
+                </span>
+                <span className="text-sm">
+                  <b className="block font-bold text-ink">{tm.name}</b>
+                  <span className="text-xs text-ink-muted">{tm.city}</span>
+                </span>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
+
+      {/* ---- FAQ ---- */}
+      <section id="faq" className={`${shell} pt-16`}>
+        <h2 className="text-center font-display text-[28px] font-bold text-ink">{L.faq.title}</h2>
+        <p className="mx-auto mt-3 max-w-[64ch] text-center text-[15.5px] leading-[1.8] text-ink-soft">
+          {L.faq.sub}
+        </p>
+        <div className="mx-auto mt-7 grid max-w-[760px] gap-3">
+          {L.faq.items.map((item) => (
+            <details
+              key={item.q}
+              className="group rounded-2xl border border-ink/8 bg-white px-5 shadow-ward-1 [&_summary::-webkit-details-marker]:hidden"
+            >
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-[15.5px] font-bold text-ink">
+                {item.q}
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-50 text-brand transition-transform group-open:rotate-45">
+                  <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
+                    <path d="M7 2v10M2 7h10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </span>
+              </summary>
+              <p className="pb-5 pe-10 text-[14px] leading-[1.85] text-ink-soft">{item.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
       {/* ---- Final CTA ---- */}
       <section id="final" className={`${shell} pt-16`}>
         <div className="rounded-[28px] bg-gradient-to-br from-brand-400 to-brand-600 px-8 py-11 text-center text-white">
@@ -215,12 +358,42 @@ export default function Landing() {
             {L.cta}
           </Button>
         </div>
-
-        {/* ---- Footer ---- */}
-        <footer className="mt-16 border-t border-ink/10 py-6 text-center text-xs text-ink-muted">
-          {L.footer}
-        </footer>
       </section>
+
+      {/* ---- Footer ---- */}
+      <footer className="mt-16 border-t border-ink/10">
+        <div className={`${shell} grid gap-8 py-10 sm:grid-cols-[1.4fr_1fr_1fr]`}>
+          <div className="flex flex-col gap-3">
+            <Link href="#top" className="flex items-center gap-2.5" aria-label={L.brand}>
+              <FlowerMark className="h-9 w-9" title="" />
+              <b className="font-display text-[16px] text-brand-800">{L.brand}</b>
+            </Link>
+            <p className="max-w-[34ch] text-[13.5px] leading-relaxed text-ink-muted">{L.footer.tagline}</p>
+          </div>
+
+          <nav className="flex flex-col gap-2.5" aria-label="footer-explore">
+            <b className="text-xs font-bold uppercase tracking-wide text-ink-faint">{L.footer.exploreTitle}</b>
+            {L.nav.map((n, i) => (
+              <a key={n} href={NAV_HREFS[i]} className="text-sm font-semibold text-ink-soft transition-colors hover:text-brand">
+                {n}
+              </a>
+            ))}
+          </nav>
+
+          <nav className="flex flex-col gap-2.5" aria-label="footer-account">
+            <b className="text-xs font-bold uppercase tracking-wide text-ink-faint">{L.footer.accountTitle}</b>
+            <Link href="/login" className="text-sm font-semibold text-ink-soft transition-colors hover:text-brand">
+              {L.login}
+            </Link>
+            <Link href={ENROLL} className="text-sm font-semibold text-ink-soft transition-colors hover:text-brand">
+              {L.cta}
+            </Link>
+          </nav>
+        </div>
+        <div className={`${shell} border-t border-ink/8 py-5`}>
+          <p className="text-center text-xs text-ink-muted">{L.footer.copyright}</p>
+        </div>
+      </footer>
     </div>
   );
 }

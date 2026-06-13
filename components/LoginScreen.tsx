@@ -5,6 +5,7 @@ import Link from "next/link";
 import FlowerMark from "./FlowerMark";
 import Icon from "./Icon";
 import Button from "./ui/Button";
+import LangToggle from "./LangToggle";
 import { useT } from "./LanguageProvider";
 
 /**
@@ -29,10 +30,13 @@ export default function LoginScreen() {
           <FlowerMark className="h-9 w-9" title="" />
           <span className="font-display text-lg font-bold text-ink">{brandName}</span>
         </Link>
-        <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-soft transition-colors hover:text-brand">
-          <Icon name="arrow-right" className="rtl-flip h-4 w-4 rotate-180" />
-          {t.ui.backHome}
-        </Link>
+        <div className="flex items-center gap-3">
+          <LangToggle />
+          <Link href="/" className="hidden items-center gap-1.5 text-sm font-semibold text-ink-soft transition-colors hover:text-brand sm:inline-flex">
+            <Icon name="arrow-right" className="rtl-flip h-4 w-4 rotate-180" />
+            {t.ui.backHome}
+          </Link>
+        </div>
       </header>
 
       <div className="mx-auto max-w-md px-5 pb-20">
@@ -54,8 +58,8 @@ export default function LoginScreen() {
               </Button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="grid gap-5" noValidate>
-              <Field id="email" label={L.email.label} placeholder={L.email.placeholder} type="email" autoComplete="email" />
+            <form onSubmit={handleSubmit} className="grid gap-5">
+              <Field id="email" label={L.email.label} placeholder={L.email.placeholder} type="email" autoComplete="email" required />
               <div className="grid gap-1.5">
                 <div className="flex items-center justify-between gap-2">
                   <label htmlFor="password" className="text-sm font-semibold text-ink">
@@ -71,6 +75,8 @@ export default function LoginScreen() {
                   type="password"
                   placeholder={L.password.placeholder}
                   autoComplete="current-password"
+                  required
+                  aria-required
                   className="w-full rounded-2xl border border-ink/15 bg-white px-4 py-3 text-base text-ink placeholder:text-ink-faint transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
                 />
               </div>
@@ -104,12 +110,14 @@ function Field({
   placeholder,
   type,
   autoComplete,
+  required,
 }: {
   id: string;
   label: string;
   placeholder: string;
   type: string;
   autoComplete?: string;
+  required?: boolean;
 }) {
   return (
     <div className="grid gap-1.5">
@@ -120,6 +128,8 @@ function Field({
         type={type}
         placeholder={placeholder}
         autoComplete={autoComplete}
+        required={required}
+        aria-required={required}
         className="w-full rounded-2xl border border-ink/15 bg-white px-4 py-3 text-base text-ink placeholder:text-ink-faint transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
       />
     </div>

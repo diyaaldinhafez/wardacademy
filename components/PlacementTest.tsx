@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import Icon from "./Icon";
 import Spark from "./Spark";
 import ShareRow from "./ShareRow";
-import { useT } from "./LanguageProvider";
+import { useT, useLang } from "./LanguageProvider";
+import { toArabicDigits } from "@/lib/i18n";
 
 /**
  * VISUAL ONLY placement test. The "personalized AI generation" is a simulated
@@ -20,8 +22,11 @@ export default function PlacementTest({
   name?: string;
   shareUrl: string;
 }) {
-  const enroll = useT().enroll;
+  const dict = useT();
+  const { lang } = useLang();
+  const enroll = dict.enroll;
   const t = enroll.test;
+  const fmt = (n: number) => (lang === "ar" ? toArabicDigits(n) : String(n));
   const [phase, setPhase] = useState<Phase>("preparing");
   const [qIndex, setQIndex] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>(
@@ -82,7 +87,7 @@ export default function PlacementTest({
               {enroll.result.scoreLabel}
             </div>
             <div className="mt-1 font-display text-3xl font-bold text-brand">
-              {score}<span className="text-xl text-ink-faint"> / {t.questions.length}</span>
+              {fmt(score)}<span className="text-xl text-ink-faint"> / {fmt(t.questions.length)}</span>
             </div>
           </div>
           <div className="rounded-2xl border border-ink/5 bg-cream/70 p-4">
@@ -90,6 +95,10 @@ export default function PlacementTest({
               {enroll.result.levelLabel}
             </div>
             <div className="mt-1 font-display text-lg font-bold text-ink">{band.level}</div>
+            <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-dashed border-brand-300 bg-[#F4EEFF] px-2.5 py-1 text-[11px] font-semibold text-brand-700">
+              <Spark gradient className="h-3 w-3" />
+              {dict.landing.trust.draft}
+            </span>
           </div>
         </div>
 
@@ -101,6 +110,14 @@ export default function PlacementTest({
           <p className="mb-2 text-sm font-semibold text-ink">{enroll.result.shareHeading}</p>
           <ShareRow url={shareUrl} message={enroll.share.resultMessage} labels={enroll.share} />
         </div>
+
+        <Link
+          href="/"
+          className="mt-7 inline-flex items-center gap-1.5 text-sm font-semibold text-ink-soft transition-colors hover:text-brand"
+        >
+          <Icon name="arrow-right" className="rtl-flip h-4 w-4 rotate-180" />
+          {enroll.result.backHome}
+        </Link>
       </div>
     );
   }

@@ -150,14 +150,14 @@ function RegisterStep({
   const r = enroll.register;
   const f = r.fields;
   return (
-    <form onSubmit={onSubmit} className="grid gap-8" noValidate>
+    <form onSubmit={onSubmit} className="grid gap-8">
       {/* Guardian */}
       <section>
         <SectionTitle icon="user">{r.guardianSection}</SectionTitle>
         <div className="mt-4 grid gap-5 sm:grid-cols-2">
-          <Field id="guardianName" f={f.guardianName} type="text" autoComplete="name" full />
-          <Field id="email" f={f.email} type="email" autoComplete="email" />
-          <Field id="phone" f={f.phone} type="tel" autoComplete="tel" />
+          <Field id="guardianName" f={f.guardianName} type="text" autoComplete="name" full required />
+          <Field id="email" f={f.email} type="email" autoComplete="email" required />
+          <Field id="phone" f={f.phone} type="tel" autoComplete="tel" required />
           <Select id="country" f={f.country} options={r.options.countries} />
           <Field id="city" f={f.city} type="text" />
           <Field id="nationality" f={f.nationality} type="text" full />
@@ -168,15 +168,15 @@ function RegisterStep({
       <section>
         <SectionTitle icon="graduation">{r.studentSection}</SectionTitle>
         <div className="mt-4 grid gap-5 sm:grid-cols-2">
-          <Field id="studentName" f={f.studentName} type="text" full />
+          <Field id="studentName" f={f.studentName} type="text" full required />
           <Select id="gender" f={f.gender} options={r.options.genders} />
-          <Select id="age" f={f.age} options={r.options.ages.map((a) => `${a} ${r.yearsWord}`)} />
+          <Select id="age" f={f.age} options={r.options.ages.map((a) => `${a} ${r.yearsWord}`)} required />
           <Select id="grade" f={f.grade} options={r.options.grades} />
           <Select id="schoolType" f={f.schoolType} options={r.options.schoolTypes} />
-          <Select id="englishLevel" f={f.englishLevel} options={r.options.englishLevels} full />
+          <Select id="englishLevel" f={f.englishLevel} options={r.options.englishLevels} full required />
           <Select id="speaking" f={f.speaking} options={r.options.comfort} />
           <Select id="reading" f={f.reading} options={r.options.comfort} />
-          <Select id="goal" f={f.goal} options={r.options.goals} defaultValue={initialGoal} full />
+          <Select id="goal" f={f.goal} options={r.options.goals} defaultValue={initialGoal} full required />
           <TextArea id="notes" f={f.notes} full />
         </div>
       </section>
@@ -415,17 +415,22 @@ function Field({
   type,
   autoComplete,
   full,
+  required,
 }: {
   id: string;
   f: FieldCopy;
   type: string;
   autoComplete?: string;
   full?: boolean;
+  required?: boolean;
 }) {
   return (
     <div className={`flex flex-col gap-1.5 ${full ? "sm:col-span-2" : ""}`}>
-      <label htmlFor={id} className="text-sm font-semibold text-ink">{f.label}</label>
-      <input id={id} name={id} type={type} placeholder={f.placeholder} autoComplete={autoComplete} className="w-full rounded-2xl border border-ink/15 bg-white px-4 py-3 text-base text-ink placeholder:text-ink-faint transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30" />
+      <label htmlFor={id} className="text-sm font-semibold text-ink">
+        {f.label}
+        {required && <span className="text-coral-600" aria-hidden> *</span>}
+      </label>
+      <input id={id} name={id} type={type} placeholder={f.placeholder} autoComplete={autoComplete} required={required} aria-required={required} className="w-full rounded-2xl border border-ink/15 bg-white px-4 py-3 text-base text-ink placeholder:text-ink-faint transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30" />
     </div>
   );
 }
@@ -445,18 +450,23 @@ function Select({
   options,
   full,
   defaultValue = "",
+  required,
 }: {
   id: string;
   f: FieldCopy;
   options: readonly string[];
   full?: boolean;
   defaultValue?: string;
+  required?: boolean;
 }) {
   return (
     <div className={`flex flex-col gap-1.5 ${full ? "sm:col-span-2" : ""}`}>
-      <label htmlFor={id} className="text-sm font-semibold text-ink">{f.label}</label>
+      <label htmlFor={id} className="text-sm font-semibold text-ink">
+        {f.label}
+        {required && <span className="text-coral-600" aria-hidden> *</span>}
+      </label>
       <div className="relative">
-        <select id={id} name={id} defaultValue={defaultValue} className="w-full appearance-none rounded-2xl border border-ink/15 bg-white px-4 py-3 pe-10 text-base text-ink transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30">
+        <select id={id} name={id} defaultValue={defaultValue} required={required} aria-required={required} className="w-full appearance-none rounded-2xl border border-ink/15 bg-white px-4 py-3 pe-10 text-base text-ink transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30">
           <option value="" disabled>{f.placeholder}</option>
           {options.map((opt) => (
             <option key={opt} value={opt}>{opt}</option>

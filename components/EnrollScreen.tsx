@@ -4,6 +4,7 @@ import Link from "next/link";
 import FlowerMark from "./FlowerMark";
 import Icon from "./Icon";
 import EnrollFlow from "./EnrollFlow";
+import LangToggle from "./LangToggle";
 import { useT } from "./LanguageProvider";
 
 /**
@@ -20,13 +21,16 @@ export default function EnrollScreen({ goalKey }: { goalKey?: string }) {
           <FlowerMark className="h-9 w-9" title="" />
           <span className="font-display text-lg font-bold text-ink">{brandName}</span>
         </Link>
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-soft transition-colors hover:text-brand"
-        >
-          <Icon name="arrow-right" className="rtl-flip h-4 w-4 rotate-180" />
-          {t.ui.backHome}
-        </Link>
+        <div className="flex items-center gap-3">
+          <LangToggle />
+          <Link
+            href="/"
+            className="hidden items-center gap-1.5 text-sm font-semibold text-ink-soft transition-colors hover:text-brand sm:inline-flex"
+          >
+            <Icon name="arrow-right" className="rtl-flip h-4 w-4 rotate-180" />
+            {t.ui.backHome}
+          </Link>
+        </div>
       </header>
 
       <div className="mx-auto max-w-3xl px-5 pb-20 sm:px-8">

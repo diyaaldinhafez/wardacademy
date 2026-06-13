@@ -20,9 +20,11 @@ export const site = {
  */
 export const landing = {
   brand: "Ward Academy",
-  nav: ["How it works", "Teachers", "Pricing"],
+  nav: ["How it works", "Pricing", "FAQ"],
   cta: "Book a free trial",
   login: "Log in",
+  menu: "Menu",
+  closeMenu: "Close menu",
   hero: {
     title: "Your child's English journey, blooming step by step",
     sub: "Live 1:1 sessions with a real teacher — AI assists the teacher, never replaces them. Ages 9–13.",
@@ -49,11 +51,115 @@ export const landing = {
     sub: "Listening, Speaking, Reading, Writing and Vocabulary — your child's flower blooms petal by petal with real progress.",
     items: ["Listening", "Speaking", "Reading", "Writing", "Vocabulary"],
   },
+  pricing: {
+    title: "Simple plans that grow with your child",
+    sub: "Every plan starts with a free trial. Live 1:1 sessions, teacher-approved practice, and an honest Bloom Report — cancel anytime.",
+    badge: "Most chosen",
+    perMonth: "/ month",
+    note: "Prices in euro · No card needed for the trial · Cancel anytime",
+    plans: [
+      {
+        name: "Seedling",
+        price: "€76",
+        cadence: "1 session a week",
+        features: [
+          "4 live 1:1 sessions a month",
+          "Teacher-approved homework",
+          "Monthly Bloom Report",
+          "WhatsApp progress updates",
+        ],
+        featured: false,
+      },
+      {
+        name: "Bloom",
+        price: "€144",
+        cadence: "2 sessions a week",
+        features: [
+          "8 live 1:1 sessions a month",
+          "Everything in Seedling",
+          "Priority booking times",
+          "Extra practice between sessions",
+        ],
+        featured: true,
+      },
+      {
+        name: "Flourish",
+        price: "€204",
+        cadence: "3 sessions a week",
+        features: [
+          "12 live 1:1 sessions a month",
+          "Everything in Bloom",
+          "Fastest progress pace",
+          "Exam-prep focus available",
+        ],
+        featured: false,
+      },
+    ],
+  },
+  testimonials: {
+    title: "Parents see the difference",
+    sub: "Real families, real change — confidence first.",
+    items: [
+      {
+        quote:
+          "My daughter went from hiding behind me to leading the conversation. Having the same teacher every week made all the difference.",
+        name: "Mona A.",
+        city: "Berlin",
+      },
+      {
+        quote:
+          "I finally trust what I'm reading. The teacher checks everything the AI makes before it ever reaches my son.",
+        name: "Yusuf K.",
+        city: "Vienna",
+      },
+      {
+        quote:
+          "The Bloom Report is honest — it tells me what's truly mastered and what still needs time. No empty praise.",
+        name: "Layla H.",
+        city: "Zürich",
+      },
+    ],
+  },
+  faq: {
+    title: "Questions parents ask",
+    sub: "Everything you want to know before the first session.",
+    items: [
+      {
+        q: "How long is each session?",
+        a: "Live 1:1 sessions are 45 minutes — long enough to grow, short enough to stay fun and focused.",
+      },
+      {
+        q: "What ages do you teach?",
+        a: "We teach children ages 8 to 15, matched to the right level after a gentle placement test.",
+      },
+      {
+        q: "What if my child is shy?",
+        a: "That's exactly who we're built for. One steady teacher, one child, and no class to perform in front of — confidence grows session by session.",
+      },
+      {
+        q: "What do we need to start?",
+        a: "Just a laptop or tablet with a camera and internet. We send a simple link — nothing to install.",
+      },
+      {
+        q: "Can I cancel anytime?",
+        a: "Yes. Plans are monthly — you can pause or cancel whenever you like, with no long contracts.",
+      },
+      {
+        q: "Is the AI replacing the teacher?",
+        a: "Never. AI helps the teacher prepare faster, but every piece of practice is reviewed and approved by your child's teacher before it reaches them.",
+      },
+    ],
+  },
   final: {
     title: "Start with a free trial session",
     sub: "Meet the teacher and see the platform from the inside.",
   },
-  footer: "Ward Academy © 2026 · Parental consent required for every account",
+  footer: {
+    tagline: "Confident English for ages 8–15 — teacher-led, AI-supported.",
+    exploreTitle: "Explore",
+    accountTitle: "Account",
+    copyright: "Ward Academy © 2026 · Parental consent required for every account",
+  },
 };
 
 /** Login screen — VISUAL ONLY (no auth backend). */
@@ -220,7 +326,7 @@ export const enroll = {
   test: {
     preparingTitle: "Preparing a personalized test…",
     preparingNote: "Building questions to match the level you told us about.",
-    greeting: (name?: string) => (name ? `Hi ${name}! 👋` : "Hi there! 👋"),
+    greeting: (name?: string) => (name ? `Hi ${name}!` : "Hi there!"),
     intro: "This short test has 10 questions. Take your time — there's no pass or fail!",
     start: "Start test",
     next: "Next",
@@ -241,16 +347,16 @@ export const enroll = {
   },
 
   result: {
-    heading: "Test complete! 🎉",
+    heading: "Test complete!",
     scoreLabel: "Your score",
     levelLabel: "Suggested starting level",
     teacherNote: "The teacher will review this and confirm the final level before your first lesson.",
     bands: [
-      { min: 9, title: "Wonderful! ✨", level: "Upper-Intermediate (B2)" },
-      { min: 7, title: "Great job! 🎉", level: "Intermediate (B1)" },
-      { min: 5, title: "Nice work! 👍", level: "Elementary (A2)" },
-      { min: 3, title: "Good start! 🌱", level: "Beginner (A1)" },
-      { min: 0, title: "Great effort! 💪", level: "Just starting (Pre-A1)" },
+      { min: 9, title: "Wonderful!", level: "Upper-Intermediate (B2)" },
+      { min: 7, title: "Great job!", level: "Intermediate (B1)" },
+      { min: 5, title: "Nice work!", level: "Elementary (A2)" },
+      { min: 3, title: "Good start!", level: "Beginner (A1)" },
+      { min: 0, title: "Great effort!", level: "Just starting (Pre-A1)" },
     ],
     shareHeading: "Share the result",
     backHome: "Back to home",
@@ -261,7 +367,7 @@ export const enroll = {
     copied: "Copied!",
     whatsapp: "Share on WhatsApp",
     linkMessage: "Here's the Ward Academy placement test for our child: ",
-    resultMessage: "Our child finished the Ward Academy placement test! 🌟 ",
+    resultMessage: "Our child finished the Ward Academy placement test! ",
   },
 };
 
