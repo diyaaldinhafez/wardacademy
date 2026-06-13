@@ -39,12 +39,30 @@ export const landing = {
     ],
   },
   trust: {
-    title: "A real teacher leads every lesson",
-    sub: "The same teacher plans your child's lessons, knows them by name, and personally checks their homework and progress — so what reaches you is real, and earned.",
+    title: "One teacher, one child — every session",
+    sub: "Every session is private and one-to-one: your child's full hour of attention, at their own pace, around what they love. The same dedicated teacher follows their journey week after week and shapes each lesson to how they're really doing.",
     points: [
-      "One dedicated teacher, every week",
-      "Every lesson checked by the teacher",
-      "Honest progress — never empty praise",
+      "Private 1:1 sessions — undivided attention",
+      "The same dedicated teacher, every week",
+      "Lessons tailored to your child's pace and goals",
+    ],
+  },
+  ai: {
+    title: "Smart support that makes every session go further",
+    sub: "Behind your child's teacher is thoughtful AI — and your child gets a helping hand too. By supporting both the teacher and the student, it turns every session into more real progress.",
+    points: [
+      {
+        t: "Support for the teacher",
+        d: "AI helps the teacher build personalized lessons, practice and progress reports in a fraction of the time — so their energy stays on teaching your child.",
+      },
+      {
+        t: "Support for your child",
+        d: "Between sessions, your child gets practice matched to their exact level, and instant, friendly help the moment they need it.",
+      },
+      {
+        t: "A faster journey",
+        d: "When a dedicated teacher and smart tools work together, progress compounds — and your child reaches their goals sooner.",
+      },
     ],
   },
   skills: {
@@ -97,19 +115,19 @@ export const landing = {
     items: [
       {
         quote:
-          "My daughter went from hiding behind me to leading the conversation. Having the same teacher every week made all the difference.",
+          "My son used to freeze up in English. One-to-one with the same teacher every week, he's finally speaking with confidence.",
         name: "Mona A.",
         city: "Berlin",
       },
       {
         quote:
-          "I finally trust what I'm reading. The teacher checks everything the AI makes before it ever reaches my son.",
+          "I get a short report after every single session, so I always know what my daughter learned and what's coming next. No guessing.",
         name: "Yusuf K.",
         city: "Vienna",
       },
       {
         quote:
-          "The Bloom Report is honest — it tells me what's truly mastered and what still needs time. No empty praise.",
+          "Every lesson is built around my son — his level, his interests. The extra practice between sessions keeps him moving faster than I expected.",
         name: "Layla H.",
         city: "Zürich",
       },

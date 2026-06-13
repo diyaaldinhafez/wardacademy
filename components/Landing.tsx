@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import FlowerMark from "./FlowerMark";
 import HeroBloom from "./HeroBloom";
+import Spark from "./Spark";
 import Icon from "./Icon";
 import Button from "./ui/Button";
 import LangToggle from "./LangToggle";
@@ -174,11 +175,11 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ---- Trust: a real teacher leads every lesson ---- */}
+      {/* ---- The private teacher: one-to-one, every session ---- */}
       <section id="trust" className={`${shell} pt-16`}>
         <div className="rounded-[28px] bg-brand-50 px-8 py-10">
           <h2 className="flex items-center justify-center gap-2.5 text-center font-display text-[28px] font-bold text-ink">
-            <Icon name="check-badge" className="h-6 w-6 text-leaf" />
+            <Icon name="teacher" className="h-6 w-6 text-brand-600" />
             {L.trust.title}
           </h2>
           <p className="mx-auto mt-3 max-w-[64ch] text-center text-[15.5px] leading-[1.8] text-ink-soft">
@@ -192,6 +193,27 @@ export default function Landing() {
               >
                 <FeatureCheck />
                 <span className="text-[14px] font-semibold leading-snug text-ink">{point}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ---- AI support: a booster for teacher + student ---- */}
+      <section id="ai" className={`${shell} pt-16`}>
+        <div className="rounded-[28px] border border-brand-100 bg-gradient-to-br from-brand-50 to-white px-8 py-10">
+          <h2 className="flex items-center justify-center gap-2.5 text-center font-display text-[28px] font-bold text-ink">
+            <Spark gradient className="h-6 w-6" />
+            {L.ai.title}
+          </h2>
+          <p className="mx-auto mt-3 max-w-[64ch] text-center text-[15.5px] leading-[1.8] text-ink-soft">
+            {L.ai.sub}
+          </p>
+          <div className="mt-7 grid gap-4 sm:grid-cols-3">
+            {L.ai.points.map((pt) => (
+              <div key={pt.t} className="flex flex-col gap-2 rounded-2xl border border-ink/8 bg-white p-5 shadow-ward-1">
+                <b className="text-[16px] font-bold text-ink">{pt.t}</b>
+                <span className="text-sm leading-[1.75] text-ink-soft">{pt.d}</span>
               </div>
             ))}
           </div>
