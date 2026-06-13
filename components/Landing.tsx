@@ -58,18 +58,65 @@ function Stars() {
   );
 }
 
-/* Floating "live progress" glimpse beside the hero flower */
-function PeekCard({ peek }: { peek: { label: string; student: string; metric: string; caption: string } }) {
+function Sprout() {
   return (
-    <div className="w-[230px] rounded-2xl border border-ink/8 bg-white p-3.5 shadow-ward-2">
+    <svg width="10" height="12" viewBox="0 0 12 14" aria-hidden className="text-amber-500">
+      <path d="M6 13V6.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+      <path d="M6 7.5C3.2 7.5 2 5.6 2 3.4 4.8 3.4 6 5.3 6 7.5Z" fill="currentColor" />
+      <path d="M6 8.5C8.8 8.5 10 6.6 10 4.4 7.2 4.4 6 6.3 6 8.5Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+/* A real glimpse of the signature Bloom Report, shown beneath the hero flower.
+   Two skills (one strong, one developing — honest) + streak + season. */
+function PeekCard({
+  name,
+  report,
+}: {
+  name: string;
+  report: {
+    tag: string;
+    streak: string;
+    season: string;
+    skills: { name: string; value: number; tag: string }[];
+  };
+}) {
+  // Reading (strong) + Speaking (developing) make an honest two-line teaser
+  const rows = [report.skills[2], report.skills[1]];
+  return (
+    <div className="w-[250px] rounded-2xl border border-ink/8 bg-white p-4 text-start shadow-ward-2">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold uppercase tracking-wide text-ink-faint">{peek.label}</span>
-        <span className="rounded-full bg-leaf/15 px-2 py-0.5 text-[9px] font-bold text-leaf">{peek.student}</span>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-100 px-2.5 py-1 text-[10.5px] font-bold text-brand-700">
+          {report.tag}
+        </span>
+        <span className="rounded-full bg-leaf/15 px-2.5 py-0.5 text-[10px] font-bold text-leaf">{name}</span>
       </div>
-      <div className="mt-1.5 font-display text-lg font-bold text-brand-700">{peek.metric}</div>
-      <div className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-ink-muted">
-        <Spark gradient className="h-3 w-3" />
-        {peek.caption}
+      <div className="mt-3 grid gap-2.5">
+        {rows.map((s) => (
+          <div key={s.name} className="flex items-center gap-2">
+            <span className="w-14 shrink-0 text-[11px] font-bold text-ink">{s.name}</span>
+            <span className="h-2 flex-1 rounded-full bg-brand-100">
+              <span
+                className="block h-full rounded-full"
+                style={{ width: `${s.value}%`, background: "linear-gradient(90deg,#9f7de7,#6840bd)" }}
+              />
+            </span>
+            <span className="min-w-[3.5rem] shrink-0 whitespace-nowrap text-end text-[10px] font-bold text-brand-700">
+              {s.tag}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 flex items-center gap-2">
+        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-600">
+          <Sprout />
+          {report.streak}
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-brand-700">
+          <Icon name="star" className="h-2.5 w-2.5 fill-current" stroke="none" />
+          {report.season}
+        </span>
       </div>
     </div>
   );
@@ -183,7 +230,7 @@ export default function Landing() {
 
             <div className="flex flex-col items-center gap-6">
               <HeroBloom className="h-44 w-44 drop-shadow-[0_8px_30px_rgba(127,85,217,0.25)] sm:h-52 sm:w-52" title="" />
-              <PeekCard peek={L.hero.peek} />
+              <PeekCard name={L.hero.peek.student} report={L.bloomReport} />
             </div>
           </div>
 

@@ -48,10 +48,7 @@ const ar: Dict = {
       note: "جلسة تجريبية مجانية · بلا التزام",
       rating: "يحبّها أكثر من 1,000 عائلة",
       peek: {
-        label: "هذا الأسبوع",
-        student: "آدم",
-        metric: "+12 كلمة جديدة",
-        caption: "قراءة · محادثة",
+        student: "ليان",
       },
     },
     assurances: [

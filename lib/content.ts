@@ -31,10 +31,7 @@ export const landing = {
     note: "Free trial session · no commitment",
     rating: "Loved by 1,000+ families",
     peek: {
-      label: "This week",
-      student: "Adam",
-      metric: "+12 new words",
-      caption: "Reading · Speaking",
+      student: "Layan",
     },
   },
   assurances: [
