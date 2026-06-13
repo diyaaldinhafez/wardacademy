@@ -13,24 +13,6 @@ import { useT } from "./LanguageProvider";
 const ENROLL = "/enroll";
 const NAV_HREFS = ["#how", "#pricing", "#faq"];
 
-/* Single purple petal (the five-skills mark) */
-function Petal({ i }: { i: number }) {
-  return (
-    <svg
-      viewBox="0 0 40 52"
-      width="26"
-      height="34"
-      aria-hidden
-      style={{ transform: `rotate(${(i - 2) * 14}deg)`, opacity: 0.55 + i * 0.1 }}
-    >
-      <path
-        d="M20,50 C8,46 0,34 3,21 C5,10 12,4 20,0 C28,4 35,10 37,21 C40,34 32,46 20,50 Z"
-        fill="#7F55D9"
-      />
-    </svg>
-  );
-}
-
 /* White flower for the final CTA (on the purple bloom gradient) */
 function WhiteFlower() {
   const PETAL =
@@ -217,25 +199,6 @@ export default function Landing() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* ---- Five petals = five skills ---- */}
-      <section id="skills" className={`${shell} pt-16`}>
-        <h2 className="text-center font-display text-[28px] font-bold text-ink">{L.skills.title}</h2>
-        <p className="mx-auto mt-3 max-w-[64ch] text-center text-[15.5px] leading-[1.8] text-ink-soft">
-          {L.skills.sub}
-        </p>
-        <div className="mt-7 flex flex-wrap justify-center gap-3.5">
-          {L.skills.items.map((s, i) => (
-            <div
-              key={s}
-              className="flex min-w-[116px] flex-col items-center gap-2 rounded-[18px] border border-ink/10 bg-white px-5 py-4 shadow-ward-1"
-            >
-              <Petal i={i} />
-              <span className="text-[13.5px] font-bold text-ink">{s}</span>
-            </div>
-          ))}
         </div>
       </section>
 

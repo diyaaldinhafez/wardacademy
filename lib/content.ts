@@ -65,11 +65,6 @@ export const landing = {
       },
     ],
   },
-  skills: {
-    title: "Five petals = five skills",
-    sub: "Listening, Speaking, Reading, Writing and Vocabulary — your child's flower blooms petal by petal with real progress.",
-    items: ["Listening", "Speaking", "Reading", "Writing", "Vocabulary"],
-  },
   pricing: {
     title: "Choose how often your child learns",
     sub: "Every plan gives your child the same full experience — the only difference is how many sessions a week. Cancel anytime.",
