@@ -1,14 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import Spark from "./Spark";
 import Reveal from "./Reveal";
 import { useT } from "./LanguageProvider";
 
 /**
- * "Inside a live session" — a warm, AI-generated lifestyle image of a child in
- * a live 1:1 online lesson (no real student; resolves the privacy concern),
- * with light on-brand overlays. The same frame can hold a real clip/photo later.
+ * "Inside a live session" — a look at the actual lesson screen (flashcards, the
+ * teacher and student tiles, the session toolbar). First names only. The image
+ * is self-contained, so it's shown clean in a simple framed card.
  */
 export default function SessionScene() {
   const s = useT().landing.session;
@@ -23,35 +22,15 @@ export default function SessionScene() {
       </Reveal>
 
       <Reveal delay={80} className="mt-8">
-        <div className="relative mx-auto aspect-[4/3] w-full max-w-[860px] overflow-hidden rounded-[28px] border border-brand-100 shadow-ward-2 sm:aspect-video">
+        <div className="mx-auto max-w-[920px] overflow-hidden rounded-[24px] border border-ink/8 bg-white shadow-ward-2">
           <Image
             src="/session.jpg"
             alt={s.title}
-            fill
-            sizes="(max-width: 880px) 100vw, 860px"
-            className="object-cover"
+            width={1720}
+            height={960}
+            sizes="(max-width: 940px) 100vw, 920px"
+            className="h-auto w-full"
           />
-
-          {/* soft scrim for overlay legibility */}
-          <div aria-hidden className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/25 to-transparent" />
-
-          {/* LIVE badge */}
-          <span className="absolute start-4 top-4 inline-flex items-center gap-2 rounded-full bg-black/35 px-3 py-1.5 text-xs font-bold text-white backdrop-blur">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-coral-300 opacity-70" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-coral" />
-            </span>
-            {s.live}
-          </span>
-
-          {/* lesson caption */}
-          <div className="absolute bottom-4 start-4 max-w-[64%] rounded-2xl bg-white/95 px-3.5 py-2.5 shadow-ward-1 backdrop-blur">
-            <div className="flex items-center gap-1.5">
-              <Spark gradient className="h-3.5 w-3.5" />
-              <b className="text-[11px] font-bold text-brand-700">{s.skill}</b>
-            </div>
-            <p className="mt-1 text-[12.5px] font-semibold leading-snug text-ink">{s.caption}</p>
-          </div>
         </div>
       </Reveal>
 
