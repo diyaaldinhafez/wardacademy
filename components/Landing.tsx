@@ -199,42 +199,55 @@ export default function Landing() {
 
       {/* ---- Hero ---- */}
       <header id="top">
-        <div className={shell}>
-          <div className="relative grid items-center gap-6 overflow-hidden rounded-b-[32px] bg-gradient-to-b from-brand-50 to-white py-12 sm:py-16 lg:gap-10 lg:grid-cols-[1.1fr_0.9fr]">
-            {/* soft gradient mesh */}
-            <div aria-hidden className="pointer-events-none absolute inset-0">
-              <div className="absolute -start-16 -top-10 h-64 w-64 rounded-full opacity-60" style={{ background: "radial-gradient(circle, rgba(159,125,231,0.22), transparent 70%)" }} />
-              <div className="absolute end-0 top-1/3 h-72 w-72 rounded-full opacity-50" style={{ background: "radial-gradient(circle, rgba(255,180,107,0.16), transparent 70%)" }} />
-            </div>
-
-            <div className="relative flex flex-col items-center gap-5 text-center lg:items-start lg:text-start lg:ps-10">
-              <span className="inline-flex items-center gap-2 rounded-full border border-ink/8 bg-white/80 px-3 py-1.5 shadow-ward-1 backdrop-blur">
-                <Stars />
-                <b className="text-xs font-bold text-ink">{L.hero.rating}</b>
-              </span>
-              <h1 className="font-display text-[clamp(28px,5.2vw,46px)] font-bold leading-[1.3] text-brand-900">
-                {L.hero.title}
-              </h1>
-              <p className="mx-auto max-w-[52ch] text-[17px] leading-[1.8] text-ink-soft lg:mx-0">
-                {L.hero.sub}
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-3.5 lg:justify-start">
-                <Button href={ENROLL} variant="warm" size="lg">
-                  {L.cta}
-                </Button>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3.5 py-1.5 text-xs font-bold text-amber-600">
-                  {L.hero.note}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col items-center gap-5">
-              <HeroBloom className="-mb-2 h-60 w-60 drop-shadow-[0_10px_34px_rgba(127,85,217,0.28)] sm:h-64 sm:w-64" title="" />
-              <PeekCard name={L.hero.peek.student} report={L.bloomReport} />
-            </div>
+        {/* full-bleed gradient — reaches the screen edges (no white gutters) */}
+        <div className="relative overflow-hidden rounded-b-[32px] bg-gradient-to-b from-brand-50 to-white">
+          {/* soft gradient mesh */}
+          <div aria-hidden className="pointer-events-none absolute inset-0">
+            <div className="absolute -start-16 -top-10 h-64 w-64 rounded-full opacity-60" style={{ background: "radial-gradient(circle, rgba(159,125,231,0.22), transparent 70%)" }} />
+            <div className="absolute end-0 top-1/3 h-72 w-72 rounded-full opacity-50" style={{ background: "radial-gradient(circle, rgba(255,180,107,0.16), transparent 70%)" }} />
           </div>
 
-          {/* assurance strip */}
+          <div className={`${shell} relative`}>
+            <div className="grid items-center gap-6 py-12 sm:py-16 lg:gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="flex flex-col items-center gap-5 text-center lg:items-start lg:text-start lg:ps-10">
+                <span className="inline-flex items-center gap-2 rounded-full border border-ink/8 bg-white/80 px-3 py-1.5 shadow-ward-1 backdrop-blur">
+                  <Stars />
+                  <b className="text-xs font-bold text-ink">{L.hero.rating}</b>
+                </span>
+                <h1 className="font-display text-[clamp(28px,5.2vw,46px)] font-bold leading-[1.3] text-brand-900">
+                  {L.hero.title}
+                </h1>
+                <p className="mx-auto max-w-[52ch] text-[17px] leading-[1.8] text-ink-soft lg:mx-0">
+                  {L.hero.sub}
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-3.5 lg:justify-start">
+                  <Button href={ENROLL} variant="warm" size="lg">
+                    {L.cta}
+                  </Button>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3.5 py-1.5 text-xs font-bold text-amber-600">
+                    {L.hero.note}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center gap-5">
+                <div className="relative grid place-items-center">
+                  {/* static soft glow (drop-shadow on the animated SVG caused a box artifact on iOS) */}
+                  <div
+                    aria-hidden
+                    className="absolute h-48 w-48 rounded-full blur-2xl sm:h-52 sm:w-52"
+                    style={{ background: "radial-gradient(circle, rgba(127,85,217,0.20), transparent 70%)" }}
+                  />
+                  <HeroBloom className="relative -mb-2 h-60 w-60 overflow-visible sm:h-64 sm:w-64" title="" />
+                </div>
+                <PeekCard name={L.hero.peek.student} report={L.bloomReport} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* assurance strip on white */}
+        <div className={shell}>
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 py-5">
             {L.assurances.map((a) => (
               <span key={a} className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-muted">
