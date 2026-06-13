@@ -200,7 +200,7 @@ export default function Landing() {
       {/* ---- Hero ---- */}
       <header id="top">
         <div className={shell}>
-          <div className="relative grid items-center gap-10 overflow-hidden rounded-b-[32px] bg-gradient-to-b from-brand-50 to-white py-12 sm:py-16 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="relative grid items-center gap-6 overflow-hidden rounded-b-[32px] bg-gradient-to-b from-brand-50 to-white py-12 sm:py-16 lg:gap-10 lg:grid-cols-[1.1fr_0.9fr]">
             {/* soft gradient mesh */}
             <div aria-hidden className="pointer-events-none absolute inset-0">
               <div className="absolute -start-16 -top-10 h-64 w-64 rounded-full opacity-60" style={{ background: "radial-gradient(circle, rgba(159,125,231,0.22), transparent 70%)" }} />
@@ -228,8 +228,8 @@ export default function Landing() {
               </div>
             </div>
 
-            <div className="flex flex-col items-center gap-6">
-              <HeroBloom className="h-44 w-44 drop-shadow-[0_8px_30px_rgba(127,85,217,0.25)] sm:h-52 sm:w-52" title="" />
+            <div className="flex flex-col items-center gap-5">
+              <HeroBloom className="-mb-2 h-60 w-60 drop-shadow-[0_10px_34px_rgba(127,85,217,0.28)] sm:h-64 sm:w-64" title="" />
               <PeekCard name={L.hero.peek.student} report={L.bloomReport} />
             </div>
           </div>
