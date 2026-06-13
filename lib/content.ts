@@ -167,12 +167,16 @@ export const landing = {
       { name: "Vocabulary", value: 60, tag: "24 of 40" },
     ],
   },
-  video: {
+  session: {
     tag: "See it in action",
-    title: "A real session, in 90 seconds",
-    sub: "See how a lesson feels — warm, personal, and focused on your child.",
-    duration: "1:30",
-    cta: "Play the tour",
+    title: "What a live session looks like",
+    sub: "Calm, personal, and focused on your child — one teacher, one child, face to face.",
+    live: "LIVE · 1:1",
+    teacher: "Ms. Sara",
+    student: "Layan",
+    skill: "Reading · Speaking",
+    caption: "“Let's read Unit 4 together.”",
+    note: "A representation of a session — faces shown abstractly for privacy.",
   },
   outcomes: {
     title: "Families are already seeing the difference",
