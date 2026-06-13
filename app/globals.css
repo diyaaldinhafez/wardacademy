@@ -107,6 +107,11 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Anchor targets clear the sticky nav when jumped to */
+[id] {
+  scroll-margin-top: 5rem;
+}
+
 /* ---- Motion: tasteful, and respectful of user preferences ---------------- */
 @keyframes float-slow {
   0%,

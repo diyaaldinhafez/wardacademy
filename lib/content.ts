@@ -29,7 +29,19 @@ export const landing = {
     title: "Your child's English journey, blooming step by step",
     sub: "A dedicated teacher guides your child through live 1:1 sessions, following their progress step by step. Ages 9–13.",
     note: "Free trial session · no commitment",
+    rating: "Loved by 1,000+ families",
+    peek: {
+      label: "This week",
+      student: "Adam",
+      metric: "+12 new words",
+      caption: "Reading · Speaking",
+    },
   },
+  assurances: [
+    "Parental consent for every account",
+    "Private 1:1 sessions",
+    "The same teacher every week",
+  ],
   how: {
     title: "How it works",
     steps: [
@@ -65,6 +77,65 @@ export const landing = {
       },
     ],
   },
+  showcase: {
+    title: "A peek inside",
+    sub: "Everything you and your child see — calm, clear, and made for focus.",
+    previewLabel: "Preview",
+    comingSoon: "Real screens coming soon",
+    items: [
+      {
+        tag: "For parents",
+        title: "Your child's progress, always in view",
+        desc: "Open your account to a living progress report, a short summary after every session, and what's coming next.",
+        points: [
+          "A short report after every session",
+          "Live progress you can actually read",
+          "Your next session at a glance",
+        ],
+      },
+      {
+        tag: "For your child",
+        title: "One tap into a live 1:1 lesson",
+        desc: "A calm, friendly space with their own teacher — no clutter, no distractions, just the two of them.",
+        points: [
+          "The same teacher, face to face",
+          "Playful, focused exercises",
+          "Gentle help the moment they need it",
+        ],
+      },
+    ],
+  },
+  bloomReport: {
+    tag: "The Bloom Report",
+    title: "Watch their English bloom, skill by skill",
+    sub: "Each petal is a skill. As your child grows, their flower opens — so progress is something you can see, not just numbers on a page.",
+    note: "Updated after every session.",
+    skills: [
+      { name: "Listening", value: 82 },
+      { name: "Speaking", value: 64 },
+      { name: "Reading", value: 73 },
+      { name: "Writing", value: 51 },
+      { name: "Vocabulary", value: 90 },
+    ],
+  },
+  video: {
+    tag: "See it in action",
+    title: "A real session, in 90 seconds",
+    sub: "See how a lesson feels — warm, personal, and focused on your child.",
+    duration: "1:30",
+    cta: "Play the tour",
+  },
+  outcomes: {
+    title: "Families are already seeing the difference",
+    sub: "Real momentum, from the very first weeks.",
+    stats: [
+      { value: "9 in 10", label: "parents see more confidence within 6 weeks" },
+      { value: "4.9/5", label: "average parent rating" },
+      { value: "12,000+", label: "live 1:1 sessions taught" },
+      { value: "25+", label: "cities across Europe" },
+    ],
+  },
+  stickyCta: "Book a free trial",
   pricing: {
     title: "Choose how often your child learns",
     sub: "Every plan gives your child the same full experience — the only difference is how many sessions a week. Cancel anytime.",
