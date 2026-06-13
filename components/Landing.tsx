@@ -11,6 +11,7 @@ import LangToggle from "./LangToggle";
 import Reveal from "./Reveal";
 import ProductShowcase from "./ProductShowcase";
 import BloomReport from "./BloomReport";
+import TeacherDashboard from "./TeacherDashboard";
 import VideoSection from "./VideoSection";
 import Outcomes from "./Outcomes";
 import StickyTrialBar from "./StickyTrialBar";
@@ -266,6 +267,11 @@ export default function Landing() {
                   <span className="text-sm leading-[1.75] text-ink-soft">{pt.d}</span>
                 </div>
               ))}
+            </div>
+
+            {/* the teacher's screen: where AI proposes and the teacher approves */}
+            <div className="mt-8">
+              <TeacherDashboard />
             </div>
           </div>
         </Reveal>
