@@ -27,7 +27,7 @@ export const landing = {
   closeMenu: "Close menu",
   hero: {
     title: "Your child's English journey, blooming step by step",
-    sub: "Live 1:1 sessions with a real teacher — AI assists the teacher, never replaces them. Ages 9–13.",
+    sub: "A dedicated teacher guides your child through live 1:1 sessions, following their progress step by step. Ages 9–13.",
     note: "Free trial session · no commitment",
   },
   how: {
@@ -39,12 +39,13 @@ export const landing = {
     ],
   },
   trust: {
-    title: "AI assists. The teacher guarantees.",
-    sub: "Everything the AI produces — homework, exercises, reports — stays a draft until the teacher reviews and approves it. Nothing reaches your child or you without human eyes.",
-    draft: "AI draft — awaiting teacher approval",
-    approved: "Teacher-approved",
-    draftCap: "A draft looks like this",
-    approvedCap: "Approved looks like this",
+    title: "A real teacher leads every lesson",
+    sub: "The same teacher plans your child's lessons, knows them by name, and personally checks their homework and progress — so what reaches you is real, and earned.",
+    points: [
+      "One dedicated teacher, every week",
+      "Every lesson checked by the teacher",
+      "Honest progress — never empty praise",
+    ],
   },
   skills: {
     title: "Five petals = five skills",
@@ -52,46 +53,40 @@ export const landing = {
     items: ["Listening", "Speaking", "Reading", "Writing", "Vocabulary"],
   },
   pricing: {
-    title: "Simple plans that grow with your child",
-    sub: "Every plan starts with a free trial. Live 1:1 sessions, teacher-approved practice, and an honest Bloom Report — cancel anytime.",
+    title: "Choose how often your child learns",
+    sub: "Every plan gives your child the same full experience — the only difference is how many sessions a week. Cancel anytime.",
     badge: "Most chosen",
     perMonth: "/ month",
-    note: "Prices in euro · No card needed for the trial · Cancel anytime",
+    includesTitle: "Every plan includes",
+    features: [
+      "Live 1:1 sessions with a dedicated teacher",
+      "A short report after every session",
+      "A live progress report in your account",
+      "Homework set and checked by the teacher",
+      "WhatsApp updates from the teacher",
+      "Cancel anytime — no long contracts",
+    ],
+    note: "Prices in euro · No card needed for the trial",
     plans: [
       {
-        name: "Seedling",
+        name: "Essential",
         price: "€76",
         cadence: "1 session a week",
-        features: [
-          "4 live 1:1 sessions a month",
-          "Teacher-approved homework",
-          "Monthly Bloom Report",
-          "WhatsApp progress updates",
-        ],
+        sessions: "4 sessions a month",
         featured: false,
       },
       {
-        name: "Bloom",
+        name: "Steady",
         price: "€144",
         cadence: "2 sessions a week",
-        features: [
-          "8 live 1:1 sessions a month",
-          "Everything in Seedling",
-          "Priority booking times",
-          "Extra practice between sessions",
-        ],
+        sessions: "8 sessions a month",
         featured: true,
       },
       {
-        name: "Flourish",
+        name: "Intensive",
         price: "€204",
         cadence: "3 sessions a week",
-        features: [
-          "12 live 1:1 sessions a month",
-          "Everything in Bloom",
-          "Fastest progress pace",
-          "Exam-prep focus available",
-        ],
+        sessions: "12 sessions a month",
         featured: false,
       },
     ],
@@ -130,7 +125,7 @@ export const landing = {
       },
       {
         q: "What ages do you teach?",
-        a: "We teach children ages 8 to 15, matched to the right level after a gentle placement test.",
+        a: "We teach children ages 9 to 13, matched to the right level after a gentle placement test.",
       },
       {
         q: "What if my child is shy?",
@@ -145,8 +140,8 @@ export const landing = {
         a: "Yes. Plans are monthly — you can pause or cancel whenever you like, with no long contracts.",
       },
       {
-        q: "Is the AI replacing the teacher?",
-        a: "Never. AI helps the teacher prepare faster, but every piece of practice is reviewed and approved by your child's teacher before it reaches them.",
+        q: "Who teaches my child?",
+        a: "A real, qualified teacher — the same one every week. They plan each lesson, guide your child personally, and check their homework and progress themselves.",
       },
     ],
   },
@@ -155,7 +150,7 @@ export const landing = {
     sub: "Meet the teacher and see the platform from the inside.",
   },
   footer: {
-    tagline: "Confident English for ages 8–15 — teacher-led, AI-supported.",
+    tagline: "Confident English for ages 9–13 — teacher-led, AI-supported.",
     exploreTitle: "Explore",
     accountTitle: "Account",
     copyright: "Ward Academy © 2026 · Parental consent required for every account",
@@ -188,7 +183,7 @@ export const signup = {
     studentAge: { label: "Student's age", placeholder: "Select age" },
     track: { label: "Learning track", placeholder: "Choose a track" },
   },
-  ageOptions: ["8", "9", "10", "11", "12", "13", "14", "15"],
+  ageOptions: ["9", "10", "11", "12", "13"],
   trackOptions: [
     { value: "school", label: "School support — help with their English class" },
     { value: "cefr", label: "CEFR English — structured levels (A1–C1)" },
@@ -256,10 +251,9 @@ export const enroll = {
     options: {
       countries: ["Germany", "Austria", "Switzerland", "Netherlands", "France", "Other"],
       genders: ["Boy", "Girl"],
-      ages: ["8", "9", "10", "11", "12", "13", "14", "15"],
+      ages: ["9", "10", "11", "12", "13"],
       grades: [
-        "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7",
-        "Grade 8", "Grade 9", "Grade 10",
+        "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8",
       ],
       schoolTypes: [
         "Public school",
@@ -350,6 +344,7 @@ export const enroll = {
     heading: "Test complete!",
     scoreLabel: "Your score",
     levelLabel: "Suggested starting level",
+    pendingBadge: "Awaiting teacher approval",
     teacherNote: "The teacher will review this and confirm the final level before your first lesson.",
     bands: [
       { min: 9, title: "Wonderful!", level: "Upper-Intermediate (B2)" },
@@ -404,8 +399,8 @@ export const teacher = {
     },
     {
       name: "Omar Khalil",
-      age: 14,
-      grade: "Grade 9",
+      age: 13,
+      grade: "Grade 8",
       schoolType: "Private school",
       goal: "Prepare for an exam",
       level: "Intermediate (B1)",

@@ -4,11 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import FlowerMark from "./FlowerMark";
 import HeroBloom from "./HeroBloom";
-import Spark from "./Spark";
 import Icon from "./Icon";
 import Button from "./ui/Button";
 import LangToggle from "./LangToggle";
-import { useT, useLang } from "./LanguageProvider";
+import { useT } from "./LanguageProvider";
 
 const ENROLL = "/enroll";
 const NAV_HREFS = ["#how", "#pricing", "#faq"];
@@ -59,30 +58,8 @@ function FeatureCheck() {
   );
 }
 
-/* Trust pills — the system's core pattern: AI draft = dashed violet capsule
-   with the spark; teacher-approved = SOLID LEAF-GREEN capsule with a check. */
-function TrustPill({ kind, children }: { kind: "draft" | "approved"; children: React.ReactNode }) {
-  if (kind === "draft") {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-dashed border-brand-300 bg-[#F4EEFF] px-3.5 py-1.5 text-xs font-semibold text-brand-700">
-        <Spark gradient className="h-3.5 w-3.5" />
-        {children}
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-leaf bg-leaf px-3.5 py-1.5 text-xs font-semibold text-white">
-      <svg width="13" height="13" viewBox="0 0 13 13" aria-hidden>
-        <path d="M2.5 7l3 3 5-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      {children}
-    </span>
-  );
-}
-
 export default function Landing() {
   const t = useT();
-  const { lang } = useLang();
   const L = t.landing;
   const shell = "mx-auto w-full max-w-[1080px] px-6";
   const [menuOpen, setMenuOpen] = useState(false);
@@ -188,7 +165,7 @@ export default function Landing() {
           {L.how.steps.map((s, i) => (
             <div key={i} className="flex flex-col gap-2.5 rounded-2xl border border-ink/5 bg-white p-5 shadow-ward-1">
               <span className="grid h-9 w-9 place-items-center rounded-full bg-brand-100 font-display text-[15px] font-bold text-brand-700">
-                {lang === "ar" ? ["١", "٢", "٣"][i] : i + 1}
+                {i + 1}
               </span>
               <b className="text-[16.5px] font-bold text-ink">{s.t}</b>
               <span className="text-sm leading-[1.75] text-ink-soft">{s.d}</span>
@@ -197,25 +174,26 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ---- Trust model: draft → approved ---- */}
+      {/* ---- Trust: a real teacher leads every lesson ---- */}
       <section id="trust" className={`${shell} pt-16`}>
         <div className="rounded-[28px] bg-brand-50 px-8 py-10">
           <h2 className="flex items-center justify-center gap-2.5 text-center font-display text-[28px] font-bold text-ink">
-            <Spark gradient className="h-6 w-6" />
+            <Icon name="check-badge" className="h-6 w-6 text-leaf" />
             {L.trust.title}
           </h2>
           <p className="mx-auto mt-3 max-w-[64ch] text-center text-[15.5px] leading-[1.8] text-ink-soft">
             {L.trust.sub}
           </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-7">
-            <div className="flex flex-col items-center gap-2">
-              <TrustPill kind="draft">{L.trust.draft}</TrustPill>
-              <span className="text-xs text-ink-muted">{L.trust.draftCap}</span>
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <TrustPill kind="approved">{L.trust.approved}</TrustPill>
-              <span className="text-xs text-ink-muted">{L.trust.approvedCap}</span>
-            </div>
+          <div className="mx-auto mt-7 grid max-w-[760px] gap-3 sm:grid-cols-3">
+            {L.trust.points.map((point) => (
+              <div
+                key={point}
+                className="flex items-start gap-2.5 rounded-2xl border border-ink/8 bg-white px-4 py-3.5 text-start shadow-ward-1"
+              >
+                <FeatureCheck />
+                <span className="text-[14px] font-semibold leading-snug text-ink">{point}</span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -245,39 +223,29 @@ export default function Landing() {
         <p className="mx-auto mt-3 max-w-[64ch] text-center text-[15.5px] leading-[1.8] text-ink-soft">
           {L.pricing.sub}
         </p>
-        <div className="mt-8 grid items-start gap-4 sm:grid-cols-3">
+        <div className="mt-8 grid items-stretch gap-4 sm:grid-cols-3">
           {L.pricing.plans.map((p) => (
             <div
               key={p.name}
-              className={`relative flex flex-col rounded-[24px] p-6 ${
+              className={`relative flex flex-col rounded-[24px] p-6 text-center ${
                 p.featured
                   ? "bg-gradient-to-b from-brand-50 to-white shadow-ward-2 ring-2 ring-brand sm:-mt-3 sm:pb-8"
                   : "border border-ink/8 bg-white shadow-ward-1"
               }`}
             >
               {p.featured && (
-                <span className="absolute -top-3 start-6 inline-flex items-center gap-1 rounded-full bg-brand px-3 py-1 text-[11px] font-bold text-white shadow-ward-1">
-                  <Spark className="h-3 w-3" />
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand px-3 py-1 text-[11px] font-bold text-white shadow-ward-1">
                   {L.pricing.badge}
                 </span>
               )}
               <b className="font-display text-lg font-bold text-ink">{p.name}</b>
-              <div className="mt-2 flex items-end gap-1">
-                <span className="font-display text-[34px] font-bold leading-none text-brand-700">{p.price}</span>
+              <span className="mt-1 text-sm font-semibold text-brand-700">{p.cadence}</span>
+              <div className="mt-4 flex items-end justify-center gap-1">
+                <span className="font-display text-[36px] font-bold leading-none text-brand-700">{p.price}</span>
                 <span className="pb-1 text-xs font-semibold text-ink-muted">{L.pricing.perMonth}</span>
               </div>
-              <span className="mt-1 text-sm font-semibold text-ink-soft">{p.cadence}</span>
-
-              <ul className="mt-5 grid gap-2.5">
-                {p.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-[13.5px] leading-relaxed text-ink-soft">
-                    <FeatureCheck />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-6">
+              <span className="mt-1.5 text-xs font-medium text-ink-muted">{p.sessions}</span>
+              <div className="mt-auto pt-6">
                 <Button
                   href={ENROLL}
                   variant={p.featured ? "primary" : "soft"}
@@ -290,6 +258,20 @@ export default function Landing() {
             </div>
           ))}
         </div>
+
+        {/* Shared — every plan includes the same care */}
+        <div className="mt-5 rounded-[24px] border border-ink/8 bg-white p-6 shadow-ward-1">
+          <b className="text-[15px] font-bold text-ink">{L.pricing.includesTitle}</b>
+          <ul className="mt-4 grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
+            {L.pricing.features.map((f) => (
+              <li key={f} className="flex items-start gap-2 text-[14px] leading-relaxed text-ink-soft">
+                <FeatureCheck />
+                {f}
+              </li>
+            ))}
+          </ul>
+        </div>
+
         <p className="mt-5 text-center text-xs font-medium text-ink-muted">{L.pricing.note}</p>
       </section>
 

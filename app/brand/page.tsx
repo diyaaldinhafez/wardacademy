@@ -64,7 +64,7 @@ export default function BrandPage() {
             One spark, <span className="brand-gradient bg-clip-text text-transparent">one soul</span>.
           </h1>
           <p className="mt-4 max-w-2xl text-lg leading-relaxed text-ink-soft">
-            Ward Academy is confident English for ages 8–15 — teacher-led, AI-supported.
+            Ward Academy is confident English for ages 9–13 — teacher-led, AI-supported.
             Warm and lively for kids, clear and trustworthy for parents. This page is the
             living reference for the brand.
           </p>

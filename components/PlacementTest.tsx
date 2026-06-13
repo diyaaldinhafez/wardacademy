@@ -5,8 +5,7 @@ import Link from "next/link";
 import Icon from "./Icon";
 import Spark from "./Spark";
 import ShareRow from "./ShareRow";
-import { useT, useLang } from "./LanguageProvider";
-import { toArabicDigits } from "@/lib/i18n";
+import { useT } from "./LanguageProvider";
 
 /**
  * VISUAL ONLY placement test. The "personalized AI generation" is a simulated
@@ -22,11 +21,8 @@ export default function PlacementTest({
   name?: string;
   shareUrl: string;
 }) {
-  const dict = useT();
-  const { lang } = useLang();
-  const enroll = dict.enroll;
+  const enroll = useT().enroll;
   const t = enroll.test;
-  const fmt = (n: number) => (lang === "ar" ? toArabicDigits(n) : String(n));
   const [phase, setPhase] = useState<Phase>("preparing");
   const [qIndex, setQIndex] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>(
@@ -87,7 +83,7 @@ export default function PlacementTest({
               {enroll.result.scoreLabel}
             </div>
             <div className="mt-1 font-display text-3xl font-bold text-brand">
-              {fmt(score)}<span className="text-xl text-ink-faint"> / {fmt(t.questions.length)}</span>
+              {score}<span className="text-xl text-ink-faint"> / {t.questions.length}</span>
             </div>
           </div>
           <div className="rounded-2xl border border-ink/5 bg-cream/70 p-4">
@@ -95,9 +91,9 @@ export default function PlacementTest({
               {enroll.result.levelLabel}
             </div>
             <div className="mt-1 font-display text-lg font-bold text-ink">{band.level}</div>
-            <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-dashed border-brand-300 bg-[#F4EEFF] px-2.5 py-1 text-[11px] font-semibold text-brand-700">
-              <Spark gradient className="h-3 w-3" />
-              {dict.landing.trust.draft}
+            <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-ink/15 bg-cream px-2.5 py-1 text-[11px] font-semibold text-ink-muted">
+              <Icon name="clock" className="h-3 w-3" />
+              {enroll.result.pendingBadge}
             </span>
           </div>
         </div>
