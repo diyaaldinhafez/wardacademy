@@ -61,7 +61,7 @@ function Stars() {
 /* Floating "live progress" glimpse beside the hero flower */
 function PeekCard({ peek }: { peek: { label: string; student: string; metric: string; caption: string } }) {
   return (
-    <div className="absolute -bottom-3 hidden w-[190px] rounded-2xl border border-ink/8 bg-white p-3.5 shadow-ward-2 lg:block lg:-start-2">
+    <div className="w-[230px] rounded-2xl border border-ink/8 bg-white p-3.5 shadow-ward-2">
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-bold uppercase tracking-wide text-ink-faint">{peek.label}</span>
         <span className="rounded-full bg-leaf/15 px-2 py-0.5 text-[9px] font-bold text-leaf">{peek.student}</span>
@@ -181,8 +181,8 @@ export default function Landing() {
               </div>
             </div>
 
-            <div className="relative flex justify-center">
-              <HeroBloom className="h-44 w-44 drop-shadow-[0_8px_30px_rgba(127,85,217,0.25)] sm:h-56 sm:w-56" title="" />
+            <div className="flex flex-col items-center gap-6">
+              <HeroBloom className="h-44 w-44 drop-shadow-[0_8px_30px_rgba(127,85,217,0.25)] sm:h-52 sm:w-52" title="" />
               <PeekCard peek={L.hero.peek} />
             </div>
           </div>
