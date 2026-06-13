@@ -206,7 +206,21 @@ body {
   100% { opacity: 1; transform: translate(0, 0) scale(1); }
 }
 
-.bloom-story { animation: bob 3.4s ease-in-out 6.9s infinite; }
+/* Idle, after the bloom: a real flower swaying on its stem in a soft breeze.
+   The flower pivots from the base of its (imaginary) stem — bottom-centre —
+   with a gentle, slightly uneven side-to-side tilt. No up/down bobbing. */
+@keyframes flower-sway {
+  0% { transform: rotate(0deg); }
+  20% { transform: rotate(-1.5deg); }
+  50% { transform: rotate(1.8deg); }
+  78% { transform: rotate(-0.7deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.bloom-story {
+  transform-origin: 50% 100%;
+  animation: flower-sway 7s ease-in-out 6.9s infinite;
+}
 .bloom-story .hb-bud,
 .bloom-story .hb-balloon,
 .bloom-story .hb-burst,
