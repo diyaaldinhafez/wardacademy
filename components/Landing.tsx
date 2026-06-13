@@ -241,7 +241,7 @@ export default function Landing() {
                   {L.hero.sub}
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-3.5 lg:justify-start">
-                  <Button href={ENROLL} variant="warm" size="lg">
+                  <Button href={ENROLL} variant="green" size="lg">
                     {L.cta}
                   </Button>
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3.5 py-1.5 text-xs font-bold text-amber-600">
@@ -483,7 +483,7 @@ export default function Landing() {
             <WhiteFlower />
             <h2 className="mt-2.5 font-display text-[26px] font-bold text-white">{L.final.title}</h2>
             <p className="mx-auto mb-5 mt-2 max-w-[48ch] text-[15px] text-brand-100">{L.final.sub}</p>
-            <Button href={ENROLL} variant="warm" size="lg">
+            <Button href={ENROLL} variant="green" size="lg">
               {L.cta}
             </Button>
           </div>

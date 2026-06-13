@@ -5,12 +5,13 @@ import type { ReactNode } from "react";
  * Pill button — every button at Ward Academy is a pill (design system).
  * Renders a Next <Link> when `href` is set, otherwise a <button>.
  */
-type Variant = "primary" | "warm" | "soft" | "ghost";
+type Variant = "primary" | "warm" | "green" | "soft" | "ghost";
 type Size = "sm" | "md" | "lg";
 
 const variants: Record<Variant, string> = {
   primary: "bg-brand text-white shadow-ward-1 hover:bg-brand-600",
   warm: "bg-amber text-brand-900 shadow-ward-1 hover:brightness-[1.05]",
+  green: "bg-leaf text-white shadow-ward-1 hover:brightness-95",
   soft: "bg-brand-100 text-brand-700 hover:bg-brand-200",
   ghost: "text-brand-700 hover:bg-brand-50",
 };
