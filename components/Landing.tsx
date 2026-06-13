@@ -12,7 +12,6 @@ import Reveal from "./Reveal";
 import ProductShowcase from "./ProductShowcase";
 import BloomReport from "./BloomReport";
 import TeacherDashboard from "./TeacherDashboard";
-import SessionScene from "./SessionScene";
 import Outcomes from "./Outcomes";
 import StickyTrialBar from "./StickyTrialBar";
 import { useT } from "./LanguageProvider";
@@ -355,9 +354,6 @@ export default function Landing() {
           </div>
         </Reveal>
       </section>
-
-      {/* ---- Inside a live session ---- */}
-      <SessionScene />
 
       {/* ---- Outcomes / social proof ---- */}
       <Outcomes />
