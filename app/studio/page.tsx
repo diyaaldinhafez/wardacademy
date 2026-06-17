@@ -145,11 +145,24 @@ export default async function StudioPage() {
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+// Resolve an answer to readable text: a numeric index points into options.
+function formatAnswer(answer: unknown, options?: string[]): string {
+  if (typeof answer === "number") return options?.[answer] ?? String(answer);
+  if (typeof answer === "string" || typeof answer === "boolean") return String(answer);
+  if (Array.isArray(answer)) {
+    return answer
+      .map((a) => (typeof a === "number" ? (options?.[a] ?? String(a)) : String(a)))
+      .join(", ");
+  }
+  return JSON.stringify(answer);
+}
+
 function ItemBody({ it }: { it: any }) {
   const content = (it.content ?? {}) as {
     options?: string[];
     answer?: unknown;
     explanation?: string;
+    rubric?: string;
   };
   return (
     <div>
@@ -157,7 +170,7 @@ function ItemBody({ it }: { it: any }) {
         <span className="rounded bg-slate-100 px-1.5 py-0.5">{FORMAT_LABELS[it.format as keyof typeof FORMAT_LABELS] ?? it.format}</span>
         <span className="rounded bg-slate-100 px-1.5 py-0.5">{it.difficulty}</span>
       </div>
-      <p className="font-medium text-slate-900">{it.prompt}</p>
+      <p className="font-medium whitespace-pre-line text-slate-900">{it.prompt}</p>
       {Array.isArray(content.options) && (
         <ul className="mt-2 list-disc pl-5 text-sm text-slate-700">
           {content.options.map((opt, i) => (
@@ -168,7 +181,12 @@ function ItemBody({ it }: { it: any }) {
       {content.answer !== undefined && content.answer !== null && (
         <p className="mt-2 text-sm">
           <span className="font-semibold text-emerald-700">Answer:</span>{" "}
-          {typeof content.answer === "string" ? content.answer : JSON.stringify(content.answer)}
+          {formatAnswer(content.answer, content.options)}
+        </p>
+      )}
+      {content.rubric && (
+        <p className="mt-1 whitespace-pre-line text-sm text-slate-600">
+          <span className="font-semibold">Rubric:</span> {content.rubric}
         </p>
       )}
       {content.explanation && (

@@ -41,6 +41,10 @@ Rules:
 - Produce ONE original practice item. Never copy or paraphrase copyrighted textbooks, passages, or published exercises — invent fresh content.
 - Target the given learning objective and level, in the requested format and difficulty.
 - Keep language age-appropriate, clear, and encouraging. The item is reviewed by a teacher before any student sees it.
+- Write clean text only: no stray characters, trailing braces, code fences, or markdown artifacts.
+- For "multiple_choice", set "answer" to the EXACT text of the correct option (not an index).
+- For "audio", the student READS the given word/sentence aloud and records themselves — do NOT assume any audio is played to them (there is no playback); the teacher may model the pronunciation. Put a short marking "rubric" in content.
+- For "open", "answer" may be null; put a short marking "rubric" in content.
 - Return the item ONLY by calling the emit_item tool.`;
 
 const itemTool: Anthropic.Tool = {
@@ -56,14 +60,16 @@ const itemTool: Anthropic.Tool = {
       content: {
         type: "object",
         description:
-          "Format-specific payload. multiple_choice/matching: options[] + answer. " +
-          "true_false: answer (boolean). fill_blank: answer (string). open/audio: " +
-          "answer may be null; include a short rubric. Always include a teacher explanation.",
+          "Format-specific payload. multiple_choice: options[] + answer (the correct " +
+          "option's exact text). matching: options[] + answer[]. true_false: answer " +
+          "(boolean). fill_blank: answer (string). open/audio: answer null + a rubric. " +
+          "Always include a teacher explanation.",
         properties: {
           options: { type: "array", items: { type: "string" } },
           answer: {
-            description: "Correct answer: string, boolean, index, or array depending on format.",
+            description: "Correct answer as text (option text for multiple_choice), boolean, string, or array; null for open/audio.",
           },
+          rubric: { type: "string", description: "Short marking rubric (for open/audio items)." },
           explanation: { type: "string", description: "Short rationale for the teacher." },
         },
         additionalProperties: true,
