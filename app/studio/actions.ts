@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { generateItem } from "@/lib/generation/service";
+import { homePathForRoles } from "@/lib/roles";
 import type { ItemFormat, Difficulty } from "@/lib/items";
 
 export async function login(_prev: { error?: string } | undefined, formData: FormData) {
@@ -12,7 +13,12 @@ export async function login(_prev: { error?: string } | undefined, formData: For
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: error.message };
-  redirect("/studio");
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: profile } = await supabase.from("profiles").select("roles").eq("id", user!.id).single();
+  redirect(homePathForRoles(profile?.roles));
 }
 
 export async function logout() {

@@ -6,7 +6,7 @@ export function proxy(request: NextRequest) {
   return updateSession(request);
 }
 
-// Only the authenticated teacher workspace needs session handling.
+// The authenticated workspaces need session handling.
 export const config = {
-  matcher: ["/studio/:path*"],
+  matcher: ["/studio/:path*", "/learn/:path*", "/guardian/:path*"],
 };

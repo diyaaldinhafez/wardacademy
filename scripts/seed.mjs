@@ -75,10 +75,47 @@ try {
     console.log("objectives already present:", c[0].n);
   }
 
-  console.log("\n=== Studio login ===");
-  console.log("URL     : http://localhost:3000/studio/login");
-  console.log("email   :", EMAIL);
-  console.log("password:", PASSWORD);
+  // A guardian + a learner (their child), so the learner practice view has an
+  // account to sign in as. Guardian-anchored with consent granted.
+  const GUARDIAN_EMAIL = process.env.SEED_GUARDIAN_EMAIL ?? "parent@ward.local";
+  const GUARDIAN_PASSWORD = process.env.SEED_GUARDIAN_PASSWORD ?? "WardParent!2026";
+  const LEARNER_EMAIL = process.env.SEED_LEARNER_EMAIL ?? "student@ward.local";
+  const LEARNER_PASSWORD = process.env.SEED_LEARNER_PASSWORD ?? "WardStudent!2026";
+
+  async function findOrCreate(email, password) {
+    let u = await findUserByEmail(email);
+    if (!u) {
+      const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+      if (error) throw error;
+      u = data.user;
+      console.log("created user:", email);
+    } else {
+      console.log("user exists:", email);
+    }
+    return u;
+  }
+
+  const guardian = await findOrCreate(GUARDIAN_EMAIL, GUARDIAN_PASSWORD);
+  const learner = await findOrCreate(LEARNER_EMAIL, LEARNER_PASSWORD);
+
+  const upsertProfile = `insert into public.profiles(id, tenant_id, full_name, roles, is_minor)
+       values ($1, $2, $3, $4::public.user_role[], $5)
+     on conflict (id) do update
+       set tenant_id = excluded.tenant_id, roles = excluded.roles,
+           full_name = excluded.full_name, is_minor = excluded.is_minor`;
+  await pg.query(upsertProfile, [guardian.id, tenantId, "Parent (dev)", "{guardian}", false]);
+  await pg.query(upsertProfile, [learner.id, tenantId, "Yousef (dev)", "{learner}", true]);
+  await pg.query(
+    `insert into public.guardianships(tenant_id, guardian_id, learner_id, relationship, consent_granted, consent_at)
+       values ($1, $2, $3, 'parent', true, now())
+     on conflict (guardian_id, learner_id) do nothing`,
+    [tenantId, guardian.id, learner.id],
+  );
+
+  console.log("\n=== Logins (http://localhost:3000/studio/login) ===");
+  console.log("teacher :", EMAIL, "/", PASSWORD, "-> /studio");
+  console.log("student :", LEARNER_EMAIL, "/", LEARNER_PASSWORD, "-> /learn");
+  console.log("parent  :", GUARDIAN_EMAIL, "/", GUARDIAN_PASSWORD, "-> /guardian (next)");
 } catch (e) {
   console.error("SEED ERROR:", e.message);
   process.exitCode = 1;
