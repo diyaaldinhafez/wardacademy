@@ -47,13 +47,16 @@ try {
     tenantId = (await pg.query("insert into public.tenants(name) values ($1) returning id", [TENANT_NAME])).rows[0].id;
     console.log("created tenant:", TENANT_NAME);
   }
+  // self-serve signups join the default tenant
+  await pg.query("update public.tenants set is_default = true where id = $1", [tenantId]);
 
   await pg.query(
-    `insert into public.profiles(id, tenant_id, full_name, roles)
-       values ($1, $2, $3, array['instructor']::public.user_role[])
+    `insert into public.profiles(id, tenant_id, full_name, roles, login_email)
+       values ($1, $2, $3, array['instructor']::public.user_role[], $4)
      on conflict (id) do update
-       set tenant_id = excluded.tenant_id, roles = excluded.roles, full_name = excluded.full_name`,
-    [user.id, tenantId, "Teacher (dev)"],
+       set tenant_id = excluded.tenant_id, roles = excluded.roles,
+           full_name = excluded.full_name, login_email = excluded.login_email`,
+    [user.id, tenantId, "Teacher (dev)", EMAIL],
   );
 
   const { rows: c } = await pg.query("select count(*)::int n from public.objectives where tenant_id=$1", [tenantId]);
@@ -98,13 +101,14 @@ try {
   const guardian = await findOrCreate(GUARDIAN_EMAIL, GUARDIAN_PASSWORD);
   const learner = await findOrCreate(LEARNER_EMAIL, LEARNER_PASSWORD);
 
-  const upsertProfile = `insert into public.profiles(id, tenant_id, full_name, roles, is_minor)
-       values ($1, $2, $3, $4::public.user_role[], $5)
+  const upsertProfile = `insert into public.profiles(id, tenant_id, full_name, roles, is_minor, login_email)
+       values ($1, $2, $3, $4::public.user_role[], $5, $6)
      on conflict (id) do update
        set tenant_id = excluded.tenant_id, roles = excluded.roles,
-           full_name = excluded.full_name, is_minor = excluded.is_minor`;
-  await pg.query(upsertProfile, [guardian.id, tenantId, "Parent (dev)", "{guardian}", false]);
-  await pg.query(upsertProfile, [learner.id, tenantId, "Yousef (dev)", "{learner}", true]);
+           full_name = excluded.full_name, is_minor = excluded.is_minor,
+           login_email = excluded.login_email`;
+  await pg.query(upsertProfile, [guardian.id, tenantId, "Parent (dev)", "{guardian}", false, GUARDIAN_EMAIL]);
+  await pg.query(upsertProfile, [learner.id, tenantId, "Yousef (dev)", "{learner}", true, LEARNER_EMAIL]);
   await pg.query(
     `insert into public.guardianships(tenant_id, guardian_id, learner_id, relationship, consent_granted, consent_at)
        values ($1, $2, $3, 'parent', true, now())

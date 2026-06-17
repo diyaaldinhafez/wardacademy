@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { bloomStage } from "@/lib/progress";
 import { logout } from "@/app/studio/actions";
+import { addChild, grantConsent } from "./actions";
+import SubmitButton from "@/components/studio/SubmitButton";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const first = (x: any) => (Array.isArray(x) ? x[0] : x) ?? {};
@@ -18,7 +20,7 @@ export default async function GuardianPage() {
   // Read-only: the guardian's children (RLS scopes to their own links).
   const { data: children } = await supabase
     .from("guardianships")
-    .select("learner_id, consent_granted, profiles!guardianships_learner_id_fkey(full_name)");
+    .select("learner_id, consent_granted, profiles!guardianships_learner_id_fkey(full_name, login_email)");
 
   const { data: prog } = await supabase
     .from("progress_records")
@@ -45,6 +47,18 @@ export default async function GuardianPage() {
         </form>
       </header>
 
+      <section className="mb-8 rounded-xl border border-slate-200 bg-white p-4">
+        <h2 className="mb-2 text-sm font-semibold text-slate-700">Add a child</h2>
+        <form action={addChild} className="flex flex-wrap items-end gap-2">
+          <input name="childName" required placeholder="Child's name" className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+          <input name="childPassword" required minLength={6} type="text" placeholder="Set a password" className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+          <SubmitButton pendingText="Adding…" className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">
+            Add child
+          </SubmitButton>
+        </form>
+        <p className="mt-2 text-xs text-slate-400">A simple sign-in is created for your child; their email is shown below.</p>
+      </section>
+
       {(children ?? []).length === 0 && <p className="text-sm text-slate-500">No children linked yet.</p>}
 
       <ul className="flex flex-col gap-4">
@@ -63,6 +77,18 @@ export default async function GuardianPage() {
                   {c.consent_granted ? "Consent granted" : "Consent pending"}
                 </span>
               </div>
+              <p className="mb-2 text-xs text-slate-500">Sign-in: {first(c.profiles).login_email ?? "—"}</p>
+              {!c.consent_granted && (
+                <form action={grantConsent} className="mb-3">
+                  <input type="hidden" name="learnerId" value={c.learner_id} />
+                  <SubmitButton
+                    pendingText="Saving…"
+                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                  >
+                    Grant consent
+                  </SubmitButton>
+                </form>
+              )}
               {rows.length === 0 ? (
                 <p className="text-sm text-slate-500">No activity yet.</p>
               ) : (
