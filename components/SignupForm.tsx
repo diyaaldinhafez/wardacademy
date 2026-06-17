@@ -22,6 +22,7 @@ export default function SignupForm() {
       </label>
 
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state?.message && <p className="text-sm text-emerald-700">{state.message}</p>}
 
       <button type="submit" disabled={pending} className="mt-2 rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800 disabled:opacity-60">
         {pending ? "Creating account…" : "Create parent account"}

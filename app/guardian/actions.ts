@@ -22,6 +22,13 @@ export async function addChild(formData: FormData) {
   const { data: gp } = await supabase.from("profiles").select("tenant_id, roles").eq("id", user.id).single();
   if (!gp || !(gp.roles as string[]).includes("guardian")) throw new Error("Only a guardian can add a child.");
 
+  // Reasonable cap to limit account-creation abuse.
+  const { count } = await supabase
+    .from("guardianships")
+    .select("*", { count: "exact", head: true })
+    .eq("guardian_id", user.id);
+  if ((count ?? 0) >= 10) throw new Error("Child limit reached.");
+
   const admin = createAdminClient();
   const slug = childName.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 12) || "learner";
   const email = `${slug}-${Math.random().toString(36).slice(2, 7)}@learner.ward.local`;
