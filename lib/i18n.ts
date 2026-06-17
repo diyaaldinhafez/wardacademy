@@ -4,8 +4,7 @@
  * Arabic (`ar`) mirrors the exact shape.
  *
  * The English-learning CONTENT itself (placement-test questions) stays English in
- * both languages — only surrounding UI is translated. Internal pages
- * (/teacher, /brand) stay English and read content.ts directly.
+ * both languages — only surrounding UI is translated.
  */
 import { site, landing, login, signup, starter, enroll } from "./content";
 
