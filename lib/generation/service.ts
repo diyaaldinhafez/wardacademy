@@ -123,3 +123,58 @@ export async function generateItem(input: GenerateItemInput): Promise<GeneratedI
     usage: { input_tokens: res.usage.input_tokens, output_tokens: res.usage.output_tokens },
   };
 }
+
+export type ReportInput = {
+  learnerName: string;
+  progress: { objective: string; attempts: number; correct: number; completions: number }[];
+};
+export type GeneratedReport = { summary: string; strengths: string; improve: string };
+
+const REPORT_SYSTEM = `You write a short, warm, honest post-session report for a parent about their child's English learning at Ward Academy (ages 9–13).
+
+Rules:
+- Base everything ONLY on the progress data provided. Never invent facts, scores, or events.
+- Be specific, encouraging, and easy for a non-teacher parent to understand.
+- summary: 2–3 sentences. strengths: one short sentence. improve: one short, kind next step.
+- Return the report ONLY by calling the emit_report tool.`;
+
+const reportTool: Anthropic.Tool = {
+  name: "emit_report",
+  description: "Return a short post-session report based on the progress data.",
+  input_schema: {
+    type: "object",
+    properties: {
+      summary: { type: "string" },
+      strengths: { type: "string" },
+      improve: { type: "string" },
+    },
+    required: ["summary", "strengths", "improve"],
+  },
+};
+
+/** Draft a post-session report from the learner's progress. Teacher edits + approves. */
+export async function generateSessionReportDraft(input: ReportInput): Promise<GeneratedReport> {
+  const lines = input.progress.length
+    ? input.progress
+        .map((p) => `- ${p.objective}: ${p.correct}/${p.attempts} correct${p.completions ? `, ${p.completions} practiced` : ""}`)
+        .join("\n")
+    : "- No graded activity yet.";
+
+  const userPrompt = `Student: ${input.learnerName}\nProgress by objective:\n${lines}\n\nWrite the report. Call emit_report.`;
+
+  const res = await client().messages.create({
+    model: MODEL,
+    max_tokens: 512,
+    system: REPORT_SYSTEM,
+    tools: [reportTool],
+    tool_choice: { type: "tool", name: "emit_report" },
+    messages: [{ role: "user", content: userPrompt }],
+  });
+
+  const toolUse = res.content.find(
+    (b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === "emit_report",
+  );
+  if (!toolUse) throw new Error("Report generation did not return a report");
+  const out = toolUse.input as GeneratedReport;
+  return { summary: out.summary, strengths: out.strengths, improve: out.improve };
+}

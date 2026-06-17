@@ -8,6 +8,8 @@ import {
   assignItem,
   createReport,
   approveReport,
+  draftReportWithAI,
+  updateReport,
   logout,
 } from "./actions";
 import SubmitButton from "@/components/studio/SubmitButton";
@@ -79,7 +81,7 @@ export default async function StudioPage() {
 
   const { data: sessions } = await supabase
     .from("sessions")
-    .select("id, scheduled_at, duration_minutes, status, learner_id, session_reports(id, status, summary)")
+    .select("id, scheduled_at, duration_minutes, status, learner_id, session_reports(id, status, summary, strengths, improve)")
     .order("scheduled_at", { ascending: true });
 
   return (
@@ -256,25 +258,40 @@ export default async function StudioPage() {
                 </div>
                 <div className="mt-3 border-t border-slate-100 pt-3">
                   {!report && (
-                    <form action={createReport} className="flex flex-col gap-2">
-                      <input type="hidden" name="sessionId" value={s.id} />
-                      <p className="text-sm font-medium text-slate-700">Write the session report</p>
-                      <textarea name="summary" required rows={2} placeholder="Summary" className="rounded border border-slate-300 px-2 py-1 text-sm" />
-                      <input name="strengths" placeholder="Strengths (optional)" className="rounded border border-slate-300 px-2 py-1 text-sm" />
-                      <input name="improve" placeholder="To improve (optional)" className="rounded border border-slate-300 px-2 py-1 text-sm" />
-                      <SubmitButton pendingText="Saving…" className="self-start rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">
-                        Save report (draft)
-                      </SubmitButton>
-                    </form>
+                    <div className="flex flex-col gap-3">
+                      <form action={draftReportWithAI}>
+                        <input type="hidden" name="sessionId" value={s.id} />
+                        <SubmitButton pendingText="Drafting…" className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-100 disabled:opacity-60">
+                          Draft report with AI
+                        </SubmitButton>
+                      </form>
+                      <form action={createReport} className="flex flex-col gap-2">
+                        <input type="hidden" name="sessionId" value={s.id} />
+                        <p className="text-sm font-medium text-slate-700">…or write it</p>
+                        <textarea name="summary" required rows={2} placeholder="Summary" className="rounded border border-slate-300 px-2 py-1 text-sm" />
+                        <input name="strengths" placeholder="Strengths (optional)" className="rounded border border-slate-300 px-2 py-1 text-sm" />
+                        <input name="improve" placeholder="To improve (optional)" className="rounded border border-slate-300 px-2 py-1 text-sm" />
+                        <SubmitButton pendingText="Saving…" className="self-start rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">
+                          Save report (draft)
+                        </SubmitButton>
+                      </form>
+                    </div>
                   )}
                   {report && report.status === "draft" && (
-                    <div>
-                      <p className="text-sm text-slate-700">
-                        <span className="font-medium">Report (draft):</span> {report.summary}
-                      </p>
-                      <form action={approveReport} className="mt-2">
+                    <div className="flex flex-col gap-2">
+                      <p className="text-xs font-medium text-amber-700">Draft — edit if needed, then approve</p>
+                      <form action={updateReport} className="flex flex-col gap-2">
                         <input type="hidden" name="reportId" value={report.id} />
-                        <SubmitButton pendingText="Approving…" className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">
+                        <textarea name="summary" required rows={2} defaultValue={report.summary ?? ""} className="rounded border border-slate-300 px-2 py-1 text-sm" />
+                        <input name="strengths" defaultValue={report.strengths ?? ""} placeholder="Strengths" className="rounded border border-slate-300 px-2 py-1 text-sm" />
+                        <input name="improve" defaultValue={report.improve ?? ""} placeholder="To improve" className="rounded border border-slate-300 px-2 py-1 text-sm" />
+                        <SubmitButton pendingText="Saving…" className="self-start rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100 disabled:opacity-60">
+                          Save edits
+                        </SubmitButton>
+                      </form>
+                      <form action={approveReport}>
+                        <input type="hidden" name="reportId" value={report.id} />
+                        <SubmitButton pendingText="Approving…" className="self-start rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">
                           Approve report
                         </SubmitButton>
                       </form>

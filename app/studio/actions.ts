@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { generateItem } from "@/lib/generation/service";
+import { generateItem, generateSessionReportDraft } from "@/lib/generation/service";
 import { homePathForRoles } from "@/lib/roles";
 import type { ItemFormat, Difficulty } from "@/lib/items";
 
@@ -209,6 +209,73 @@ export async function approveReport(formData: FormData) {
   const { error } = await supabase
     .from("session_reports")
     .update({ status: "approved", approved_at: new Date().toISOString() })
+    .eq("id", reportId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/studio");
+}
+
+/** Generate a draft report from the learner's progress (teacher edits + approves). */
+export async function draftReportWithAI(formData: FormData) {
+  const sessionId = String(formData.get("sessionId") ?? "");
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/studio/login");
+
+  const { data: session } = await supabase
+    .from("sessions")
+    .select("id, tenant_id, learner_id")
+    .eq("id", sessionId)
+    .single();
+  if (!session) throw new Error("Session not found");
+
+  const { data: learner } = await supabase.from("profiles").select("full_name").eq("id", session.learner_id).single();
+  const { data: prog } = await supabase
+    .from("progress_records")
+    .select("attempts, correct, completions, objectives(description)")
+    .eq("learner_id", session.learner_id);
+
+  const progress = (prog ?? []).map((p) => {
+    const o = Array.isArray(p.objectives) ? p.objectives[0] : p.objectives;
+    return {
+      objective: (o as { description?: string })?.description ?? "Objective",
+      attempts: p.attempts as number,
+      correct: p.correct as number,
+      completions: p.completions as number,
+    };
+  });
+
+  const draft = await generateSessionReportDraft({
+    learnerName: learner?.full_name ?? "the student",
+    progress,
+  });
+
+  const { error } = await supabase.from("session_reports").insert({
+    session_id: session.id,
+    tenant_id: session.tenant_id,
+    learner_id: session.learner_id,
+    summary: draft.summary,
+    strengths: draft.strengths,
+    improve: draft.improve,
+    status: "draft",
+  });
+  if (error) throw new Error(error.code === "23505" ? "A report already exists for this session." : error.message);
+  revalidatePath("/studio");
+}
+
+/** Edit a draft report's text before approving. */
+export async function updateReport(formData: FormData) {
+  const reportId = String(formData.get("reportId") ?? "");
+  const summary = String(formData.get("summary") ?? "").trim();
+  const strengths = String(formData.get("strengths") ?? "").trim();
+  const improve = String(formData.get("improve") ?? "").trim();
+  if (!summary) throw new Error("Write a short summary.");
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("session_reports")
+    .update({ summary, strengths: strengths || null, improve: improve || null })
     .eq("id", reportId);
   if (error) throw new Error(error.message);
   revalidatePath("/studio");
