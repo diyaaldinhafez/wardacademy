@@ -1,5 +1,6 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
+import { ITEM_FORMATS, DIFFICULTIES, type ItemFormat, type Difficulty } from "@/lib/items";
 
 /**
  * Generation Service — the SINGLE server-side boundary through which every
@@ -10,19 +11,6 @@ import Anthropic from "@anthropic-ai/sdk";
  * Keep all model access behind this module so caps, attribution hooks, and
  * model/version choices have exactly one place to live.
  */
-
-export const ITEM_FORMATS = [
-  "multiple_choice",
-  "fill_blank",
-  "true_false",
-  "matching",
-  "open",
-  "audio",
-] as const;
-export type ItemFormat = (typeof ITEM_FORMATS)[number];
-
-export const DIFFICULTIES = ["easy", "medium", "hard"] as const;
-export type Difficulty = (typeof DIFFICULTIES)[number];
 
 export type GenerateItemInput = {
   objective: { description: string; track: "cefr" | "school"; level?: string | null };
@@ -40,7 +28,12 @@ export type GeneratedItem = {
 const MODEL = process.env.ANTHROPIC_GENERATION_MODEL ?? "claude-sonnet-4-6";
 const MAX_TOKENS = 1024;
 
-const client = new Anthropic(); // reads ANTHROPIC_API_KEY
+// Lazy so merely importing this module has no side effects (and never throws
+// for a missing key in contexts that don't call the model).
+let _client: Anthropic | null = null;
+function client() {
+  return (_client ??= new Anthropic()); // reads ANTHROPIC_API_KEY
+}
 
 const SYSTEM = `You are an English-teaching content author for Ward Academy, a 1:1 tutoring platform for children aged 9–13.
 
@@ -103,7 +96,7 @@ export async function generateItem(input: GenerateItemInput): Promise<GeneratedI
     `Write one original item that practices this objective. Call emit_item with the result.`,
   ].join("\n");
 
-  const res = await client.messages.create({
+  const res = await client().messages.create({
     model: MODEL,
     max_tokens: MAX_TOKENS,
     system: SYSTEM,
