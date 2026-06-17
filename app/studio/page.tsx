@@ -11,6 +11,9 @@ import {
   draftReportWithAI,
   updateReport,
   startPlacement,
+  startPlan,
+  approvePlan,
+  materializePlanObjectives,
   logout,
 } from "./actions";
 import SubmitButton from "@/components/studio/SubmitButton";
@@ -27,6 +30,16 @@ type ProgRow = {
   objectives: EmbeddedObjective | EmbeddedObjective[] | null;
 };
 const objText = (o: ProgRow["objectives"]): EmbeddedObjective => (Array.isArray(o) ? o[0] : o) ?? {};
+
+type PlanItem = { description: string; level: string };
+type StudyPlanRow = {
+  id: string;
+  learner_id: string;
+  title: string;
+  level: string | null;
+  items: PlanItem[];
+  status: string;
+};
 
 export default async function StudioPage() {
   const supabase = await createClient();
@@ -92,6 +105,15 @@ export default async function StudioPage() {
   const placementByLearner = new Map<string, { status: string; suggested_level: string | null }>();
   for (const pl of (placements ?? []) as { learner_id: string; status: string; suggested_level: string | null }[]) {
     if (!placementByLearner.has(pl.learner_id)) placementByLearner.set(pl.learner_id, pl);
+  }
+
+  const { data: studyPlans } = await supabase
+    .from("study_plans")
+    .select("id, learner_id, title, level, items, status, created_at")
+    .order("created_at", { ascending: false });
+  const planByLearner = new Map<string, StudyPlanRow>();
+  for (const sp of (studyPlans ?? []) as StudyPlanRow[]) {
+    if (!planByLearner.has(sp.learner_id)) planByLearner.set(sp.learner_id, sp);
   }
 
   return (
@@ -327,6 +349,7 @@ export default async function StudioPage() {
           {learners.map((l) => {
             const rows = progByLearner.get(l.id) ?? [];
             const pl = placementByLearner.get(l.id);
+            const plan = planByLearner.get(l.id);
             return (
               <li key={l.id} className="rounded-xl border border-slate-200 bg-white p-4">
                 <p className="font-medium text-slate-900">{l.full_name ?? l.id}</p>
@@ -353,6 +376,46 @@ export default async function StudioPage() {
                     </form>
                   )}
                 </div>
+                {plan ? (
+                  <div className="mb-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
+                    <p className="text-xs font-medium text-slate-700">
+                      Plan: {plan.title} {plan.status === "draft" ? "(draft)" : "✓"}
+                    </p>
+                    <ol className="mt-1 list-decimal pl-4 text-xs text-slate-600">
+                      {plan.items.map((it, i) => (
+                        <li key={i}>
+                          {it.level ? `${it.level} · ` : ""}
+                          {it.description}
+                        </li>
+                      ))}
+                    </ol>
+                    <div className="mt-2 flex gap-2">
+                      {plan.status === "draft" && (
+                        <form action={approvePlan}>
+                          <input type="hidden" name="planId" value={plan.id} />
+                          <SubmitButton pendingText="Approving…" className="rounded-lg bg-emerald-600 px-2 py-0.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">
+                            Approve plan
+                          </SubmitButton>
+                        </form>
+                      )}
+                      {plan.status === "approved" && (
+                        <form action={materializePlanObjectives}>
+                          <input type="hidden" name="planId" value={plan.id} />
+                          <SubmitButton pendingText="Adding…" className="rounded-lg border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-100 disabled:opacity-60">
+                            Add objectives
+                          </SubmitButton>
+                        </form>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <form action={startPlan} className="mb-2">
+                    <input type="hidden" name="learnerId" value={l.id} />
+                    <SubmitButton pendingText="Generating…" className="rounded-lg border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-100 disabled:opacity-60">
+                      Generate plan
+                    </SubmitButton>
+                  </form>
+                )}
                 {rows.length === 0 ? (
                   <p className="mt-1 text-sm text-slate-500">No activity yet.</p>
                 ) : (

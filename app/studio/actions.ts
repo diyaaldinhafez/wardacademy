@@ -3,7 +3,12 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { generateItem, generateSessionReportDraft, generatePlacementQuestions } from "@/lib/generation/service";
+import {
+  generateItem,
+  generateSessionReportDraft,
+  generatePlacementQuestions,
+  generatePlan,
+} from "@/lib/generation/service";
 import { homePathForRoles } from "@/lib/roles";
 import type { ItemFormat, Difficulty } from "@/lib/items";
 
@@ -301,6 +306,88 @@ export async function startPlacement(formData: FormData) {
   const { error: qErr } = await supabase.from("placement_questions").insert(rows);
   if (qErr) throw new Error(qErr.message);
 
+  revalidatePath("/studio");
+}
+
+/** Generate a draft study plan for a learner (informed by their placement level). */
+export async function startPlan(formData: FormData) {
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/studio/login");
+
+  const { data: profile } = await supabase.from("profiles").select("tenant_id, roles").eq("id", user.id).single();
+  if (!profile || !(profile.roles as string[]).includes("instructor")) {
+    throw new Error("Only an instructor can generate a plan.");
+  }
+
+  const { data: learner } = await supabase.from("profiles").select("full_name").eq("id", learnerId).single();
+  const { data: placement } = await supabase
+    .from("placement_tests")
+    .select("suggested_level")
+    .eq("learner_id", learnerId)
+    .eq("status", "completed")
+    .order("completed_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const level = placement?.suggested_level ?? "A1";
+
+  const plan = await generatePlan(level, learner?.full_name ?? "the student");
+
+  const { error } = await supabase.from("study_plans").insert({
+    tenant_id: profile.tenant_id,
+    learner_id: learnerId,
+    title: plan.title,
+    level,
+    items: plan.items,
+    status: "draft",
+    created_by: user.id,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/studio");
+}
+
+export async function approvePlan(formData: FormData) {
+  const planId = String(formData.get("planId") ?? "");
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("study_plans")
+    .update({ status: "approved", approved_at: new Date().toISOString() })
+    .eq("id", planId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/studio");
+}
+
+/** Turn a plan's objectives into real objectives so items can be generated/assigned. */
+export async function materializePlanObjectives(formData: FormData) {
+  const planId = String(formData.get("planId") ?? "");
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/studio/login");
+
+  const { data: plan } = await supabase
+    .from("study_plans")
+    .select("tenant_id, items")
+    .eq("id", planId)
+    .single();
+  if (!plan) throw new Error("Plan not found");
+
+  const items = (plan.items as { description: string; level: string }[]) ?? [];
+  if (items.length === 0) return;
+
+  const rows = items.map((it) => ({
+    tenant_id: plan.tenant_id,
+    track: "cefr",
+    level: it.level,
+    description: it.description,
+    created_by: user.id,
+  }));
+  const { error } = await supabase.from("objectives").insert(rows);
+  if (error) throw new Error(error.message);
   revalidatePath("/studio");
 }
 

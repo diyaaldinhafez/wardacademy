@@ -57,6 +57,16 @@ export default async function GuardianPage() {
     if (!placementByLearner.has(pl.learner_id)) placementByLearner.set(pl.learner_id, pl);
   }
 
+  const { data: studyPlans } = await supabase
+    .from("study_plans")
+    .select("learner_id, title, items")
+    .eq("status", "approved")
+    .order("created_at", { ascending: false });
+  const planByLearner = new Map<string, any>();
+  for (const sp of (studyPlans ?? []) as any[]) {
+    if (!planByLearner.has(sp.learner_id)) planByLearner.set(sp.learner_id, sp);
+  }
+
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
       <header className="mb-8 flex items-center justify-between">
@@ -90,6 +100,7 @@ export default async function GuardianPage() {
           const name = first(c.profiles).full_name ?? "Child";
           const rows = progByLearner.get(c.learner_id) ?? [];
           const pl = placementByLearner.get(c.learner_id);
+          const plan = planByLearner.get(c.learner_id);
           return (
             <li key={c.learner_id} className="rounded-xl border border-slate-200 bg-white p-4">
               <div className="mb-2 flex items-center justify-between">
@@ -120,6 +131,19 @@ export default async function GuardianPage() {
                     Grant consent
                   </SubmitButton>
                 </form>
+              )}
+              {plan && (
+                <div className="mb-3 rounded-lg border border-slate-200 bg-slate-50 p-2">
+                  <p className="text-xs font-medium text-slate-700">Plan: {plan.title}</p>
+                  <ol className="mt-1 list-decimal pl-4 text-xs text-slate-600">
+                    {((plan.items as any[]) ?? []).map((it: any, i: number) => (
+                      <li key={i}>
+                        {it.level ? `${it.level} · ` : ""}
+                        {it.description}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
               )}
               {rows.length === 0 ? (
                 <p className="text-sm text-slate-500">No activity yet.</p>

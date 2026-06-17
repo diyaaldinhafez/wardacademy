@@ -227,3 +227,51 @@ export async function generatePlacementQuestions(levels: string[]): Promise<Plac
   const out = toolUse.input as { questions: PlacementQuestion[] };
   return out.questions ?? [];
 }
+
+export type PlanObjective = { description: string; level: string };
+export type GeneratedPlan = { title: string; items: PlanObjective[] };
+
+const planTool: Anthropic.Tool = {
+  name: "emit_plan",
+  description: "Return a short, progressive study plan as a titled list of learning objectives.",
+  input_schema: {
+    type: "object",
+    properties: {
+      title: { type: "string" },
+      items: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            description: { type: "string", description: "A clear, original learning objective." },
+            level: { type: "string", description: "The CEFR sub-level it targets (e.g. A2)." },
+          },
+          required: ["description", "level"],
+        },
+      },
+    },
+    required: ["title", "items"],
+  },
+};
+
+/** Generate a draft study plan (5–6 progressive objectives) for a learner's level. */
+export async function generatePlan(level: string, learnerName: string): Promise<GeneratedPlan> {
+  const res = await client().messages.create({
+    model: MODEL,
+    max_tokens: 800,
+    system:
+      "You design a short English study plan for a child aged 9–13. Given a starting CEFR level, " +
+      "produce 5–6 progressive, original learning objectives (no copied material) that build on each other. " +
+      "Each objective is one clear sentence plus the CEFR sub-level it targets. Return via emit_plan.",
+    tools: [planTool],
+    tool_choice: { type: "tool", name: "emit_plan" },
+    messages: [{ role: "user", content: `Student: ${learnerName}. Starting level: ${level}. Create the plan.` }],
+  });
+
+  const toolUse = res.content.find(
+    (b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === "emit_plan",
+  );
+  if (!toolUse) throw new Error("Plan generation did not return a plan");
+  const out = toolUse.input as GeneratedPlan;
+  return { title: out.title, items: out.items ?? [] };
+}

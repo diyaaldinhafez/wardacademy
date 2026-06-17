@@ -65,6 +65,15 @@ export default async function LearnPage() {
     placementQuestions = data ?? [];
   }
 
+  const { data: studyPlan } = await supabase
+    .from("study_plans")
+    .select("title, level, items")
+    .eq("learner_id", user.id)
+    .eq("status", "approved")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   const lastByItem = new Map<string, { is_correct: boolean | null; graded: boolean }>();
   for (const s of (subs ?? []) as any[]) {
     if (!lastByItem.has(s.item_id)) lastByItem.set(s.item_id, { is_correct: s.is_correct, graded: s.graded });
@@ -154,6 +163,24 @@ export default async function LearnPage() {
           })}
         </ul>
       </section>
+
+      {/* Study plan */}
+      {studyPlan && (
+        <section className="mb-10">
+          <h2 className="mb-3 text-lg font-semibold">Your plan</h2>
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <p className="font-medium text-slate-900">{studyPlan.title}</p>
+            <ol className="mt-2 list-decimal pl-5 text-sm text-slate-700">
+              {((studyPlan.items as any[]) ?? []).map((it, i) => (
+                <li key={i}>
+                  {it.level ? `${it.level} · ` : ""}
+                  {it.description}
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+      )}
 
       {/* Sessions */}
       <section className="mb-10">
