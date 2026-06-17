@@ -4,6 +4,7 @@ import { bloomStage } from "@/lib/progress";
 import { FORMAT_LABELS, type ItemFormat } from "@/lib/items";
 import { logout } from "@/app/studio/actions";
 import AnswerForm from "@/components/learn/AnswerForm";
+import { fmtUTC } from "@/lib/datetime";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const objOf = (row: any) => (Array.isArray(row?.objectives) ? row.objectives[0] : row?.objectives) ?? {};
@@ -31,6 +32,16 @@ export default async function LearnPage() {
   const { data: prog } = await supabase
     .from("progress_records")
     .select("attempts, correct, completions, objectives(description, level)");
+
+  const { data: sessions } = await supabase
+    .from("sessions")
+    .select("id, scheduled_at, duration_minutes")
+    .order("scheduled_at");
+  const { data: reports } = await supabase
+    .from("session_reports")
+    .select("session_id, summary, strengths, improve");
+  const reportBySession = new Map<string, any>();
+  for (const r of (reports ?? []) as any[]) reportBySession.set(r.session_id, r);
 
   const lastByItem = new Map<string, { is_correct: boolean | null; graded: boolean }>();
   for (const s of (subs ?? []) as any[]) {
@@ -74,6 +85,40 @@ export default async function LearnPage() {
                     {p.completions ? ` · ${p.completions} practiced` : ""}
                   </span>
                 </span>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      {/* Sessions */}
+      <section className="mb-10">
+        <h2 className="mb-3 text-lg font-semibold">Your sessions</h2>
+        {(sessions ?? []).length === 0 && <p className="text-sm text-slate-500">No sessions scheduled yet.</p>}
+        <ul className="flex flex-col gap-2">
+          {(sessions ?? []).map((s: any) => {
+            const r = reportBySession.get(s.id);
+            return (
+              <li key={s.id} className="rounded-xl border border-slate-200 bg-white p-3">
+                <p className="text-sm text-slate-800">
+                  {fmtUTC(s.scheduled_at)} · {s.duration_minutes} min
+                </p>
+                {r && (
+                  <div className="mt-2 rounded-lg bg-slate-50 p-2 text-sm">
+                    <p className="font-medium text-slate-700">Report</p>
+                    <p className="text-slate-700">{r.summary}</p>
+                    {r.strengths && (
+                      <p className="text-slate-600">
+                        <span className="font-medium">Strengths:</span> {r.strengths}
+                      </p>
+                    )}
+                    {r.improve && (
+                      <p className="text-slate-600">
+                        <span className="font-medium">To improve:</span> {r.improve}
+                      </p>
+                    )}
+                  </div>
+                )}
               </li>
             );
           })}

@@ -4,6 +4,7 @@ import { bloomStage } from "@/lib/progress";
 import { logout } from "@/app/studio/actions";
 import { addChild, grantConsent } from "./actions";
 import SubmitButton from "@/components/studio/SubmitButton";
+import { fmtUTC } from "@/lib/datetime";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const first = (x: any) => (Array.isArray(x) ? x[0] : x) ?? {};
@@ -31,6 +32,20 @@ export default async function GuardianPage() {
     const arr = progByLearner.get(r.learner_id) ?? [];
     arr.push(r);
     progByLearner.set(r.learner_id, arr);
+  }
+
+  const { data: sessions } = await supabase
+    .from("sessions")
+    .select("id, scheduled_at, duration_minutes, learner_id")
+    .order("scheduled_at");
+  const { data: reports } = await supabase.from("session_reports").select("session_id, summary");
+  const reportBySession = new Map<string, any>();
+  for (const r of (reports ?? []) as any[]) reportBySession.set(r.session_id, r);
+  const sessionsByLearner = new Map<string, any[]>();
+  for (const s of (sessions ?? []) as any[]) {
+    const arr = sessionsByLearner.get(s.learner_id) ?? [];
+    arr.push(s);
+    sessionsByLearner.set(s.learner_id, arr);
   }
 
   return (
@@ -113,6 +128,22 @@ export default async function GuardianPage() {
                     );
                   })}
                 </ul>
+              )}
+              {(sessionsByLearner.get(c.learner_id) ?? []).length > 0 && (
+                <div className="mt-3 border-t border-slate-100 pt-3">
+                  <p className="mb-1 text-xs font-medium text-slate-500">Sessions</p>
+                  <ul className="flex flex-col gap-1">
+                    {(sessionsByLearner.get(c.learner_id) ?? []).map((s: any) => {
+                      const r = reportBySession.get(s.id);
+                      return (
+                        <li key={s.id} className="text-sm text-slate-700">
+                          {fmtUTC(s.scheduled_at)}
+                          {r ? ` — ${r.summary}` : ""}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
               )}
             </li>
           );

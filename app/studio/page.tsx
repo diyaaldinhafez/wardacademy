@@ -1,9 +1,19 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ITEM_FORMATS, DIFFICULTIES, FORMAT_LABELS } from "@/lib/items";
-import { generateDraft, approveItem, rejectItem, assignItem, logout } from "./actions";
+import {
+  generateDraft,
+  approveItem,
+  rejectItem,
+  assignItem,
+  createReport,
+  approveReport,
+  logout,
+} from "./actions";
 import SubmitButton from "@/components/studio/SubmitButton";
+import ScheduleForm from "@/components/studio/ScheduleForm";
 import { bloomStage } from "@/lib/progress";
+import { fmtUTC } from "@/lib/datetime";
 
 type EmbeddedObjective = { description?: string; level?: string };
 type ProgRow = {
@@ -65,6 +75,12 @@ export default async function StudioPage() {
   }
   const learnerName = new Map<string, string>();
   for (const l of learners) learnerName.set(l.id, (l.full_name as string) ?? l.id);
+  const learnersForForm = learners.map((l) => ({ id: l.id, name: (l.full_name as string) ?? l.id }));
+
+  const { data: sessions } = await supabase
+    .from("sessions")
+    .select("id, scheduled_at, duration_minutes, status, learner_id, session_reports(id, status, summary)")
+    .order("scheduled_at", { ascending: true });
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
@@ -203,6 +219,69 @@ export default async function StudioPage() {
                         Assign
                       </SubmitButton>
                     </form>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      {/* Sessions */}
+      <section className="mt-10">
+        <h2 className="mb-3 text-lg font-semibold">Sessions</h2>
+        {learnersForForm.length > 0 ? (
+          <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4">
+            <p className="mb-2 text-sm font-medium text-slate-700">Schedule a session</p>
+            <ScheduleForm learners={learnersForForm} />
+            <p className="mt-2 text-xs text-slate-400">Entered in your local time, stored and shown as UTC.</p>
+          </div>
+        ) : (
+          <p className="mb-4 text-sm text-slate-500">Add a student first to schedule a session.</p>
+        )}
+        {(sessions ?? []).length === 0 && <p className="text-sm text-slate-500">No sessions yet.</p>}
+        <ul className="flex flex-col gap-3">
+          {(sessions ?? []).map((s) => {
+            const report = Array.isArray(s.session_reports) ? s.session_reports[0] : s.session_reports;
+            return (
+              <li key={s.id} className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-slate-900">{learnerName.get(s.learner_id) ?? s.learner_id}</p>
+                    <p className="text-sm text-slate-500">
+                      {fmtUTC(s.scheduled_at)} · {s.duration_minutes} min
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{s.status}</span>
+                </div>
+                <div className="mt-3 border-t border-slate-100 pt-3">
+                  {!report && (
+                    <form action={createReport} className="flex flex-col gap-2">
+                      <input type="hidden" name="sessionId" value={s.id} />
+                      <p className="text-sm font-medium text-slate-700">Write the session report</p>
+                      <textarea name="summary" required rows={2} placeholder="Summary" className="rounded border border-slate-300 px-2 py-1 text-sm" />
+                      <input name="strengths" placeholder="Strengths (optional)" className="rounded border border-slate-300 px-2 py-1 text-sm" />
+                      <input name="improve" placeholder="To improve (optional)" className="rounded border border-slate-300 px-2 py-1 text-sm" />
+                      <SubmitButton pendingText="Saving…" className="self-start rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">
+                        Save report (draft)
+                      </SubmitButton>
+                    </form>
+                  )}
+                  {report && report.status === "draft" && (
+                    <div>
+                      <p className="text-sm text-slate-700">
+                        <span className="font-medium">Report (draft):</span> {report.summary}
+                      </p>
+                      <form action={approveReport} className="mt-2">
+                        <input type="hidden" name="reportId" value={report.id} />
+                        <SubmitButton pendingText="Approving…" className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">
+                          Approve report
+                        </SubmitButton>
+                      </form>
+                    </div>
+                  )}
+                  {report && report.status === "approved" && (
+                    <p className="text-sm text-emerald-700">Report approved — visible to the family.</p>
                   )}
                 </div>
               </li>

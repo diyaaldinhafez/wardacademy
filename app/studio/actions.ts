@@ -139,3 +139,77 @@ export async function assignItem(formData: FormData) {
   if (error && error.code !== "23505") throw new Error(error.message);
   revalidatePath("/studio");
 }
+
+/** Schedule a 1:1 session. scheduledAt is a UTC ISO string from the client. */
+export async function scheduleSession(formData: FormData) {
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const scheduledAt = String(formData.get("scheduledAt") ?? "");
+  const duration = Number(formData.get("duration") ?? 30);
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/studio/login");
+  if (!learnerId || !scheduledAt) throw new Error("Choose a student and a time.");
+
+  const { data: profile } = await supabase.from("profiles").select("tenant_id, roles").eq("id", user.id).single();
+  if (!profile || !(profile.roles as string[]).includes("instructor")) throw new Error("Only an instructor can schedule.");
+
+  const { error } = await supabase.from("sessions").insert({
+    tenant_id: profile.tenant_id,
+    instructor_id: user.id,
+    learner_id: learnerId,
+    scheduled_at: scheduledAt,
+    duration_minutes: duration,
+  });
+  if (error) {
+    throw new Error(error.code === "23P01" ? "That time overlaps an existing session." : error.message);
+  }
+  revalidatePath("/studio");
+}
+
+/** Write a draft report for a session (reaches the family only once approved). */
+export async function createReport(formData: FormData) {
+  const sessionId = String(formData.get("sessionId") ?? "");
+  const summary = String(formData.get("summary") ?? "").trim();
+  const strengths = String(formData.get("strengths") ?? "").trim();
+  const improve = String(formData.get("improve") ?? "").trim();
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/studio/login");
+  if (!summary) throw new Error("Write a short summary.");
+
+  const { data: session } = await supabase
+    .from("sessions")
+    .select("id, tenant_id, learner_id")
+    .eq("id", sessionId)
+    .single();
+  if (!session) throw new Error("Session not found");
+
+  const { error } = await supabase.from("session_reports").insert({
+    session_id: session.id,
+    tenant_id: session.tenant_id,
+    learner_id: session.learner_id,
+    summary,
+    strengths: strengths || null,
+    improve: improve || null,
+    status: "draft",
+  });
+  if (error) throw new Error(error.code === "23505" ? "A report already exists for this session." : error.message);
+  revalidatePath("/studio");
+}
+
+export async function approveReport(formData: FormData) {
+  const reportId = String(formData.get("reportId") ?? "");
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("session_reports")
+    .update({ status: "approved", approved_at: new Date().toISOString() })
+    .eq("id", reportId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/studio");
+}
