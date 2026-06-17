@@ -3,6 +3,17 @@ import { createClient } from "@/lib/supabase/server";
 import { ITEM_FORMATS, DIFFICULTIES, FORMAT_LABELS } from "@/lib/items";
 import { generateDraft, approveItem, rejectItem, logout } from "./actions";
 import SubmitButton from "@/components/studio/SubmitButton";
+import { bloomStage } from "@/lib/progress";
+
+type EmbeddedObjective = { description?: string; level?: string };
+type ProgRow = {
+  learner_id: string;
+  attempts: number;
+  correct: number;
+  completions: number;
+  objectives: EmbeddedObjective | EmbeddedObjective[] | null;
+};
+const objText = (o: ProgRow["objectives"]): EmbeddedObjective => (Array.isArray(o) ? o[0] : o) ?? {};
 
 export default async function StudioPage() {
   const supabase = await createClient();
@@ -31,6 +42,19 @@ export default async function StudioPage() {
 
   const drafts = (items ?? []).filter((i) => i.status === "draft");
   const approved = (items ?? []).filter((i) => i.status === "approved");
+
+  // Students & their progress (instructor sees the whole tenant).
+  const { data: people } = await supabase.from("profiles").select("id, full_name, roles");
+  const learners = (people ?? []).filter((p) => ((p.roles as string[]) ?? []).includes("learner"));
+  const { data: prog } = await supabase
+    .from("progress_records")
+    .select("learner_id, attempts, correct, completions, objectives(description, level)");
+  const progByLearner = new Map<string, ProgRow[]>();
+  for (const r of (prog ?? []) as ProgRow[]) {
+    const arr = progByLearner.get(r.learner_id) ?? [];
+    arr.push(r);
+    progByLearner.set(r.learner_id, arr);
+  }
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
@@ -138,6 +162,49 @@ export default async function StudioPage() {
               <ItemBody it={it} />
             </li>
           ))}
+        </ul>
+      </section>
+
+      {/* Students & progress */}
+      <section className="mt-10">
+        <h2 className="mb-3 text-lg font-semibold">
+          Students &amp; progress <span className="text-slate-400">({learners.length})</span>
+        </h2>
+        {learners.length === 0 && <p className="text-sm text-slate-500">No students yet.</p>}
+        <ul className="flex flex-col gap-3">
+          {learners.map((l) => {
+            const rows = progByLearner.get(l.id) ?? [];
+            return (
+              <li key={l.id} className="rounded-xl border border-slate-200 bg-white p-4">
+                <p className="font-medium text-slate-900">{l.full_name ?? l.id}</p>
+                {rows.length === 0 ? (
+                  <p className="mt-1 text-sm text-slate-500">No activity yet.</p>
+                ) : (
+                  <ul className="mt-2 flex flex-col gap-1">
+                    {rows.map((r, i) => {
+                      const o = objText(r.objectives);
+                      const stage = bloomStage(r);
+                      return (
+                        <li key={i} className="flex items-center justify-between text-sm">
+                          <span className="text-slate-700">
+                            {o.level ? `${o.level} · ` : ""}
+                            {o.description ?? "Objective"}
+                          </span>
+                          <span>
+                            <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">{stage.label}</span>
+                            <span className="ml-2 text-slate-400">
+                              {r.correct}/{r.attempts}
+                              {r.completions ? ` · ${r.completions} practiced` : ""}
+                            </span>
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
         </ul>
       </section>
     </main>
