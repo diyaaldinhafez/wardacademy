@@ -112,3 +112,30 @@ export async function rejectItem(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath("/studio");
 }
+
+/** Assign an approved item to a learner (so it appears in their practice). */
+export async function assignItem(formData: FormData) {
+  const itemId = String(formData.get("itemId") ?? "");
+  const learnerId = String(formData.get("learnerId") ?? "");
+  if (!learnerId) return;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/studio/login");
+
+  const { data: item } = await supabase.from("items").select("id, tenant_id, status").eq("id", itemId).single();
+  if (!item) throw new Error("Item not found");
+  if (item.status !== "approved") throw new Error("Only approved items can be assigned");
+
+  const { error } = await supabase.from("assignments").insert({
+    tenant_id: item.tenant_id,
+    item_id: itemId,
+    learner_id: learnerId,
+    assigned_by: user.id,
+  });
+  // ignore "already assigned" (unique violation)
+  if (error && error.code !== "23505") throw new Error(error.message);
+  revalidatePath("/studio");
+}

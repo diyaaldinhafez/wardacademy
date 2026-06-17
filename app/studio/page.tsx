@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ITEM_FORMATS, DIFFICULTIES, FORMAT_LABELS } from "@/lib/items";
-import { generateDraft, approveItem, rejectItem, logout } from "./actions";
+import { generateDraft, approveItem, rejectItem, assignItem, logout } from "./actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import { bloomStage } from "@/lib/progress";
 
@@ -55,6 +55,16 @@ export default async function StudioPage() {
     arr.push(r);
     progByLearner.set(r.learner_id, arr);
   }
+
+  const { data: assignments } = await supabase.from("assignments").select("item_id, learner_id");
+  const assigneesByItem = new Map<string, string[]>();
+  for (const a of (assignments ?? []) as { item_id: string; learner_id: string }[]) {
+    const arr = assigneesByItem.get(a.item_id) ?? [];
+    arr.push(a.learner_id);
+    assigneesByItem.set(a.item_id, arr);
+  }
+  const learnerName = new Map<string, string>();
+  for (const l of learners) learnerName.set(l.id, (l.full_name as string) ?? l.id);
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
@@ -157,11 +167,47 @@ export default async function StudioPage() {
         </h2>
         {approved.length === 0 && <p className="text-sm text-slate-500">Nothing approved yet.</p>}
         <ul className="flex flex-col gap-3">
-          {approved.map((it) => (
-            <li key={it.id} className="rounded-xl border border-emerald-200 bg-white p-4">
-              <ItemBody it={it} />
-            </li>
-          ))}
+          {approved.map((it) => {
+            const assigned = assigneesByItem.get(it.id) ?? [];
+            return (
+              <li key={it.id} className="rounded-xl border border-emerald-200 bg-white p-4">
+                <ItemBody it={it} />
+                <div className="mt-3 border-t border-slate-100 pt-3">
+                  <p className="text-xs text-slate-500">
+                    Assigned to:{" "}
+                    {assigned.length
+                      ? assigned.map((id) => learnerName.get(id) ?? id).join(", ")
+                      : "no one yet"}
+                  </p>
+                  {learners.length > 0 && (
+                    <form action={assignItem} className="mt-2 flex items-center gap-2">
+                      <input type="hidden" name="itemId" value={it.id} />
+                      <select
+                        name="learnerId"
+                        defaultValue=""
+                        className="rounded-lg border border-slate-300 px-2 py-1 text-sm"
+                      >
+                        <option value="" disabled>
+                          Choose a student…
+                        </option>
+                        {learners.map((l) => (
+                          <option key={l.id} value={l.id}>
+                            {(l.full_name as string) ?? l.id}
+                          </option>
+                        ))}
+                      </select>
+                      <SubmitButton
+                        pendingText="Assigning…"
+                        className="rounded-lg border border-slate-300 px-3 py-1 text-sm hover:bg-slate-100 disabled:opacity-60"
+                      >
+                        Assign
+                      </SubmitButton>
+                    </form>
+                  )}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       </section>
 
