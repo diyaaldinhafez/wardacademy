@@ -1,16 +1,12 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
-import PlacementClient from "@/components/PlacementClient";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Placement test — Ward Academy",
   robots: { index: false, follow: false },
 };
 
+// Placement is run inside the app by the teacher; start with registration.
 export default function PlacementPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-cream" />}>
-      <PlacementClient />
-    </Suspense>
-  );
+  redirect("/signup");
 }

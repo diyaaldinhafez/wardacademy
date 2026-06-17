@@ -16,7 +16,7 @@ import Outcomes from "./Outcomes";
 import StickyTrialBar from "./StickyTrialBar";
 import { useT } from "./LanguageProvider";
 
-const ENROLL = "/enroll";
+const ENROLL = "/signup";
 const NAV_HREFS = ["#how", "#pricing", "#faq"];
 
 /* White flower for the final CTA (on the purple bloom gradient) */
@@ -162,7 +162,7 @@ export default function Landing() {
 
             <div className="ms-auto flex items-center gap-3">
               <LangToggle />
-              <Link href="/login" className="hidden text-sm font-semibold text-ink-soft hover:text-brand sm:inline">
+              <Link href="/studio/login" className="hidden text-sm font-semibold text-ink-soft hover:text-brand sm:inline">
                 {L.login}
               </Link>
               <div className="hidden sm:block">
@@ -196,7 +196,7 @@ export default function Landing() {
                 </a>
               ))}
               <Link
-                href="/login"
+                href="/studio/login"
                 onClick={() => setMenuOpen(false)}
                 className="rounded-xl px-4 py-3 text-sm font-semibold text-ink-soft transition-colors hover:bg-brand-50 hover:text-brand"
               >
@@ -512,7 +512,7 @@ export default function Landing() {
 
           <nav className="flex flex-col gap-2.5" aria-label="footer-account">
             <b className="text-xs font-bold uppercase tracking-wide text-ink-faint">{L.footer.accountTitle}</b>
-            <Link href="/login" className="text-sm font-semibold text-ink-soft transition-colors hover:text-brand">
+            <Link href="/studio/login" className="text-sm font-semibold text-ink-soft transition-colors hover:text-brand">
               {L.login}
             </Link>
             <Link href={ENROLL} className="text-sm font-semibold text-ink-soft transition-colors hover:text-brand">

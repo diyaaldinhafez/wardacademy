@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import LoginScreen from "@/components/LoginScreen";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Log in — Ward Academy",
   robots: { index: false, follow: false },
 };
 
+// The real login lives in the app. (Previously a visual mockup.)
 export default function LoginPage() {
-  return <LoginScreen />;
+  redirect("/studio/login");
 }
