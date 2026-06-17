@@ -10,6 +10,7 @@ import {
   approveReport,
   draftReportWithAI,
   updateReport,
+  startPlacement,
   logout,
 } from "./actions";
 import SubmitButton from "@/components/studio/SubmitButton";
@@ -83,6 +84,15 @@ export default async function StudioPage() {
     .from("sessions")
     .select("id, scheduled_at, duration_minutes, status, learner_id, session_reports(id, status, summary, strengths, improve)")
     .order("scheduled_at", { ascending: true });
+
+  const { data: placements } = await supabase
+    .from("placement_tests")
+    .select("learner_id, status, suggested_level, created_at")
+    .order("created_at", { ascending: false });
+  const placementByLearner = new Map<string, { status: string; suggested_level: string | null }>();
+  for (const pl of (placements ?? []) as { learner_id: string; status: string; suggested_level: string | null }[]) {
+    if (!placementByLearner.has(pl.learner_id)) placementByLearner.set(pl.learner_id, pl);
+  }
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
@@ -316,9 +326,33 @@ export default async function StudioPage() {
         <ul className="flex flex-col gap-3">
           {learners.map((l) => {
             const rows = progByLearner.get(l.id) ?? [];
+            const pl = placementByLearner.get(l.id);
             return (
               <li key={l.id} className="rounded-xl border border-slate-200 bg-white p-4">
                 <p className="font-medium text-slate-900">{l.full_name ?? l.id}</p>
+                <div className="mb-2 mt-1 flex items-center gap-2 text-xs">
+                  {pl?.status === "completed" && (
+                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">
+                      Placement: {pl.suggested_level}
+                    </span>
+                  )}
+                  {pl?.status === "in_progress" && (
+                    <span className="rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-700">
+                      Placement in progress
+                    </span>
+                  )}
+                  {pl?.status !== "in_progress" && (
+                    <form action={startPlacement}>
+                      <input type="hidden" name="learnerId" value={l.id} />
+                      <SubmitButton
+                        pendingText="Generating…"
+                        className="rounded-lg border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-100 disabled:opacity-60"
+                      >
+                        {pl?.status === "completed" ? "Re-run placement" : "Start placement"}
+                      </SubmitButton>
+                    </form>
+                  )}
+                </div>
                 {rows.length === 0 ? (
                   <p className="mt-1 text-sm text-slate-500">No activity yet.</p>
                 ) : (

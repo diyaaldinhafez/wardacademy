@@ -3,7 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { bloomStage } from "@/lib/progress";
 import { FORMAT_LABELS, type ItemFormat } from "@/lib/items";
 import { logout } from "@/app/studio/actions";
+import { submitPlacement } from "./actions";
 import AnswerForm from "@/components/learn/AnswerForm";
+import SubmitButton from "@/components/studio/SubmitButton";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { fmtUTC } from "@/lib/datetime";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -43,6 +46,25 @@ export default async function LearnPage() {
   const reportBySession = new Map<string, any>();
   for (const r of (reports ?? []) as any[]) reportBySession.set(r.session_id, r);
 
+  const { data: placement } = await supabase
+    .from("placement_tests")
+    .select("id, status, suggested_level")
+    .eq("learner_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  let placementQuestions: any[] = [];
+  if (placement?.status === "in_progress") {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("placement_questions")
+      .select("id, prompt, content, position")
+      .eq("placement_test_id", placement.id)
+      .order("position");
+    placementQuestions = data ?? [];
+  }
+
   const lastByItem = new Map<string, { is_correct: boolean | null; graded: boolean }>();
   for (const s of (subs ?? []) as any[]) {
     if (!lastByItem.has(s.item_id)) lastByItem.set(s.item_id, { is_correct: s.is_correct, graded: s.graded });
@@ -61,6 +83,48 @@ export default async function LearnPage() {
           </button>
         </form>
       </header>
+
+      {/* Placement test */}
+      {placement?.status === "in_progress" && (
+        <section className="mb-10 rounded-2xl border border-slate-200 bg-white p-5">
+          <h2 className="mb-1 text-lg font-semibold">Placement test</h2>
+          <p className="mb-4 text-sm text-slate-500">Answer these so we can find your level.</p>
+          <form action={submitPlacement} className="flex flex-col gap-4">
+            <input type="hidden" name="testId" value={placement.id} />
+            {placementQuestions.map((q: any, idx: number) => {
+              const options = (q.content?.options ?? []) as string[];
+              return (
+                <div key={q.id}>
+                  <p className="font-medium text-slate-900">
+                    {idx + 1}. {q.prompt}
+                  </p>
+                  <div className="mt-1 flex flex-col gap-1">
+                    {options.map((o, i) => (
+                      <label key={i} className="flex items-center gap-2 text-sm">
+                        <input type="radio" name={`q_${q.id}`} value={o} required /> {o}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+            <SubmitButton
+              pendingText="Submitting…"
+              className="self-start rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+            >
+              Submit placement
+            </SubmitButton>
+          </form>
+        </section>
+      )}
+      {placement?.status === "completed" && placement.suggested_level && (
+        <section className="mb-10 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-5">
+          <h2 className="text-lg font-semibold">Placement complete</h2>
+          <p className="mt-1 text-sm text-slate-700">
+            Suggested level: <span className="font-semibold text-emerald-700">{placement.suggested_level}</span>
+          </p>
+        </section>
+      )}
 
       {/* Progress */}
       <section className="mb-10">

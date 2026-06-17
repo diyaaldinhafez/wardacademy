@@ -48,6 +48,15 @@ export default async function GuardianPage() {
     sessionsByLearner.set(s.learner_id, arr);
   }
 
+  const { data: placements } = await supabase
+    .from("placement_tests")
+    .select("learner_id, status, suggested_level, created_at")
+    .order("created_at", { ascending: false });
+  const placementByLearner = new Map<string, any>();
+  for (const pl of (placements ?? []) as any[]) {
+    if (!placementByLearner.has(pl.learner_id)) placementByLearner.set(pl.learner_id, pl);
+  }
+
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
       <header className="mb-8 flex items-center justify-between">
@@ -80,6 +89,7 @@ export default async function GuardianPage() {
         {(children ?? []).map((c: any) => {
           const name = first(c.profiles).full_name ?? "Child";
           const rows = progByLearner.get(c.learner_id) ?? [];
+          const pl = placementByLearner.get(c.learner_id);
           return (
             <li key={c.learner_id} className="rounded-xl border border-slate-200 bg-white p-4">
               <div className="mb-2 flex items-center justify-between">
@@ -93,6 +103,13 @@ export default async function GuardianPage() {
                 </span>
               </div>
               <p className="mb-2 text-xs text-slate-500">Sign-in: {first(c.profiles).login_email ?? "—"}</p>
+              {pl?.status === "completed" && (
+                <p className="mb-2 text-xs">
+                  <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">
+                    Level: {pl.suggested_level}
+                  </span>
+                </p>
+              )}
               {!c.consent_granted && (
                 <form action={grantConsent} className="mb-3">
                   <input type="hidden" name="learnerId" value={c.learner_id} />

@@ -178,3 +178,52 @@ export async function generateSessionReportDraft(input: ReportInput): Promise<Ge
   const out = toolUse.input as GeneratedReport;
   return { summary: out.summary, strengths: out.strengths, improve: out.improve };
 }
+
+export type PlacementQuestion = { level: string; prompt: string; options: string[]; answer: string };
+
+const placementTool: Anthropic.Tool = {
+  name: "emit_placement",
+  description: "Return one original multiple-choice question per requested CEFR level.",
+  input_schema: {
+    type: "object",
+    properties: {
+      questions: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            level: { type: "string", description: "The CEFR level this question targets (e.g. A1)." },
+            prompt: { type: "string" },
+            options: { type: "array", items: { type: "string" }, description: "Exactly 4 options." },
+            answer: { type: "string", description: "The exact text of the correct option." },
+          },
+          required: ["level", "prompt", "options", "answer"],
+        },
+      },
+    },
+    required: ["questions"],
+  },
+};
+
+/** Generate one original multiple-choice placement question per CEFR level. */
+export async function generatePlacementQuestions(levels: string[]): Promise<PlacementQuestion[]> {
+  const res = await client().messages.create({
+    model: MODEL,
+    max_tokens: 1500,
+    system:
+      "You write original English placement questions for children aged 9–13. " +
+      "For EACH requested CEFR level, write ONE multiple-choice question of difficulty appropriate to that level, " +
+      "with exactly 4 options and the correct option's exact text as the answer. Invent fresh content — never copy " +
+      "published material. Return everything by calling emit_placement.",
+    tools: [placementTool],
+    tool_choice: { type: "tool", name: "emit_placement" },
+    messages: [{ role: "user", content: `Levels: ${levels.join(", ")}. One question each.` }],
+  });
+
+  const toolUse = res.content.find(
+    (b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === "emit_placement",
+  );
+  if (!toolUse) throw new Error("Placement generation did not return questions");
+  const out = toolUse.input as { questions: PlacementQuestion[] };
+  return out.questions ?? [];
+}

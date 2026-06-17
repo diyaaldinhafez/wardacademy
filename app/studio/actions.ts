@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { generateItem, generateSessionReportDraft } from "@/lib/generation/service";
+import { generateItem, generateSessionReportDraft, generatePlacementQuestions } from "@/lib/generation/service";
 import { homePathForRoles } from "@/lib/roles";
 import type { ItemFormat, Difficulty } from "@/lib/items";
 
@@ -261,6 +261,46 @@ export async function draftReportWithAI(formData: FormData) {
     status: "draft",
   });
   if (error) throw new Error(error.code === "23505" ? "A report already exists for this session." : error.message);
+  revalidatePath("/studio");
+}
+
+/** Start a placement test for a learner: generate questions across CEFR levels. */
+export async function startPlacement(formData: FormData) {
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/studio/login");
+
+  const { data: profile } = await supabase.from("profiles").select("tenant_id, roles").eq("id", user.id).single();
+  if (!profile || !(profile.roles as string[]).includes("instructor")) {
+    throw new Error("Only an instructor can start a placement test.");
+  }
+
+  const questions = await generatePlacementQuestions(["A1", "A2", "B1"]);
+  if (questions.length === 0) throw new Error("Generation returned no questions.");
+
+  const { data: test, error } = await supabase
+    .from("placement_tests")
+    .insert({ tenant_id: profile.tenant_id, learner_id: learnerId, status: "in_progress" })
+    .select("id")
+    .single();
+  if (error || !test) throw new Error(error?.message ?? "Failed to create placement test");
+
+  const rows = questions.map((q, i) => ({
+    placement_test_id: test.id,
+    tenant_id: profile.tenant_id,
+    level: q.level,
+    format: "multiple_choice",
+    prompt: q.prompt,
+    content: { options: q.options },
+    answer: q.answer,
+    position: i,
+  }));
+  const { error: qErr } = await supabase.from("placement_questions").insert(rows);
+  if (qErr) throw new Error(qErr.message);
+
   revalidatePath("/studio");
 }
 
