@@ -26,7 +26,7 @@ export default function StickyTrialBar() {
       }`}
       style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
     >
-      <Button href="/signup" variant="green" size="md" className="w-full">
+      <Button href="/enroll" variant="green" size="md" className="w-full">
         {L.stickyCta}
       </Button>
     </div>

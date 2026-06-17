@@ -16,7 +16,7 @@ import Outcomes from "./Outcomes";
 import StickyTrialBar from "./StickyTrialBar";
 import { useT } from "./LanguageProvider";
 
-const ENROLL = "/signup";
+const ENROLL = "/enroll";
 const NAV_HREFS = ["#how", "#pricing", "#faq"];
 
 /* White flower for the final CTA (on the purple bloom gradient) */
