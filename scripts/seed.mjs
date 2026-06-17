@@ -116,6 +116,73 @@ try {
     [tenantId, guardian.id, learner.id],
   );
 
+  // ---- Demo content so the three accounts feel alive (each piece added once) ----
+  const objs = (await pg.query("select id, description from public.objectives where tenant_id=$1 order by created_at", [tenantId])).rows;
+  const routines = objs.find((o) => /routine/i.test(o.description)) ?? objs[1] ?? objs[0];
+  const itemRows = (await pg.query("select id, format, status from public.items where tenant_id=$1 order by created_at", [tenantId])).rows;
+  const approvedItems = itemRows.filter((i) => i.status === "approved");
+  const cnt = async (tbl) => (await pg.query(`select count(*)::int n from public.${tbl} where tenant_id=$1`, [tenantId])).rows[0].n;
+
+  // a draft for the teacher's "Drafts to review"
+  if (!itemRows.some((i) => i.status === "draft") && routines) {
+    const did = (
+      await pg.query(
+        `insert into public.items(tenant_id,objective_id,format,difficulty,prompt,content,origin,status,created_by)
+           values ($1,$2,'multiple_choice','easy',$3,$4::jsonb,'ai','draft',$5) returning id`,
+        [tenantId, routines.id, "Choose the correct question about a daily routine.", JSON.stringify({ options: ["What time you wake up?", "What time do you wake up?", "What time does you wake up?", "What time waking up?"] }), user.id],
+      )
+    ).rows[0].id;
+    await pg.query("insert into public.item_keys(item_id,tenant_id,answer,explanation) values ($1,$2,$3::jsonb,$4)", [did, tenantId, JSON.stringify("What time do you wake up?"), "Present simple questions use 'do' + base verb."]);
+    console.log("seeded: 1 draft item to review");
+  }
+
+  // assign the approved items to the learner
+  if ((await cnt("assignments")) === 0 && approvedItems.length) {
+    for (const it of approvedItems) {
+      await pg.query("insert into public.assignments(tenant_id,item_id,learner_id,assigned_by) values ($1,$2,$3,$4) on conflict do nothing", [tenantId, it.id, learner.id, user.id]);
+    }
+    console.log("seeded: assigned", approvedItems.length, "items to the learner");
+  }
+
+  // a couple of graded submissions -> progress
+  if ((await cnt("submissions")) === 0) {
+    const gradable = approvedItems.filter((i) => ["multiple_choice", "true_false", "fill_blank"].includes(i.format));
+    if (gradable[0]) await pg.query("insert into public.submissions(item_id,learner_id,response,is_correct,graded,graded_at) values ($1,$2,$3::jsonb,true,true,now())", [gradable[0].id, learner.id, JSON.stringify({ answer: "(demo)" })]);
+    if (gradable[1]) await pg.query("insert into public.submissions(item_id,learner_id,response,is_correct,graded,graded_at) values ($1,$2,$3::jsonb,false,true,now())", [gradable[1].id, learner.id, JSON.stringify({ answer: "(demo)" })]);
+    console.log("seeded: graded submissions -> progress");
+  }
+
+  // a past session (with approved report) + an upcoming one
+  if ((await cnt("sessions")) === 0) {
+    const past = new Date(Date.now() - 2 * 24 * 3600 * 1000); past.setUTCHours(15, 0, 0, 0);
+    const future = new Date(Date.now() + 3 * 24 * 3600 * 1000); future.setUTCHours(16, 0, 0, 0);
+    const sPast = (await pg.query("insert into public.sessions(tenant_id,instructor_id,learner_id,scheduled_at,duration_minutes,status) values ($1,$2,$3,$4,30,'completed') returning id", [tenantId, user.id, learner.id, past.toISOString()])).rows[0].id;
+    await pg.query("insert into public.sessions(tenant_id,instructor_id,learner_id,scheduled_at,duration_minutes,status) values ($1,$2,$3,$4,30,'scheduled')", [tenantId, user.id, learner.id, future.toISOString()]);
+    await pg.query(
+      "insert into public.session_reports(session_id,tenant_id,learner_id,summary,strengths,improve,status,approved_at) values ($1,$2,$3,$4,$5,$6,'approved',now())",
+      [sPast, tenantId, learner.id, "Yousef worked hard on the past simple tense and is making steady progress.", "Strong grasp of irregular verbs like 'went' and 'ate'.", "Practise forming present-simple questions at home."],
+    );
+    console.log("seeded: 2 sessions + approved report");
+  }
+
+  // a completed placement result
+  if ((await cnt("placement_tests")) === 0) {
+    await pg.query("insert into public.placement_tests(tenant_id,learner_id,status,suggested_level,completed_at) values ($1,$2,'completed','A2',now())", [tenantId, learner.id]);
+    console.log("seeded: placement (A2)");
+  }
+
+  // an approved study plan
+  if ((await cnt("study_plans")) === 0) {
+    const planItems = [
+      { description: "Use the past simple to talk about yesterday's activities", level: "A2" },
+      { description: "Ask and answer questions about daily routines", level: "A2" },
+      { description: "Read a short paragraph and find the main idea", level: "A2" },
+      { description: "Give an opinion with a reason using 'because'", level: "B1" },
+    ];
+    await pg.query("insert into public.study_plans(tenant_id,learner_id,title,level,items,status,created_by,approved_at) values ($1,$2,$3,'A2',$4::jsonb,'approved',$5,now())", [tenantId, learner.id, "English Plan for Yousef — A2", JSON.stringify(planItems), user.id]);
+    console.log("seeded: approved study plan");
+  }
+
   console.log("\n=== Logins (http://localhost:3000/studio/login) ===");
   console.log("teacher :", EMAIL, "/", PASSWORD, "-> /studio");
   console.log("student :", LEARNER_EMAIL, "/", LEARNER_PASSWORD, "-> /learn");
