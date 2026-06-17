@@ -47,19 +47,38 @@ export async function generateDraft(formData: FormData) {
     difficulty,
   });
 
+  // Keep the answer key out of student-facing content (see migration 0008).
+  const { answer, explanation, rubric, ...studentContent } = (gen.content ?? {}) as Record<
+    string,
+    unknown
+  >;
+
   // Inserted under the instructor's own session — RLS checks tenant + role.
-  const { error: insErr } = await supabase.from("items").insert({
+  const { data: item, error: insErr } = await supabase
+    .from("items")
+    .insert({
+      tenant_id: obj.tenant_id,
+      objective_id: obj.id,
+      format,
+      difficulty,
+      prompt: gen.prompt,
+      content: studentContent,
+      origin: "ai",
+      status: "draft",
+      created_by: user.id,
+    })
+    .select("id")
+    .single();
+  if (insErr || !item) throw new Error(insErr?.message ?? "Failed to save item");
+
+  const { error: keyErr } = await supabase.from("item_keys").insert({
+    item_id: item.id,
     tenant_id: obj.tenant_id,
-    objective_id: obj.id,
-    format,
-    difficulty,
-    prompt: gen.prompt,
-    content: gen.content,
-    origin: "ai",
-    status: "draft",
-    created_by: user.id,
+    answer: answer ?? null,
+    explanation: typeof explanation === "string" ? explanation : null,
+    rubric: typeof rubric === "string" ? rubric : null,
   });
-  if (insErr) throw new Error(insErr.message);
+  if (keyErr) throw new Error(keyErr.message);
 
   revalidatePath("/studio");
 }

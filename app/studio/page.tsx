@@ -26,7 +26,7 @@ export default async function StudioPage() {
 
   const { data: items } = await supabase
     .from("items")
-    .select("id, prompt, content, format, difficulty, status, objective_id")
+    .select("id, prompt, content, format, difficulty, status, objective_id, item_keys(answer, explanation, rubric)")
     .order("created_at", { ascending: false });
 
   const drafts = (items ?? []).filter((i) => i.status === "draft");
@@ -158,12 +158,12 @@ function formatAnswer(answer: unknown, options?: string[]): string {
 }
 
 function ItemBody({ it }: { it: any }) {
-  const content = (it.content ?? {}) as {
-    options?: string[];
-    answer?: unknown;
-    explanation?: string;
-    rubric?: string;
-  };
+  const content = (it.content ?? {}) as { options?: string[] };
+  // item_keys (answer/explanation/rubric) — instructor-only, may be array or object
+  const keys = (Array.isArray(it.item_keys) ? it.item_keys[0] : it.item_keys) ?? {};
+  const answer = keys.answer;
+  const explanation: string | undefined = keys.explanation ?? undefined;
+  const rubric: string | undefined = keys.rubric ?? undefined;
   return (
     <div>
       <div className="mb-1 flex gap-2 text-xs text-slate-500">
@@ -178,20 +178,20 @@ function ItemBody({ it }: { it: any }) {
           ))}
         </ul>
       )}
-      {content.answer !== undefined && content.answer !== null && (
+      {answer !== undefined && answer !== null && (
         <p className="mt-2 text-sm">
           <span className="font-semibold text-emerald-700">Answer:</span>{" "}
-          {formatAnswer(content.answer, content.options)}
+          {formatAnswer(answer, content.options)}
         </p>
       )}
-      {content.rubric && (
+      {rubric && (
         <p className="mt-1 whitespace-pre-line text-sm text-slate-600">
-          <span className="font-semibold">Rubric:</span> {content.rubric}
+          <span className="font-semibold">Rubric:</span> {rubric}
         </p>
       )}
-      {content.explanation && (
+      {explanation && (
         <p className="mt-1 text-sm text-slate-600">
-          <span className="font-semibold">Why:</span> {content.explanation}
+          <span className="font-semibold">Why:</span> {explanation}
         </p>
       )}
     </div>
