@@ -40,7 +40,6 @@ export default function OpengraphImage() {
           fontFamily: "sans-serif",
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={flowerDataUri} width={190} height={190} alt="" />
         <div style={{ fontSize: 78, fontWeight: 800, color: "#FFFFFF", letterSpacing: -1 }}>
           Ward Academy
