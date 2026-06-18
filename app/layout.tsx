@@ -61,9 +61,10 @@ export default function RootLayout({
     <html
       lang="ar"
       dir="rtl"
+      suppressHydrationWarning
       className={`${nunito.variable} ${baloo.variable} ${plexArabic.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-cream text-ink">
+      <body suppressHydrationWarning className="min-h-full flex flex-col bg-cream text-ink">
         <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>
