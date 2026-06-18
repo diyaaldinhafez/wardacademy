@@ -24,6 +24,8 @@ export async function submitLead(_prev: LeadState | undefined, formData: FormDat
   const school_type = get("schoolType");
   const learning_goal = get("learningGoal");
   const prior_study = get("priorStudy");
+  const english_use = get("englishUse");
+  const home_language = get("homeLanguage");
   const student_notes = get("studentNotes");
 
   // Per-skill self-assessment → { listening, speaking, ... }.
@@ -57,6 +59,8 @@ export async function submitLead(_prev: LeadState | undefined, formData: FormDat
       school_type: school_type || null,
       learning_goal: learning_goal || null,
       prior_study: prior_study || null,
+      english_use: english_use || null,
+      home_language: home_language || null,
       skill_levels: Object.keys(skill_levels).length ? skill_levels : null,
       student_notes: student_notes || null,
     })

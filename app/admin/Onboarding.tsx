@@ -22,7 +22,7 @@ export default async function Onboarding() {
   const supabase = await createClient();
   const { data: leads } = await supabase
     .from("leads")
-    .select("id, guardian_name, guardian_email, guardian_phone, guardian_country, guardian_nationality, student_name, student_dob, student_grade, student_level, school_type, learning_goal, prior_study, skill_levels, student_notes, status, created_at, intro_outcome, intro_notes, intro_done_at")
+    .select("id, guardian_name, guardian_email, guardian_phone, guardian_country, guardian_nationality, student_name, student_dob, student_grade, student_level, school_type, learning_goal, prior_study, english_use, home_language, skill_levels, student_notes, status, created_at, intro_outcome, intro_notes, intro_done_at")
     .order("created_at", { ascending: false });
   const { data: slots } = await supabase
     .from("availability_slots")
@@ -84,6 +84,8 @@ export default async function Onboarding() {
                     <div className="mt-1 flex flex-wrap gap-1.5 text-xs">
                       <span className="rounded-full bg-brand-50 px-2 py-0.5 text-ink-soft">التعليم: {labelOf("schoolType", lead.school_type)}</span>
                       <span className="rounded-full bg-brand-50 px-2 py-0.5 text-ink-soft">الهدف: {labelOf("goal", lead.learning_goal)}</span>
+                      <span className="rounded-full bg-brand-50 px-2 py-0.5 text-ink-soft">الاستخدام: {labelOf("englishUse", lead.english_use)}</span>
+                      {lead.home_language && <span className="rounded-full bg-brand-50 px-2 py-0.5 text-ink-soft">لغة البيت: {lead.home_language}</span>}
                       {lead.prior_study && <span className="rounded-full bg-brand-50 px-2 py-0.5 text-ink-soft">سابقاً: {labelOf("priorStudy", lead.prior_study)}</span>}
                     </div>
                     {lead.skill_levels && (

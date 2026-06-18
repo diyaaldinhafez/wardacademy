@@ -5,13 +5,13 @@ import { submitLead, bookSlot } from "@/app/enroll/actions";
 import FlowerMark from "../FlowerMark";
 import BudMark from "../BudMark";
 import {
-  COUNTRIES,
   STAGES,
   SCHOOL_TYPES,
   GOALS,
   LEVELS,
   SKILL_RATINGS,
   PRIOR_STUDY,
+  ENGLISH_USE,
   ENROLL_SKILLS,
   SKILL_AR,
   type Opt,
@@ -41,7 +41,7 @@ function Header({ title, sub }: { title: string; sub: string }) {
   );
 }
 
-const STEP_LABELS = ["وليّ الأمر", "الطالب", "الحجز"];
+const STEP_LABELS = ["الطالب", "وليّ الأمر", "الحجز"];
 function Steps({ current }: { current: 1 | 2 | 3 }) {
   return (
     <div className="mb-6 flex items-center justify-center gap-2">
@@ -145,14 +145,12 @@ export default function EnrollFlow({ slots }: { slots: Slot[] }) {
     );
   }
 
-  // ---- Steps 1–2: Registration (guardian → student) ----
+  // ---- Steps 1–2: Registration (student → guardian) ----
+  // Only step-1 fields are `required` right now, so validating the whole form
+  // validates exactly the student step before advancing.
   function goNext(e: React.MouseEvent<HTMLButtonElement>) {
     const form = e.currentTarget.form;
-    if (!form) return;
-    for (const n of ["guardianName", "guardianEmail", "guardianCountry"]) {
-      const el = form.elements.namedItem(n) as HTMLInputElement | HTMLSelectElement | null;
-      if (el && !el.reportValidity()) return;
-    }
+    if (form && !form.reportValidity()) return;
     setStep(2);
   }
 
@@ -170,57 +168,22 @@ export default function EnrollFlow({ slots }: { slots: Slot[] }) {
         }}
         className="rounded-3xl border border-brand-100 bg-cream/40 p-6 shadow-ward-1"
       >
-        {/* Step 1 — Guardian */}
-        <div className={step === 1 ? "flex flex-col gap-3" : "hidden"}>
-          <p className="text-sm font-semibold text-brand-700">بيانات وليّ الأمر</p>
-          <div>
-            <label className={labelCls}>الاسم الكامل</label>
-            <input name="guardianName" required className={field} placeholder="مثال: سارة محمد" />
-          </div>
-          <div>
-            <label className={labelCls}>البريد الإلكتروني</label>
-            <input name="guardianEmail" type="email" required className={field} dir="ltr" placeholder="you@example.com" />
-          </div>
-          <div>
-            <label className={labelCls}>رقم الواتساب</label>
-            <input name="guardianPhone" type="tel" className={field} dir="ltr" placeholder="+9665…" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelCls}>بلد الإقامة</label>
-              <select name="guardianCountry" defaultValue="" required className={field}>
-                <option value="" disabled>اختر…</option>
-                {COUNTRIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={labelCls}>الجنسية</label>
-              <input name="guardianNationality" className={field} placeholder="مثال: سعوديّة" />
-            </div>
-          </div>
-          <button type="button" onClick={goNext} className={`${primaryBtn} mt-2 w-full`}>
-            التالي ←
-          </button>
-        </div>
-
-        {/* Step 2 — Student */}
-        <div className={step === 2 ? "flex flex-col gap-4" : "hidden"}>
+        {/* Step 1 — Student */}
+        <div className={step === 1 ? "flex flex-col gap-4" : "hidden"}>
           <p className="text-sm font-semibold text-brand-700">بيانات الطالب</p>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>اسم الطالب</label>
-              <input name="studentName" required={step === 2} className={field} placeholder="مثال: يوسف" />
+              <label className={labelCls}>الاسم الكامل للطالب</label>
+              <input name="studentName" required={step === 1} className={field} placeholder="الاسم الأوّل والأخير" />
             </div>
             <div>
               <label className={labelCls}>تاريخ الميلاد</label>
-              <input name="studentDob" type="date" className={field} dir="ltr" />
+              <input name="studentDob" type="date" required={step === 1} className={field} dir="ltr" />
             </div>
           </div>
           <div>
             <label className={labelCls}>المرحلة الدراسية</label>
-            <select name="studentGrade" defaultValue="" required={step === 2} className={field}>
+            <select name="studentGrade" defaultValue="" required={step === 1} className={field}>
               <option value="" disabled>اختر المرحلة…</option>
               {STAGES.map((s) => (
                 <option key={s.value} value={s.value}>{s.label}</option>
@@ -229,15 +192,23 @@ export default function EnrollFlow({ slots }: { slots: Slot[] }) {
           </div>
           <div>
             <label className={labelCls}>نوع التعليم الحاليّ</label>
-            <RadioPills name="schoolType" options={SCHOOL_TYPES} required={step === 2} />
+            <RadioPills name="schoolType" options={SCHOOL_TYPES} required={step === 1} />
+          </div>
+          <div>
+            <label className={labelCls}>اللغة الأساسية في البيت</label>
+            <input name="homeLanguage" className={field} placeholder="مثال: العربية، أو العربية والألمانية" />
+          </div>
+          <div>
+            <label className={labelCls}>استخدام الإنجليزية في حياته اليومية</label>
+            <RadioPills name="englishUse" options={ENGLISH_USE} required={step === 1} />
           </div>
           <div>
             <label className={labelCls}>هدفكم من الانضمام</label>
-            <RadioPills name="learningGoal" options={GOALS} required={step === 2} />
+            <RadioPills name="learningGoal" options={GOALS} required={step === 1} />
           </div>
           <div>
             <label className={labelCls}>المستوى العامّ في الإنجليزية</label>
-            <RadioPills name="studentLevel" options={LEVELS} required={step === 2} />
+            <RadioPills name="studentLevel" options={LEVELS} required={step === 1} />
           </div>
           <div>
             <label className={labelCls}>قيّموا كلّ مهارة (تقديرٌ مبدئيّ)</label>
@@ -245,7 +216,7 @@ export default function EnrollFlow({ slots }: { slots: Slot[] }) {
               {ENROLL_SKILLS.map((sk) => (
                 <div key={sk} className="flex items-center justify-between gap-2">
                   <span className="w-14 shrink-0 text-sm text-ink-soft">{SKILL_AR[sk]}</span>
-                  <RadioPills name={`skill_${sk}`} options={SKILL_RATINGS} required={step === 2} size="sm" />
+                  <RadioPills name={`skill_${sk}`} options={SKILL_RATINGS} required={step === 1} size="sm" />
                 </div>
               ))}
             </div>
@@ -257,6 +228,36 @@ export default function EnrollFlow({ slots }: { slots: Slot[] }) {
           <div>
             <label className={labelCls}>أهداف أو ملاحظات (اختياري)</label>
             <textarea name="studentNotes" rows={2} className={field} placeholder="مثال: يحتاج تقويةً في المحادثة." />
+          </div>
+          <button type="button" onClick={goNext} className={`${primaryBtn} mt-2 w-full`}>
+            التالي ←
+          </button>
+        </div>
+
+        {/* Step 2 — Guardian */}
+        <div className={step === 2 ? "flex flex-col gap-3" : "hidden"}>
+          <p className="text-sm font-semibold text-brand-700">بيانات وليّ الأمر</p>
+          <div>
+            <label className={labelCls}>الاسم الكامل</label>
+            <input name="guardianName" required={step === 2} className={field} placeholder="مثال: سارة محمد" />
+          </div>
+          <div>
+            <label className={labelCls}>البريد الإلكتروني</label>
+            <input name="guardianEmail" type="email" required={step === 2} className={field} dir="ltr" placeholder="you@example.com" />
+          </div>
+          <div>
+            <label className={labelCls}>رقم الواتساب</label>
+            <input name="guardianPhone" type="tel" className={field} dir="ltr" placeholder="+9665…" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>بلد الإقامة</label>
+              <input name="guardianCountry" required={step === 2} className={field} placeholder="مثال: ألمانيا" />
+            </div>
+            <div>
+              <label className={labelCls}>الجنسية</label>
+              <input name="guardianNationality" className={field} placeholder="مثال: سعوديّة" />
+            </div>
           </div>
 
           {leadState?.error && <p className="text-sm font-semibold text-red-600">{leadState.error}</p>}

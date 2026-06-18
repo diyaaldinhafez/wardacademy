@@ -1,17 +1,9 @@
 // Shared option sets + Arabic labels for the enrolment form and the admin view.
 // Stored values are stable codes; labels are for display.
 
-import { SKILLS, SKILL_AR, type Skill } from "@/lib/skills";
+import { SKILL_AR, type Skill } from "@/lib/skills";
 
 export type Opt = { value: string; label: string };
-
-// Country of residence — curated for the target region (+ other).
-export const COUNTRIES: string[] = [
-  "السعودية", "الإمارات", "الكويت", "قطر", "البحرين", "عُمان",
-  "الأردن", "لبنان", "سوريا", "فلسطين", "العراق", "مصر",
-  "اليمن", "السودان", "ليبيا", "تونس", "الجزائر", "المغرب",
-  "تركيا", "دولة أخرى",
-];
 
 // Current school stage — Grade 1 through end of middle school (9 levels).
 export const STAGES: Opt[] = [
@@ -60,7 +52,16 @@ export const PRIOR_STUDY: Opt[] = [
   { value: "apps", label: "نعم, تطبيقات/ذاتيّ" },
 ];
 
-export const ENROLL_SKILLS: Skill[] = [...SKILLS];
+// How much English is part of the child's daily life (academic vs. lived).
+export const ENGLISH_USE: Opt[] = [
+  { value: "home_school", label: "في البيت والمدرسة يومياً" },
+  { value: "school_only", label: "في المدرسة فقط" },
+  { value: "sometimes", label: "أحياناً (إعلام، ألعاب، أصدقاء)" },
+  { value: "rarely", label: "نادراً — لغته اليومية غير الإنجليزية" },
+];
+
+// The four assessed skills on the enrolment form (vocabulary excluded here).
+export const ENROLL_SKILLS: Skill[] = ["listening", "speaking", "reading", "writing"];
 export { SKILL_AR };
 
 // value → label lookups for the admin display.
@@ -72,6 +73,7 @@ export const LABELS: Record<string, Record<string, string>> = {
   level: toMap(LEVELS),
   rating: toMap(SKILL_RATINGS),
   priorStudy: toMap(PRIOR_STUDY),
+  englishUse: toMap(ENGLISH_USE),
 };
 export const labelOf = (group: keyof typeof LABELS, value?: string | null) =>
   value ? LABELS[group]?.[value] ?? value : "—";
