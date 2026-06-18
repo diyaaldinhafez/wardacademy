@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   generateItem,
   generateSessionReportDraft,
@@ -498,4 +499,66 @@ export async function approveLeadTestAction(formData: FormData) {
     .eq("id", testId);
   if (error) throw new Error(error.message);
   revalidatePath("/studio");
+}
+
+/**
+ * Provision real accounts from a lead: creates the guardian + the child's login,
+ * links them with consent, carries over the placement level, and returns the
+ * generated credentials ONCE for the teacher to share (not stored).
+ */
+export async function provisionAccounts(
+  _prev: { error?: string; guardian?: { email: string; password: string }; student?: { email: string; password: string } } | undefined,
+  formData: FormData,
+) {
+  const leadId = String(formData.get("leadId") ?? "");
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/studio/login");
+  const { data: profile } = await supabase.from("profiles").select("tenant_id, roles").eq("id", user.id).single();
+  if (!profile || !(profile.roles as string[]).includes("instructor")) return { error: "للمعلّم فقط." };
+
+  const { data: lead } = await supabase
+    .from("leads")
+    .select("id, tenant_id, guardian_name, guardian_email, student_name, status")
+    .eq("id", leadId)
+    .single();
+  if (!lead) return { error: "الطلب غير موجود." };
+  if (lead.status === "converted") return { error: "جُهّزت الحسابات مسبقاً." };
+
+  const admin = createAdminClient();
+  const gPassword = "Ward-" + Math.random().toString(36).slice(2, 8);
+  const sPassword = "Ward-" + Math.random().toString(36).slice(2, 8);
+
+  const { data: g, error: ge } = await admin.auth.admin.createUser({ email: lead.guardian_email, password: gPassword, email_confirm: true });
+  if (ge) return { error: /already|exists|registered/i.test(ge.message) ? "بريد وليّ الأمر مسجَّلٌ مسبقاً." : ge.message };
+  await admin.from("profiles").insert({ id: g.user.id, tenant_id: lead.tenant_id, full_name: lead.guardian_name, roles: ["guardian"], login_email: lead.guardian_email });
+
+  const slug = (lead.student_name || "learner").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 12) || "learner";
+  const sEmail = `${slug}-${Math.random().toString(36).slice(2, 7)}@learner.ward.local`;
+  const { data: s, error: se } = await admin.auth.admin.createUser({ email: sEmail, password: sPassword, email_confirm: true });
+  if (se) {
+    await admin.auth.admin.deleteUser(g.user.id);
+    return { error: se.message };
+  }
+  await admin.from("profiles").insert({ id: s.user.id, tenant_id: lead.tenant_id, full_name: lead.student_name, roles: ["learner"], is_minor: true, login_email: sEmail });
+  await admin.from("guardianships").insert({ tenant_id: lead.tenant_id, guardian_id: g.user.id, learner_id: s.user.id, relationship: "parent", consent_granted: true, consent_at: new Date().toISOString() });
+
+  // carry over placement level
+  const { data: lt } = await admin
+    .from("lead_tests")
+    .select("suggested_level")
+    .eq("lead_id", leadId)
+    .eq("status", "completed")
+    .order("completed_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (lt?.suggested_level) {
+    await admin.from("placement_tests").insert({ tenant_id: lead.tenant_id, learner_id: s.user.id, status: "completed", suggested_level: lt.suggested_level, completed_at: new Date().toISOString() });
+  }
+
+  await admin.from("leads").update({ status: "converted" }).eq("id", leadId);
+  revalidatePath("/studio");
+  return { guardian: { email: lead.guardian_email, password: gPassword }, student: { email: sEmail, password: sPassword } };
 }

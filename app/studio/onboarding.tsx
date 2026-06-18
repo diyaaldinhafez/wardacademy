@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { generateLeadTestAction, approveLeadTestAction, removeSlot } from "./actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import SlotForm from "@/components/studio/SlotForm";
+import ProvisionPanel from "@/components/studio/ProvisionPanel";
 import { fmtUTC } from "@/lib/datetime";
 
 const SITE_URL = "https://ward.academy";
@@ -172,6 +173,16 @@ export default async function Onboarding() {
                     </div>
                   )}
                 </div>
+
+                {lead.status === "converted" ? (
+                  <p className="mt-3 border-t border-slate-100 pt-3 text-sm font-medium text-emerald-700">
+                    تمّ تجهيز حسابات وليّ الأمر والطالب ✓
+                  </p>
+                ) : (
+                  <div className="mt-3 border-t border-slate-100 pt-3">
+                    <ProvisionPanel leadId={lead.id} guardianPhone={lead.guardian_phone} />
+                  </div>
+                )}
               </li>
             );
           })}
