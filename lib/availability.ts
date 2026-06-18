@@ -36,9 +36,11 @@ export function expandSlots(opts: {
   exceptionDates: Set<string>; // "yyyy-MM-dd" in tenant tz
   timezone: string;
   horizonWeeks: number;
+  breakMinutes?: number;
   now?: DateTime;
 }): DesiredSlot[] {
   const { rules, exceptionDates, timezone, horizonWeeks } = opts;
+  const brk = opts.breakMinutes ?? BREAK_MINUTES;
   const now = (opts.now ?? DateTime.now()).setZone(timezone);
   if (!now.isValid) return [];
   const startDay = now.startOf("day");
@@ -54,8 +56,8 @@ export function expandSlots(opts: {
       const e = parseHM(r.end_time);
       let t = day.set({ hour: s.hour, minute: s.minute, second: 0, millisecond: 0 });
       const end = day.set({ hour: e.hour, minute: e.minute, second: 0, millisecond: 0 });
-      // Step by session length + a 15-minute break before the next slot.
-      for (; t.plus({ minutes: r.slot_minutes }) <= end; t = t.plus({ minutes: r.slot_minutes + BREAK_MINUTES })) {
+      // Step by session length + the configured break before the next slot.
+      for (; t.plus({ minutes: r.slot_minutes }) <= end; t = t.plus({ minutes: r.slot_minutes + brk })) {
         if (t <= now) continue;
         out.push({
           instructor_id: r.instructor_id,
@@ -70,3 +72,16 @@ export function expandSlots(opts: {
 }
 
 export const WEEKDAY_AR = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+
+/** How many sessions a single weekly rule yields (session + break spacing). */
+export function sessionsPerRule(startHM: string, endHM: string, slotMin: number, breakMin: number): number {
+  const toMin = (t: string) => {
+    const [h, m] = t.split(":").map(Number);
+    return h * 60 + (m || 0);
+  };
+  const start = toMin(startHM);
+  const end = toMin(endHM);
+  let n = 0;
+  for (let t = start; t + slotMin <= end; t += slotMin + breakMin) n++;
+  return n;
+}

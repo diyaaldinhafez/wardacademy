@@ -195,8 +195,9 @@ export async function regenerateSlots() {
   const { supabase, profile } = await assertAdmin();
   const tenantId = profile.tenant_id;
 
-  const { data: tenant } = await supabase.from("tenants").select("timezone").eq("id", tenantId).maybeSingle();
+  const { data: tenant } = await supabase.from("tenants").select("timezone, slot_break_minutes").eq("id", tenantId).maybeSingle();
   const timezone = tenant?.timezone ?? "Asia/Riyadh";
+  const breakMinutes = tenant?.slot_break_minutes ?? 15;
 
   const { data: rules } = await supabase
     .from("availability_rules")
@@ -205,7 +206,7 @@ export async function regenerateSlots() {
   const { data: exceptions } = await supabase.from("availability_exceptions").select("on_date").eq("kind", "block");
   const exceptionDates = new Set<string>((exceptions ?? []).map((e: any) => e.on_date));
 
-  const desired = expandSlots({ rules: (rules ?? []) as Rule[], exceptionDates, timezone, horizonWeeks: HORIZON_WEEKS });
+  const desired = expandSlots({ rules: (rules ?? []) as Rule[], exceptionDates, timezone, horizonWeeks: HORIZON_WEEKS, breakMinutes });
 
   if (desired.length) {
     const rows = desired.map((d) => ({
@@ -267,6 +268,15 @@ export async function deleteRule(formData: FormData) {
   // Drop this rule's future open slots first (FK would otherwise orphan them).
   await supabase.from("availability_slots").delete().eq("source_rule_id", id).eq("status", "open").gte("starts_at", new Date().toISOString());
   const { error } = await supabase.from("availability_rules").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  await regenerateSlots();
+}
+
+/** Set the break between sessions (minutes), then regenerate slots. */
+export async function setBreakMinutes(formData: FormData) {
+  const minutes = Math.max(0, Math.min(120, Number(formData.get("breakMinutes") ?? 15)));
+  const { supabase, profile } = await assertAdmin();
+  const { error } = await supabase.from("tenants").update({ slot_break_minutes: minutes }).eq("id", profile.tenant_id);
   if (error) throw new Error(error.message);
   await regenerateSlots();
 }
