@@ -7,16 +7,20 @@ import { generateLeadTest } from "@/lib/generation/service";
 import { assertAdmin } from "@/lib/auth";
 import { expandSlots, type Rule } from "@/lib/availability";
 import { sendBookingConfirmation, sendAccountInvite } from "@/lib/email";
-import type { SupabaseClient } from "@supabase/supabase-js";
 
 const HORIZON_WEEKS = 4;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://ward.academy";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-/** The intro session is delivered by a teacher; resolve the tenant's instructor. */
-async function defaultInstructorId(supabase: SupabaseClient, tenantId: string): Promise<string> {
-  const { data } = await supabase.from("profiles").select("id, roles").eq("tenant_id", tenantId);
+/**
+ * The intro session is delivered by a teacher; resolve the tenant's instructor.
+ * Uses the service role (a trusted lookup) because the admin's RLS does not
+ * grant read access to other users' profiles.
+ */
+async function defaultInstructorId(tenantId: string): Promise<string> {
+  const admin = createAdminClient();
+  const { data } = await admin.from("profiles").select("id, roles, created_at").eq("tenant_id", tenantId).order("created_at", { ascending: true });
   const teacher = (data ?? []).find((p: any) => ((p.roles as string[]) ?? []).includes("instructor"));
   if (!teacher) throw new Error("لا يوجد معلّمٌ في المنصّة بعد.");
   return teacher.id;
@@ -29,7 +33,7 @@ export async function addSlot(formData: FormData) {
   if (!startsAt) throw new Error("اختر وقتاً.");
 
   const { supabase, profile } = await assertAdmin();
-  const instructorId = await defaultInstructorId(supabase, profile.tenant_id);
+  const instructorId = await defaultInstructorId(profile.tenant_id);
 
   const { error } = await supabase.from("availability_slots").insert({
     tenant_id: profile.tenant_id,
@@ -125,7 +129,7 @@ export async function provisionAccounts(
   if (!lead) return { error: "الطلب غير موجود." };
   if (lead.status === "converted") return { error: "جُهّزت الحسابات مسبقاً." };
 
-  const instructorId = await defaultInstructorId(supabase, lead.tenant_id);
+  const instructorId = await defaultInstructorId(lead.tenant_id);
   const admin = createAdminClient();
 
   // Create accounts WITHOUT a password; the family sets their own via an invite
@@ -240,7 +244,7 @@ export async function createRule(formData: FormData) {
   if (endTime <= startTime) throw new Error("وقت النهاية يجب أن يكون بعد البداية.");
 
   const { supabase, profile } = await assertAdmin();
-  const instructorId = await defaultInstructorId(supabase, profile.tenant_id);
+  const instructorId = await defaultInstructorId(profile.tenant_id);
   const { error } = await supabase.from("availability_rules").insert({
     tenant_id: profile.tenant_id,
     instructor_id: instructorId,
