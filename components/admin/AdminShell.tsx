@@ -3,16 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { logout } from "@/app/studio/actions";
+import { adminLogout } from "@/app/admin/actions";
 import { Avatar, Badge } from "@/components/ward/ui";
 import FlowerMark from "@/components/FlowerMark";
 
 const NAV = [
-  { href: "/studio", label: "اليوم", d: "M3 11l9-8 9 8M5 9v11h14V9" },
-  { href: "/studio/reviews", label: "مراجعات الذكاء", d: "M12 3l1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5L12 3z", badge: "reviews" as const },
-  { href: "/studio/students", label: "الطلاب", d: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21v-1a6 6 0 0112 0v1" },
-  { href: "/studio/homework", label: "الواجبات", d: "M9 3h6l5 5v13H4V3h5zM9 13h6M9 17h4" },
-  { href: "/studio/reports", label: "تقارير الجلسات", d: "M4 19V5m0 14h16M8 15v-4m4 4V8m4 7v-6" },
+  { href: "/admin", label: "اللوحة", d: "M3 11l9-8 9 8M5 9v11h14V9" },
+  { href: "/admin/registrations", label: "طلبات التسجيل", d: "M4 4h16v16H4zM4 9h16M9 4v5", badge: "leads" as const },
+  // المواعيد + اختبارات التحديد تُضاف في المراحل التالية
 ];
 
 function NavIcon({ d }: { d: string }) {
@@ -23,21 +21,21 @@ function NavIcon({ d }: { d: string }) {
   );
 }
 
-export default function TeacherShell({
-  teacherName,
+export default function AdminShell({
+  adminName,
   today,
-  reviewsCount = 0,
+  leadsCount = 0,
   children,
 }: {
-  teacherName: string;
+  adminName: string;
   today: string;
-  reviewsCount?: number;
+  leadsCount?: number;
   children: ReactNode;
 }) {
   const pathname = usePathname();
-  const isActive = (href: string) => (href === "/studio" ? pathname === "/studio" : pathname.startsWith(href));
-  const title = NAV.find((n) => isActive(n.href))?.label ?? "استوديو المعلّم";
-  const counts: Record<string, number> = { reviews: reviewsCount };
+  const isActive = (href: string) => (href === "/admin" ? pathname === "/admin" : pathname.startsWith(href));
+  const title = NAV.find((n) => isActive(n.href))?.label ?? "الإدارة";
+  const counts: Record<string, number> = { leads: leadsCount };
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)", fontFamily: "var(--font-ar)" }} dir="rtl">
@@ -57,9 +55,12 @@ export default function TeacherShell({
           height: "100vh",
         }}
       >
-        <Link href="/studio" style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 8px 18px", textDecoration: "none" }}>
+        <Link href="/admin" style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 8px 14px", textDecoration: "none" }}>
           <FlowerMark className="h-9 w-9 shrink-0" />
-          <span style={{ fontWeight: 700, fontSize: 16, color: "var(--ward-purple-800)" }}>أكاديمية وَرد</span>
+          <span style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ fontWeight: 700, fontSize: 15, color: "var(--ward-purple-800)" }}>أكاديمية وَرد</span>
+            <span style={{ fontSize: 11.5, color: "var(--text-muted)" }}>الإدارة والتشغيل</span>
+          </span>
         </Link>
         {NAV.map((it) => {
           const active = isActive(it.href);
@@ -83,21 +84,18 @@ export default function TeacherShell({
             >
               <NavIcon d={it.d} />
               {it.label}
-              {it.badge && n > 0 ? <span style={{ marginInlineStart: "auto" }}><Badge tone={it.badge === "reviews" ? "brand" : "apricot"}>{n}</Badge></span> : null}
+              {it.badge && n > 0 ? <span style={{ marginInlineStart: "auto" }}><Badge tone="apricot">{n}</Badge></span> : null}
             </Link>
           );
         })}
         <div style={{ marginBlockStart: "auto", display: "flex", alignItems: "center", gap: 10, padding: "12px 8px 4px", borderBlockStart: "1px solid var(--border-soft)" }}>
-          <Avatar name={teacherName} size={34} />
+          <Avatar name={adminName} size={34} />
           <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-body)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {teacherName}
+            {adminName}
           </span>
         </div>
-        <form action={logout}>
-          <button
-            className="ward-btn ward-btn--ghost ward-btn--sm ward-btn--full"
-            style={{ justifyContent: "flex-start", color: "var(--text-muted)" }}
-          >
+        <form action={adminLogout}>
+          <button className="ward-btn ward-btn--ghost ward-btn--sm ward-btn--full" style={{ justifyContent: "flex-start", color: "var(--text-muted)" }}>
             تسجيل الخروج
           </button>
         </form>

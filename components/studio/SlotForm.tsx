@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { addSlot } from "@/app/studio/actions";
+import { addSlot } from "@/app/admin/actions";
 import SubmitButton from "./SubmitButton";
 
 export default function SlotForm() {

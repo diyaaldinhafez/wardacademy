@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { provisionAccounts } from "@/app/studio/actions";
+import { provisionAccounts } from "@/app/admin/actions";
 
 export default function ProvisionPanel({ leadId, guardianPhone }: { leadId: string; guardianPhone?: string | null }) {
   const [state, action, pending] = useActionState(provisionAccounts, undefined);

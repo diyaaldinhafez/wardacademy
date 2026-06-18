@@ -102,6 +102,8 @@ try {
   const GUARDIAN_PASSWORD = process.env.SEED_GUARDIAN_PASSWORD ?? "WardParent!2026";
   const LEARNER_EMAIL = process.env.SEED_LEARNER_EMAIL ?? "student@ward.local";
   const LEARNER_PASSWORD = process.env.SEED_LEARNER_PASSWORD ?? "WardStudent!2026";
+  const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? "admin@ward.local";
+  const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "WardAdmin!2026";
 
   async function findOrCreate(email, password) {
     let u = await findUserByEmail(email);
@@ -118,6 +120,7 @@ try {
 
   const guardian = await findOrCreate(GUARDIAN_EMAIL, GUARDIAN_PASSWORD);
   const learner = await findOrCreate(LEARNER_EMAIL, LEARNER_PASSWORD);
+  const adminUser = await findOrCreate(ADMIN_EMAIL, ADMIN_PASSWORD);
 
   const upsertProfile = `insert into public.profiles(id, tenant_id, full_name, roles, is_minor, login_email)
        values ($1, $2, $3, $4::public.user_role[], $5, $6)
@@ -127,6 +130,7 @@ try {
            login_email = excluded.login_email`;
   await pg.query(upsertProfile, [guardian.id, tenantId, "Parent (dev)", "{guardian}", false, GUARDIAN_EMAIL]);
   await pg.query(upsertProfile, [learner.id, tenantId, "Yousef (dev)", "{learner}", true, LEARNER_EMAIL]);
+  await pg.query(upsertProfile, [adminUser.id, tenantId, "Operations (dev)", "{admin}", false, ADMIN_EMAIL]);
   await pg.query(
     `insert into public.guardianships(tenant_id, guardian_id, learner_id, relationship, consent_granted, consent_at)
        values ($1, $2, $3, 'parent', true, now())
@@ -222,6 +226,7 @@ try {
 
   console.log("\n=== Logins (http://localhost:3000/studio/login) ===");
   console.log("teacher :", EMAIL, "/", PASSWORD, "-> /studio");
+  console.log("admin   :", ADMIN_EMAIL, "/", ADMIN_PASSWORD, "-> /admin");
   console.log("student :", LEARNER_EMAIL, "/", LEARNER_PASSWORD, "-> /learn");
   console.log("parent  :", GUARDIAN_EMAIL, "/", GUARDIAN_PASSWORD, "-> /guardian (next)");
 } catch (e) {
