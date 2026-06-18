@@ -23,7 +23,7 @@ export default async function Onboarding() {
     .order("created_at", { ascending: false });
   const { data: questions } = await supabase
     .from("lead_test_questions")
-    .select("lead_test_id, prompt, content, answer, level, position")
+    .select("lead_test_id, prompt, content, answer, level, position, response, is_correct")
     .order("position");
 
   const slotByLead = new Map<string, any>();
@@ -147,10 +147,29 @@ export default async function Onboarding() {
                     </div>
                   )}
                   {test?.status === "completed" && (
-                    <p className="text-sm text-slate-700">
-                      اكتمل الاختبار · المستوى المقترح:{" "}
-                      <span className="font-semibold text-emerald-700">{test.suggested_level ?? "—"}</span>
-                    </p>
+                    <div>
+                      <p className="mb-2 text-sm text-slate-700">
+                        اكتمل الاختبار · المستوى المقترح:{" "}
+                        <span className="font-semibold text-emerald-700">{test.suggested_level ?? "—"}</span>
+                      </p>
+                      <ol className="list-decimal space-y-1.5 pr-5 text-sm">
+                        {qs.map((q: any, i: number) => (
+                          <li key={i}>
+                            <span dir="ltr">{q.prompt}</span>
+                            <div className="text-xs">
+                              <span className={q.is_correct ? "text-emerald-700" : "text-rose-600"}>
+                                {q.is_correct ? "✓" : "✗"} إجابة الطالب: {String(q.response?.answer ?? "—")}
+                              </span>
+                              {!q.is_correct && (
+                                <span className="text-slate-500">
+                                  {" "}· الصحيح: {typeof q.answer === "string" ? q.answer : JSON.stringify(q.answer)}
+                                </span>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
                   )}
                 </div>
               </li>
