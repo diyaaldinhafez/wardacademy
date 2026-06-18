@@ -1,0 +1,170 @@
+/* ============================================================
+   Ward Academy Design System — ported from the Claude Design
+   project (tokens + component CSS). Used by components/ward/*.
+   The child surface flips --font-* to English via [data-surface="child"].
+   ============================================================ */
+:root {
+  /* ---- Ward Purple (Platycodon) ---- */
+  --ward-purple-50: #F6F3FE; --ward-purple-100: #EDE7FD; --ward-purple-200: #DCD0FA;
+  --ward-purple-300: #C0A9F2; --ward-purple-400: #9F7DE7; --ward-purple-500: #7F55D9;
+  --ward-purple-600: #6840BD; --ward-purple-700: #533099; --ward-purple-800: #3D2371; --ward-purple-900: #29174E;
+
+  /* ---- Spark ---- */
+  --spark-1: #F3EDFF; --spark-2: #C8ABFF; --spark-3: #A57CFF; --spark-glow: rgba(165,124,255,0.45);
+
+  /* ---- Supporting ---- */
+  --leaf-100: #DDF3E7; --leaf-300: #9FD9BD; --leaf-500: #2E9E6B; --leaf-700: #1E7A50;
+  --apricot-100: #FFEEDC; --apricot-300: #FFCB94; --apricot-400: #FFB46B; --apricot-500: #F69A45; --apricot-600: #C97A2B;
+  --sun-100: #FCF0DA; --sun-500: #E59A23; --sun-700: #9A6410;
+  --rose-100: #FBE3E9; --rose-500: #DE5A77; --rose-700: #B23A56;
+  --sky-100: #E3EEFA; --sky-500: #4C8DD9; --sky-700: #2F6BB0;
+
+  /* ---- Neutrals (Dusk) ---- */
+  --ink-0: #FFFFFF; --ink-50: #F9F8FC; --ink-100: #F1EFF7; --ink-200: #E4E1EE; --ink-300: #C9C4DA;
+  --ink-400: #9C96B5; --ink-500: #767093; --ink-600: #5E5778; --ink-700: #453E5C; --ink-900: #221D33;
+
+  /* ---- Semantic ---- */
+  --brand: var(--ward-purple-500); --brand-strong: var(--ward-purple-600); --brand-deep: var(--ward-purple-800);
+  --brand-soft: var(--ward-purple-100); --brand-softer: var(--ward-purple-50);
+  --text-strong: var(--ink-900); --text-body: var(--ink-700); --text-muted: var(--ink-500);
+  --text-on-brand: #FFFFFF; --text-on-soft: var(--ward-purple-700); --text-brand: var(--ward-purple-600);
+  --surface-page: var(--ink-50); --surface-card: #FFFFFF; --surface-soft: var(--ward-purple-50);
+  --surface-sunken: var(--ink-100); --surface-night: var(--ward-purple-900);
+  --border-soft: var(--ink-200); --border-strong: var(--ink-300); --border-brand: var(--ward-purple-300);
+  --success-bg: var(--leaf-100); --success-fg: var(--leaf-700); --success: var(--leaf-500);
+  --warning-bg: var(--sun-100); --warning-fg: var(--sun-700); --warning: var(--sun-500);
+  --danger-bg: var(--rose-100); --danger-fg: var(--rose-700); --danger: var(--rose-500);
+  --info-bg: var(--sky-100); --info-fg: var(--sky-700); --info: var(--sky-500);
+
+  /* ---- AI trust model ---- */
+  --trust-draft-bg: #F4EEFF; --trust-draft-border: var(--ward-purple-300); --trust-draft-fg: var(--ward-purple-700);
+  --trust-approved-bg: var(--leaf-100); --trust-approved-border: var(--leaf-300); --trust-approved-fg: var(--leaf-700);
+
+  /* ---- Gradients ---- */
+  --grad-bloom: linear-gradient(135deg, #9F7DE7 0%, #6840BD 100%);
+  --grad-spark: linear-gradient(135deg, #F3EDFF 0%, #C8ABFF 100%);
+  --grad-sky: linear-gradient(180deg, #F6F3FE 0%, #FFFFFF 100%);
+  --grad-garden: linear-gradient(160deg, #F6F3FE 0%, #EAF7F0 100%);
+
+  /* ---- Typography (map to next/font vars from layout) ---- */
+  --font-en-display: var(--font-baloo), 'Baloo 2', system-ui, sans-serif;
+  --font-en-body: var(--font-nunito), 'Nunito', system-ui, sans-serif;
+  --font-display: var(--font-ar), 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --font-body: var(--font-ar), 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --text-xs: 0.75rem; --text-sm: 0.875rem; --text-base: 1rem; --text-lg: 1.125rem; --text-xl: 1.25rem;
+  --text-2xl: 1.5rem; --text-3xl: 1.875rem; --text-4xl: 2.375rem;
+  --weight-regular: 400; --weight-medium: 500; --weight-semibold: 600; --weight-bold: 700; --weight-heavy: 800;
+  --leading-tight: 1.25; --leading-snug: 1.4; --leading-normal: 1.6; --leading-loose: 1.8;
+
+  /* ---- Spacing / radius / shadow ---- */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px; --space-6: 24px;
+  --space-8: 32px; --space-10: 40px; --space-12: 48px;
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-xl: 22px; --radius-2xl: 28px; --radius-pill: 999px;
+  --border-w: 1px; --border-w-strong: 1.5px;
+  --shadow-1: 0 1px 2px rgba(41,23,78,.05), 0 2px 8px rgba(41,23,78,.06);
+  --shadow-2: 0 2px 6px rgba(41,23,78,.06), 0 8px 24px rgba(41,23,78,.10);
+  --shadow-3: 0 4px 12px rgba(41,23,78,.10), 0 16px 40px rgba(41,23,78,.16);
+  --shadow-spark: 0 0 0 4px rgba(165,124,255,.16), 0 2px 12px rgba(165,124,255,.40);
+  --shadow-focus: 0 0 0 3px rgba(127,85,217,.30);
+  --tap-min: 44px; --tap-child: 52px;
+
+  /* ---- Motion ---- */
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1); --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --duration-fast: 150ms; --duration-base: 250ms; --duration-slow: 450ms; --duration-bloom: 900ms;
+}
+[data-surface="child"] { --font-display: var(--font-en-display); --font-body: var(--font-en-body); }
+
+/* ---- Keyframes ---- */
+@keyframes ward-spark-idle { 0%,100% { opacity:0.75; transform:scale(1);} 50% { opacity:1; transform:scale(1.06);} }
+@keyframes ward-spark-thinking { 0% { transform:rotate(0) scale(1);} 50% { transform:rotate(180deg) scale(1.12);} 100% { transform:rotate(360deg) scale(1);} }
+@keyframes ward-spark-success { 0% { transform:scale(0.6) rotate(-20deg); opacity:0;} 45% { transform:scale(1.25) rotate(8deg); opacity:1;} 100% { transform:scale(1) rotate(0); opacity:1;} }
+@keyframes ward-pop { 0% { transform:scale(1);} 35% { transform:scale(1.18);} 55% { transform:scale(0.92);} 100% { transform:scale(1);} }
+@keyframes ward-rise { from { opacity:0; transform:translateY(10px);} to { opacity:1; transform:translateY(0);} }
+
+/* ---- Button ---- */
+.ward-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius:var(--radius-pill);
+  font-family:var(--font-body); font-weight:var(--weight-semibold); border:none; cursor:pointer; text-decoration:none; white-space:nowrap;
+  transition:background var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out); }
+.ward-btn:active { transform:scale(0.97); }
+.ward-btn:focus-visible { outline:none; box-shadow:var(--shadow-focus); }
+.ward-btn[disabled] { opacity:0.45; pointer-events:none; }
+.ward-btn--sm { height:36px; padding-inline:16px; font-size:var(--text-sm); }
+.ward-btn--md { height:44px; padding-inline:22px; font-size:var(--text-base); }
+.ward-btn--lg { height:52px; padding-inline:28px; font-size:var(--text-lg); }
+.ward-btn--primary { background:var(--brand); color:var(--text-on-brand); box-shadow:var(--shadow-1); }
+.ward-btn--primary:hover { background:var(--brand-strong); }
+.ward-btn--secondary { background:var(--surface-card); color:var(--text-brand); border:var(--border-w-strong) solid var(--border-brand); }
+.ward-btn--secondary:hover { background:var(--brand-softer); }
+.ward-btn--soft { background:var(--brand-soft); color:var(--text-on-soft); }
+.ward-btn--soft:hover { background:var(--ward-purple-200); }
+.ward-btn--ghost { background:transparent; color:var(--text-brand); }
+.ward-btn--ghost:hover { background:var(--brand-softer); }
+.ward-btn--danger { background:var(--danger); color:#fff; }
+.ward-btn--danger:hover { background:var(--rose-700); }
+.ward-btn--success { background:var(--success); color:#fff; }
+.ward-btn--success:hover { background:var(--leaf-700); }
+.ward-btn--warm { background:var(--apricot-400); color:var(--ward-purple-900); box-shadow:var(--shadow-1); }
+.ward-btn--warm:hover { background:var(--apricot-500); }
+.ward-btn--full { width:100%; }
+
+/* ---- Card ---- */
+.ward-card { background:var(--surface-card); border-radius:var(--radius-lg); border:var(--border-w) solid var(--border-soft); box-shadow:var(--shadow-1); padding:var(--space-5); }
+.ward-card--soft { background:var(--surface-soft); border-color:var(--ward-purple-100); box-shadow:none; }
+.ward-card--flat { box-shadow:none; }
+.ward-card--child { border-radius:var(--radius-2xl); padding:var(--space-6); box-shadow:var(--shadow-2); border-color:transparent; }
+.ward-card--interactive { cursor:pointer; transition:transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out); }
+.ward-card--interactive:hover { box-shadow:var(--shadow-2); transform:translateY(-2px); }
+
+/* ---- Badge ---- */
+.ward-badge { display:inline-flex; align-items:center; gap:5px; border-radius:var(--radius-pill); font-family:var(--font-body);
+  font-size:var(--text-xs); font-weight:var(--weight-semibold); padding:3px 10px; line-height:1.5; white-space:nowrap; }
+.ward-badge--brand { background:var(--brand-soft); color:var(--text-on-soft); }
+.ward-badge--neutral { background:var(--ink-100); color:var(--ink-600); }
+.ward-badge--success { background:var(--success-bg); color:var(--success-fg); }
+.ward-badge--warning { background:var(--warning-bg); color:var(--warning-fg); }
+.ward-badge--danger { background:var(--danger-bg); color:var(--danger-fg); }
+.ward-badge--info { background:var(--info-bg); color:var(--info-fg); }
+.ward-badge--apricot { background:var(--apricot-100); color:var(--apricot-600); }
+
+/* ---- AI trust badge ---- */
+.ward-trust { display:inline-flex; align-items:center; gap:6px; border-radius:var(--radius-pill); font-family:var(--font-body);
+  font-size:var(--text-xs); font-weight:var(--weight-semibold); padding:4px 12px; line-height:1.5; white-space:nowrap; }
+.ward-trust--draft { background:var(--trust-draft-bg); color:var(--trust-draft-fg); border:var(--border-w-strong) dashed var(--trust-draft-border); }
+.ward-trust--approved { background:var(--trust-approved-bg); color:var(--trust-approved-fg); border:var(--border-w-strong) solid var(--trust-approved-border); }
+
+/* ---- Spark ---- */
+.ward-spark { display:inline-flex; flex-shrink:0; }
+.ward-spark--idle svg { animation:ward-spark-idle 2.8s var(--ease-in-out) infinite; }
+.ward-spark--thinking svg { animation:ward-spark-thinking 1.6s linear infinite; }
+.ward-spark--success svg { animation:ward-spark-success 500ms var(--ease-pop) both; }
+.ward-spark--glow svg { filter:drop-shadow(0 0 6px var(--spark-glow)); }
+
+/* ---- Avatar ---- */
+.ward-avatar { display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; border-radius:50%; overflow:hidden;
+  font-family:var(--font-body); font-weight:var(--weight-bold); color:var(--text-on-soft); user-select:none; }
+.ward-avatar img { width:100%; height:100%; object-fit:cover; }
+
+/* ---- Field (input/textarea) ---- */
+.ward-field { display:flex; flex-direction:column; gap:6px; font-family:var(--font-body); }
+.ward-field__label { font-size:var(--text-sm); font-weight:var(--weight-semibold); color:var(--text-strong); }
+.ward-field__control { width:100%; font-family:inherit; font-size:var(--text-base); color:var(--text-strong); background:var(--surface-card);
+  border:var(--border-w-strong) solid var(--border-soft); border-radius:var(--radius-md); padding:10px 14px; min-height:var(--tap-min);
+  transition:border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out); }
+.ward-field__control::placeholder { color:var(--ink-400); }
+.ward-field__control:hover { border-color:var(--border-strong); }
+.ward-field__control:focus { outline:none; border-color:var(--brand); box-shadow:var(--shadow-focus); }
+.ward-field__hint { font-size:var(--text-xs); color:var(--text-muted); }
+textarea.ward-field__control { resize:vertical; min-height:96px; line-height:var(--leading-normal); }
+
+/* ---- Select ---- */
+.ward-select { display:flex; flex-direction:column; gap:6px; font-family:var(--font-body); }
+.ward-select__label { font-size:var(--text-sm); font-weight:var(--weight-semibold); color:var(--text-strong); }
+.ward-select__wrap { position:relative; display:flex; }
+.ward-select__control { appearance:none; width:100%; font-family:inherit; font-size:var(--text-base); color:var(--text-strong);
+  background:var(--surface-card); border:var(--border-w-strong) solid var(--border-soft); border-radius:var(--radius-md);
+  padding-block:10px; padding-inline-start:14px; padding-inline-end:38px; min-height:var(--tap-min); cursor:pointer;
+  transition:border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out); }
+.ward-select__control:hover { border-color:var(--border-strong); }
+.ward-select__control:focus { outline:none; border-color:var(--brand); box-shadow:var(--shadow-focus); }
+.ward-select__chev { position:absolute; inset-inline-end:14px; inset-block-start:50%; transform:translateY(-50%); pointer-events:none; color:var(--ink-400); display:flex; }

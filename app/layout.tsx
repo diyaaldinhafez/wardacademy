@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Nunito, Baloo_2, IBM_Plex_Sans_Arabic } from "next/font/google";
 import "./globals.css";
+import "./ward.css";
 import LanguageProvider from "@/components/LanguageProvider";
 
 // English body — Nunito (clean, friendly)
