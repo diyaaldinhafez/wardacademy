@@ -5,11 +5,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-// The teacher workspace is English / LTR (PRD §7), independent of the marketing
-// site's Arabic / RTL shell.
+// Ward identity: Arabic / RTL chrome; English is kept only for the learning
+// content itself (items, questions).
 export default function StudioLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div dir="ltr" lang="en" className="min-h-screen bg-slate-50 font-sans text-slate-900">
+    <div dir="rtl" lang="ar" className="min-h-screen bg-cream text-ink">
       {children}
     </div>
   );

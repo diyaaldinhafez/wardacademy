@@ -3,40 +3,30 @@
 import { useActionState } from "react";
 import { login } from "@/app/studio/actions";
 
+const field = "rounded-2xl border border-brand-100 bg-white px-4 py-3 text-ink outline-none transition-colors focus:border-brand-400";
+
 export default function LoginForm() {
   const [state, action, pending] = useActionState(login, undefined);
 
   return (
     <form action={action} className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-        Email
-        <input
-          name="email"
-          type="email"
-          required
-          autoComplete="email"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-slate-500"
-        />
+      <label className="flex flex-col gap-1.5 text-sm font-semibold text-ink-soft">
+        البريد الإلكتروني
+        <input name="email" type="email" required autoComplete="email" dir="ltr" className={field} />
       </label>
-      <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-        Password
-        <input
-          name="password"
-          type="password"
-          required
-          autoComplete="current-password"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-slate-500"
-        />
+      <label className="flex flex-col gap-1.5 text-sm font-semibold text-ink-soft">
+        كلمة المرور
+        <input name="password" type="password" required autoComplete="current-password" dir="ltr" className={field} />
       </label>
 
-      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state?.error && <p className="text-sm font-semibold text-red-600">{state.error}</p>}
 
       <button
         type="submit"
         disabled={pending}
-        className="mt-2 rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+        className="mt-2 inline-flex h-12 items-center justify-center rounded-full bg-brand px-6 font-semibold text-white shadow-ward-1 transition-all hover:bg-brand-600 active:scale-[0.98] disabled:opacity-60"
       >
-        {pending ? "Signing in…" : "Sign in"}
+        {pending ? "جارٍ الدخول…" : "دخول"}
       </button>
     </form>
   );
