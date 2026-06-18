@@ -228,6 +228,40 @@ export async function generatePlacementQuestions(levels: string[]): Promise<Plac
   return out.questions ?? [];
 }
 
+/** Generate a tailored placement test for a lead's student (grade + declared level). */
+export async function generateLeadTest(input: {
+  grade?: string | null;
+  level?: string | null;
+  count?: number;
+}): Promise<PlacementQuestion[]> {
+  const count = input.count ?? 10;
+  const res = await client().messages.create({
+    model: MODEL,
+    max_tokens: 2500,
+    system:
+      `You write an English placement test for a child aged 9–13. Produce ${count} original multiple-choice ` +
+      "questions tailored to the student's school grade and declared English level, spanning a RANGE of " +
+      "difficulty around that level (some easier, some harder) so the result calibrates their TRUE level. " +
+      "Each question has exactly 4 options, the correct option's exact text as the answer, and a CEFR level " +
+      "tag. Invent fresh, age-appropriate content — never copy published material. Return via emit_placement.",
+    tools: [placementTool],
+    tool_choice: { type: "tool", name: "emit_placement" },
+    messages: [
+      {
+        role: "user",
+        content: `Student grade: "${input.grade ?? "unknown"}". Declared English level: "${input.level ?? "unknown"}". Generate ${count} questions.`,
+      },
+    ],
+  });
+
+  const toolUse = res.content.find(
+    (b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === "emit_placement",
+  );
+  if (!toolUse) throw new Error("Lead test generation returned nothing");
+  const out = toolUse.input as { questions: PlacementQuestion[] };
+  return out.questions ?? [];
+}
+
 export type PlanObjective = { description: string; level: string };
 export type GeneratedPlan = { title: string; items: PlanObjective[] };
 

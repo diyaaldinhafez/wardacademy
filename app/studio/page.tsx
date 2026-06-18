@@ -20,6 +20,7 @@ import SubmitButton from "@/components/studio/SubmitButton";
 import ScheduleForm from "@/components/studio/ScheduleForm";
 import { bloomStage } from "@/lib/progress";
 import { fmtUTC } from "@/lib/datetime";
+import Onboarding from "./onboarding";
 
 type EmbeddedObjective = { description?: string; level?: string };
 type ProgRow = {
@@ -137,6 +138,8 @@ export default async function StudioPage() {
           This account is not an instructor, so generation is disabled.
         </p>
       )}
+
+      {isInstructor && <Onboarding />}
 
       {/* Objectives → generate */}
       <section className="mb-10">

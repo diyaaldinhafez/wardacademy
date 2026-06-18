@@ -8,6 +8,7 @@ import {
   generateSessionReportDraft,
   generatePlacementQuestions,
   generatePlan,
+  generateLeadTest,
 } from "@/lib/generation/service";
 import { homePathForRoles } from "@/lib/roles";
 import type { ItemFormat, Difficulty } from "@/lib/items";
@@ -404,6 +405,97 @@ export async function updateReport(formData: FormData) {
     .from("session_reports")
     .update({ summary, strengths: strengths || null, improve: improve || null })
     .eq("id", reportId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/studio");
+}
+
+/** Instructor opens an intro-session time slot for booking. */
+export async function addSlot(formData: FormData) {
+  const startsAt = String(formData.get("startsAt") ?? "");
+  const duration = Number(formData.get("duration") ?? 30);
+  if (!startsAt) throw new Error("اختر وقتاً.");
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/studio/login");
+  const { data: profile } = await supabase.from("profiles").select("tenant_id, roles").eq("id", user.id).single();
+  if (!profile || !(profile.roles as string[]).includes("instructor")) throw new Error("للمعلّم فقط.");
+
+  const { error } = await supabase.from("availability_slots").insert({
+    tenant_id: profile.tenant_id,
+    instructor_id: user.id,
+    starts_at: startsAt,
+    duration_minutes: duration,
+    status: "open",
+  });
+  if (error) throw new Error(error.code === "23505" ? "هذا الوقت مُضافٌ مسبقاً." : error.message);
+  revalidatePath("/studio");
+}
+
+export async function removeSlot(formData: FormData) {
+  const id = String(formData.get("slotId") ?? "");
+  const supabase = await createClient();
+  const { error } = await supabase.from("availability_slots").delete().eq("id", id).eq("status", "open");
+  if (error) throw new Error(error.message);
+  revalidatePath("/studio");
+}
+
+/** Generate a tailored placement test for a lead (draft → teacher reviews → approves). */
+export async function generateLeadTestAction(formData: FormData) {
+  const leadId = String(formData.get("leadId") ?? "");
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/studio/login");
+  const { data: profile } = await supabase.from("profiles").select("tenant_id, roles").eq("id", user.id).single();
+  if (!profile || !(profile.roles as string[]).includes("instructor")) throw new Error("للمعلّم فقط.");
+
+  const { data: lead } = await supabase
+    .from("leads")
+    .select("id, tenant_id, student_grade, student_level")
+    .eq("id", leadId)
+    .single();
+  if (!lead) throw new Error("الطلب غير موجود.");
+
+  const questions = await generateLeadTest({ grade: lead.student_grade, level: lead.student_level, count: 10 });
+  if (!questions.length) throw new Error("تعذّر توليد الاختبار.");
+
+  const { data: test, error } = await supabase
+    .from("lead_tests")
+    .insert({ tenant_id: lead.tenant_id, lead_id: lead.id, status: "draft", created_by: user.id })
+    .select("id")
+    .single();
+  if (error || !test) throw new Error(error?.message ?? "تعذّر الإنشاء.");
+
+  const rows = questions.map((q, i) => ({
+    lead_test_id: test.id,
+    tenant_id: lead.tenant_id,
+    level: q.level,
+    format: "multiple_choice",
+    prompt: q.prompt,
+    content: { options: q.options },
+    answer: q.answer,
+    position: i,
+  }));
+  const { error: qErr } = await supabase.from("lead_test_questions").insert(rows);
+  if (qErr) throw new Error(qErr.message);
+
+  await supabase.from("leads").update({ status: "testing" }).eq("id", leadId);
+  revalidatePath("/studio");
+}
+
+/** Approve a draft lead test and make it shareable (generates a signed token). */
+export async function approveLeadTestAction(formData: FormData) {
+  const testId = String(formData.get("testId") ?? "");
+  const supabase = await createClient();
+  const token = crypto.randomUUID().replace(/-/g, "");
+  const { error } = await supabase
+    .from("lead_tests")
+    .update({ status: "shared", share_token: token, shared_at: new Date().toISOString() })
+    .eq("id", testId);
   if (error) throw new Error(error.message);
   revalidatePath("/studio");
 }
