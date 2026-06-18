@@ -7,6 +7,7 @@ import BudMark from "../BudMark";
 import {
   AGES,
   COUNTRIES_ALL,
+  NATIONALITIES_ALL,
   HOME_LANGUAGES,
   SCHOOL_TYPES,
   GOALS,
@@ -283,12 +284,17 @@ export default function EnrollFlow({ slots }: { slots: Slot[] }) {
             </div>
             <div>
               <label className={labelCls}>الجنسية</label>
-              <input name="guardianNationality" list="countries-list" className={field} placeholder="ابدأ الكتابة…" />
+              <input name="guardianNationality" list="nationalities-list" className={field} placeholder="ابدأ الكتابة…" />
             </div>
           </div>
           <datalist id="countries-list">
             {COUNTRIES_ALL.map((c) => (
               <option key={c} value={c} />
+            ))}
+          </datalist>
+          <datalist id="nationalities-list">
+            {NATIONALITIES_ALL.map((n) => (
+              <option key={n} value={n} />
             ))}
           </datalist>
           <div>
