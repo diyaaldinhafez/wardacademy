@@ -307,7 +307,7 @@ export async function generateIntroReport(input: IntroReportInput): Promise<stri
 
   const res = await client().messages.create({
     model: MODEL,
-    max_tokens: 700,
+    max_tokens: 2000, // Arabic is token-dense; the tool JSON must finish or it returns empty
     system:
       "تكتب تقريراً عربياً دافئاً ومهنياً لوليّ أمرٍ بعد جلسةٍ تعريفيةٍ مجانيةٍ لطفله في أكاديمية وَرد (أعمار 9–13). " +
       "ابنِ التقرير فقط على المُدخَلات المُعطاة ولا تختلق وقائع أو أرقاماً. اكتب بنبرةٍ لطيفةٍ مشجّعةٍ غير تسويقية: " +
@@ -323,7 +323,9 @@ export async function generateIntroReport(input: IntroReportInput): Promise<stri
     (b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === "emit_intro_report",
   );
   if (!toolUse) throw new Error("Intro report generation returned nothing");
-  return (toolUse.input as { report: string }).report;
+  const report = ((toolUse.input as { report?: string }).report ?? "").trim();
+  if (!report) throw new Error("لم يكتمل توليد التقرير — حاوِل مرّةً أخرى.");
+  return report;
 }
 
 export type PlanObjective = { description: string; level: string };
