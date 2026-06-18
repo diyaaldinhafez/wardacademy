@@ -6,10 +6,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { generateLeadTest } from "@/lib/generation/service";
 import { assertAdmin } from "@/lib/auth";
 import { expandSlots, type Rule } from "@/lib/availability";
-import { sendBookingConfirmation } from "@/lib/email";
+import { sendBookingConfirmation, sendAccountInvite } from "@/lib/email";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const HORIZON_WEEKS = 4;
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://ward.academy";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -103,13 +104,13 @@ export async function approveLeadTestAction(formData: FormData) {
 }
 
 /**
- * Provision real accounts from a lead: creates the guardian + the child's login,
- * links them with consent, carries over the placement level, and returns the
- * generated credentials ONCE for the admin to share (not stored).
+ * Provision real accounts from a lead: creates the guardian + the child's login
+ * (no password), links them with consent, carries over the placement level,
+ * assigns the teacher, and returns set-password invite links to share.
  */
 export async function provisionAccounts(
   _prev:
-    | { error?: string; guardian?: { email: string; password: string }; student?: { email: string; password: string } }
+    | { error?: string; guardian?: { email: string; link: string }; student?: { email: string; link: string } }
     | undefined,
   formData: FormData,
 ) {
@@ -126,19 +127,19 @@ export async function provisionAccounts(
 
   const instructorId = await defaultInstructorId(supabase, lead.tenant_id);
   const admin = createAdminClient();
-  const gPassword = "Ward-" + Math.random().toString(36).slice(2, 8);
-  const sPassword = "Ward-" + Math.random().toString(36).slice(2, 8);
 
-  const { data: g, error: ge } = await admin.auth.admin.createUser({ email: lead.guardian_email, password: gPassword, email_confirm: true });
-  if (ge) return { error: /already|exists|registered/i.test(ge.message) ? "بريد وليّ الأمر مسجَّلٌ مسبقاً." : ge.message };
+  // Create accounts WITHOUT a password; the family sets their own via an invite
+  // (set-password) link — no plaintext password is ever shown or sent.
+  const { data: g, error: ge } = await admin.auth.admin.createUser({ email: lead.guardian_email, email_confirm: true });
+  if (ge || !g.user) return { error: ge && /already|exists|registered/i.test(ge.message) ? "بريد وليّ الأمر مسجَّلٌ مسبقاً." : ge?.message ?? "تعذّر الإنشاء." };
   await admin.from("profiles").insert({ id: g.user.id, tenant_id: lead.tenant_id, full_name: lead.guardian_name, roles: ["guardian"], login_email: lead.guardian_email });
 
   const slug = (lead.student_name || "learner").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 12) || "learner";
   const sEmail = `${slug}-${Math.random().toString(36).slice(2, 7)}@learner.ward.local`;
-  const { data: s, error: se } = await admin.auth.admin.createUser({ email: sEmail, password: sPassword, email_confirm: true });
-  if (se) {
+  const { data: s, error: se } = await admin.auth.admin.createUser({ email: sEmail, email_confirm: true });
+  if (se || !s.user) {
     await admin.auth.admin.deleteUser(g.user.id);
-    return { error: se.message };
+    return { error: se?.message ?? "تعذّر إنشاء حساب الطالب." };
   }
   await admin.from("profiles").insert({ id: s.user.id, tenant_id: lead.tenant_id, full_name: lead.student_name, roles: ["learner"], is_minor: true, login_email: sEmail, assigned_instructor_id: instructorId });
   await admin.from("guardianships").insert({ tenant_id: lead.tenant_id, guardian_id: g.user.id, learner_id: s.user.id, relationship: "parent", consent_granted: true, consent_at: new Date().toISOString() });
@@ -156,9 +157,24 @@ export async function provisionAccounts(
     await admin.from("placement_tests").insert({ tenant_id: lead.tenant_id, learner_id: s.user.id, status: "completed", suggested_level: lt.suggested_level, completed_at: new Date().toISOString() });
   }
 
+  // Set-password (invite) links — emailed to the guardian; both returned for WhatsApp.
+  async function inviteLink(email: string): Promise<string> {
+    const { data, error } = await admin.auth.admin.generateLink({ type: "recovery", email, options: { redirectTo: `${SITE_URL}/set-password` } });
+    if (error) throw new Error(error.message);
+    return data.properties?.action_link ?? "";
+  }
+  const guardianLink = await inviteLink(lead.guardian_email);
+  const studentLink = await inviteLink(sEmail);
+
+  try {
+    await sendAccountInvite({ to: lead.guardian_email, name: lead.guardian_name, role: "guardian", link: guardianLink });
+  } catch (e) {
+    console.error("[provisionAccounts] invite email failed:", e);
+  }
+
   await admin.from("leads").update({ status: "converted" }).eq("id", leadId);
   revalidatePath(`/admin/registrations/${leadId}`);
-  return { guardian: { email: lead.guardian_email, password: gPassword }, student: { email: sEmail, password: sPassword } };
+  return { guardian: { email: lead.guardian_email, link: guardianLink }, student: { email: sEmail, link: studentLink } };
 }
 
 /**

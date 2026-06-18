@@ -9,21 +9,26 @@ export default function ProvisionPanel({ leadId, guardianPhone }: { leadId: stri
   if (state?.guardian && state?.student) {
     const phone = (guardianPhone ?? "").replace(/[^0-9]/g, "");
     const msg =
-      `بيانات الدخول إلى أكاديمية وَرد:\n\n` +
-      `وليّ الأمر:\nالبريد: ${state.guardian.email}\nكلمة المرور: ${state.guardian.password}\n\n` +
-      `الطالب:\nالبريد: ${state.student.email}\nكلمة المرور: ${state.student.password}\n\n` +
-      `الدخول: https://ward.academy/studio/login`;
+      `أهلاً بك في أكاديمية وَرد! جهّزنا حسابيكما. عيّن كلمة المرور والدخول عبر الروابط:\n\n` +
+      `وليّ الأمر (${state.guardian.email}):\n${state.guardian.link}\n\n` +
+      `الطالب:\n${state.student.link}`;
     const wa = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : "";
     return (
       <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 text-sm">
-        <p className="mb-2 font-semibold text-emerald-800">تمّ تجهيز الحسابات — احفظ البيانات الآن (لن تظهر ثانيةً):</p>
-        <div className="space-y-1 text-ink" dir="ltr">
-          <p>👤 {state.guardian.email} · {state.guardian.password}</p>
-          <p>🧒 {state.student.email} · {state.student.password}</p>
+        <p className="mb-2 font-semibold text-emerald-800">تمّ تجهيز الحسابات — أُرسلت دعوةٌ بالبريد لوليّ الأمر. شارك روابط تعيين كلمة المرور:</p>
+        <div className="space-y-2 text-ink">
+          <div>
+            <p className="text-xs font-medium">👤 وليّ الأمر · {state.guardian.email}</p>
+            <p className="break-all rounded bg-white p-1.5 text-xs" dir="ltr">{state.guardian.link}</p>
+          </div>
+          <div>
+            <p className="text-xs font-medium">🧒 الطالب · {state.student.email}</p>
+            <p className="break-all rounded bg-white p-1.5 text-xs" dir="ltr">{state.student.link}</p>
+          </div>
         </div>
         {wa && (
           <a href={wa} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white">
-            أرسل البيانات عبر واتساب
+            أرسل الروابط عبر واتساب
           </a>
         )}
       </div>

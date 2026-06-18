@@ -12,7 +12,8 @@
       "Bash(node --env-file=.env.local -e ' *)",
       "Bash(node -e \"console.log\\(require\\('resend/package.json'\\).version\\)\")",
       "Bash(echo \"resend installed: $\\(node -e \"console.log\\(require\\('resend/package.json'\\).version\\)\"\\)\")",
-      "Bash(pkill -f \"next dev\")"
+      "Bash(pkill -f \"next dev\")",
+      "Bash(curl -s -o /dev/null -w \"set-password: %{http_code}\\\\n\" --retry 30 --retry-delay 2 --retry-connrefused --max-time 90 http://localhost:3000/set-password)"
     ]
   }
 }
