@@ -9,7 +9,10 @@
       "Bash(npm run *)",
       "Bash(npx tsc *)",
       "Bash(npx eslint *)",
-      "Bash(node --env-file=.env.local -e ' *)"
+      "Bash(node --env-file=.env.local -e ' *)",
+      "Bash(node -e \"console.log\\(require\\('resend/package.json'\\).version\\)\")",
+      "Bash(echo \"resend installed: $\\(node -e \"console.log\\(require\\('resend/package.json'\\).version\\)\"\\)\")",
+      "Bash(pkill -f \"next dev\")"
     ]
   }
 }

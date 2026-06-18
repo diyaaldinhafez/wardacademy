@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { generateLeadTest } from "@/lib/generation/service";
 import { assertAdmin } from "@/lib/auth";
 import { expandSlots, type Rule } from "@/lib/availability";
+import { sendBookingConfirmation } from "@/lib/email";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const HORIZON_WEEKS = 4;
@@ -263,6 +264,38 @@ export async function removeException(formData: FormData) {
   const { error } = await supabase.from("availability_exceptions").delete().eq("id", id);
   if (error) throw new Error(error.message);
   await regenerateSlots();
+}
+
+/** Resend the booking-confirmation email for a lead's booked intro session. */
+export async function resendConfirmation(formData: FormData) {
+  const leadId = String(formData.get("leadId") ?? "");
+  const { supabase, profile } = await assertAdmin();
+
+  const { data: lead } = await supabase
+    .from("leads")
+    .select("guardian_name, guardian_email, student_name")
+    .eq("id", leadId)
+    .single();
+  const { data: slot } = await supabase
+    .from("availability_slots")
+    .select("starts_at")
+    .eq("lead_id", leadId)
+    .eq("status", "booked")
+    .order("starts_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!lead || !slot) throw new Error("لا يوجد موعدٌ محجوزٌ لهذا الطلب.");
+
+  const { data: tenant } = await supabase.from("tenants").select("timezone").eq("id", profile.tenant_id).maybeSingle();
+  const res = await sendBookingConfirmation({
+    to: lead.guardian_email,
+    guardianName: lead.guardian_name,
+    studentName: lead.student_name,
+    whenUTC: slot.starts_at,
+    timezone: tenant?.timezone ?? "Asia/Riyadh",
+  });
+  if (!res.ok && !res.skipped) throw new Error(res.error ?? "تعذّر الإرسال.");
+  revalidatePath(`/admin/registrations`);
 }
 
 /** Admin sign-out. */

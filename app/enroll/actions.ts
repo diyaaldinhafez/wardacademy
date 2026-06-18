@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendBookingConfirmation } from "@/lib/email";
 
 type LeadState = { error?: string; leadId?: string };
 type BookState = { error?: string; booked?: boolean; at?: string };
@@ -68,5 +69,27 @@ export async function bookSlot(_prev: BookState | undefined, formData: FormData)
   if (error || !claimed || claimed.length === 0) return { error: "حُجز هذا الموعد للتوّ — اختر غيره." };
 
   await admin.from("leads").update({ status: "booked" }).eq("id", leadId);
+
+  // Best-effort confirmation email — never fail the booking on email errors.
+  try {
+    const { data: lead } = await admin
+      .from("leads")
+      .select("tenant_id, guardian_name, guardian_email, student_name")
+      .eq("id", leadId)
+      .single();
+    if (lead) {
+      const { data: tenant } = await admin.from("tenants").select("timezone").eq("id", lead.tenant_id).single();
+      await sendBookingConfirmation({
+        to: lead.guardian_email,
+        guardianName: lead.guardian_name,
+        studentName: lead.student_name,
+        whenUTC: slot.starts_at,
+        timezone: tenant?.timezone ?? "Asia/Riyadh",
+      });
+    }
+  } catch (e) {
+    console.error("[bookSlot] confirmation email failed:", e);
+  }
+
   return { booked: true, at: slot.starts_at };
 }

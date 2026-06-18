@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { generateLeadTestAction, approveLeadTestAction } from "./actions";
+import { generateLeadTestAction, approveLeadTestAction, resendConfirmation } from "./actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import ProvisionPanel from "@/components/studio/ProvisionPanel";
 import { fmtUTC } from "@/lib/datetime";
@@ -66,6 +66,14 @@ export default async function Onboarding() {
                     </p>
                     {lead.student_notes && <p className="mt-1 text-sm text-ink-soft">ملاحظات: {lead.student_notes}</p>}
                     <p className="mt-1 text-xs text-ink-soft">الموعد: {booked ? fmtUTC(booked.starts_at) : "لم يُحجز بعد"}</p>
+                    {booked && (
+                      <form action={resendConfirmation} className="mt-1">
+                        <input type="hidden" name="leadId" value={lead.id} />
+                        <SubmitButton pendingText="…" className="text-xs font-medium text-brand-700 hover:underline">
+                          أعِد إرسال بريد التأكيد
+                        </SubmitButton>
+                      </form>
+                    )}
                   </div>
                   {phone && (
                     <a href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white">
