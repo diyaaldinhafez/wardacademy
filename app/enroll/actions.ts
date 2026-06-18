@@ -2,6 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendBookingConfirmation } from "@/lib/email";
+import { ENROLL_SKILLS } from "@/lib/enrollOptions";
 
 type LeadState = { error?: string; leadId?: string };
 type BookState = { error?: string; booked?: boolean; at?: string };
@@ -10,13 +11,27 @@ type BookState = { error?: string; booked?: boolean; at?: string };
 export async function submitLead(_prev: LeadState | undefined, formData: FormData): Promise<LeadState> {
   if (String(formData.get("company") ?? "")) return { error: "تعذّر الإرسال." }; // honeypot
 
-  const guardian_name = String(formData.get("guardianName") ?? "").trim();
-  const guardian_email = String(formData.get("guardianEmail") ?? "").trim().toLowerCase();
-  const guardian_phone = String(formData.get("guardianPhone") ?? "").trim();
-  const student_name = String(formData.get("studentName") ?? "").trim();
-  const student_grade = String(formData.get("studentGrade") ?? "").trim();
-  const student_level = String(formData.get("studentLevel") ?? "").trim();
-  const student_notes = String(formData.get("studentNotes") ?? "").trim();
+  const get = (k: string) => String(formData.get(k) ?? "").trim();
+  const guardian_name = get("guardianName");
+  const guardian_email = get("guardianEmail").toLowerCase();
+  const guardian_phone = get("guardianPhone");
+  const guardian_country = get("guardianCountry");
+  const guardian_nationality = get("guardianNationality");
+  const student_name = get("studentName");
+  const student_dob = get("studentDob");
+  const student_grade = get("studentGrade"); // stage code
+  const student_level = get("studentLevel"); // overall level code
+  const school_type = get("schoolType");
+  const learning_goal = get("learningGoal");
+  const prior_study = get("priorStudy");
+  const student_notes = get("studentNotes");
+
+  // Per-skill self-assessment → { listening, speaking, ... }.
+  const skill_levels: Record<string, string> = {};
+  for (const s of ENROLL_SKILLS) {
+    const v = get(`skill_${s}`);
+    if (v) skill_levels[s] = v;
+  }
 
   if (!guardian_name || !guardian_email || !student_name) {
     return { error: "يرجى تعبئة اسمك وبريدك واسم الطفل." };
@@ -33,9 +48,16 @@ export async function submitLead(_prev: LeadState | undefined, formData: FormDat
       guardian_name,
       guardian_email,
       guardian_phone: guardian_phone || null,
+      guardian_country: guardian_country || null,
+      guardian_nationality: guardian_nationality || null,
       student_name,
+      student_dob: student_dob || null,
       student_grade: student_grade || null,
       student_level: student_level || null,
+      school_type: school_type || null,
+      learning_goal: learning_goal || null,
+      prior_study: prior_study || null,
+      skill_levels: Object.keys(skill_levels).length ? skill_levels : null,
       student_notes: student_notes || null,
     })
     .select("id")

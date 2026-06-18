@@ -3,6 +3,17 @@ import { generateLeadTestAction, approveLeadTestAction, resendConfirmation, save
 import SubmitButton from "@/components/studio/SubmitButton";
 import ProvisionPanel from "@/components/studio/ProvisionPanel";
 import { fmtUTC } from "@/lib/datetime";
+import { labelOf, SKILL_AR, ENROLL_SKILLS } from "@/lib/enrollOptions";
+
+function ageFrom(dob?: string | null): string {
+  if (!dob) return "—";
+  const d = new Date(dob);
+  if (isNaN(d.getTime())) return "—";
+  const now = new Date();
+  let a = now.getFullYear() - d.getFullYear();
+  if (now.getMonth() < d.getMonth() || (now.getMonth() === d.getMonth() && now.getDate() < d.getDate())) a--;
+  return `${a} سنة`;
+}
 
 const SITE_URL = "https://ward.academy";
 
@@ -11,7 +22,7 @@ export default async function Onboarding() {
   const supabase = await createClient();
   const { data: leads } = await supabase
     .from("leads")
-    .select("id, guardian_name, guardian_email, guardian_phone, student_name, student_grade, student_level, student_notes, status, created_at, intro_outcome, intro_notes, intro_done_at")
+    .select("id, guardian_name, guardian_email, guardian_phone, guardian_country, guardian_nationality, student_name, student_dob, student_grade, student_level, school_type, learning_goal, prior_study, skill_levels, student_notes, status, created_at, intro_outcome, intro_notes, intro_done_at")
     .order("created_at", { ascending: false });
   const { data: slots } = await supabase
     .from("availability_slots")
@@ -58,12 +69,32 @@ export default async function Onboarding() {
                   <div>
                     <p className="font-medium text-ink">
                       {lead.student_name}{" "}
-                      <span className="text-sm text-ink-soft">· {lead.student_grade ?? "—"} · {lead.student_level ?? "—"}</span>
+                      <span className="text-sm text-ink-soft">
+                        · {labelOf("stage", lead.student_grade)} · {labelOf("level", lead.student_level)} · {ageFrom(lead.student_dob)}
+                      </span>
                     </p>
                     <p className="text-sm text-ink-soft">
                       وليّ الأمر: {lead.guardian_name} · {lead.guardian_email}
                       {lead.guardian_phone ? ` · ${lead.guardian_phone}` : ""}
                     </p>
+                    <p className="text-sm text-ink-soft">
+                      {lead.guardian_country ? `الإقامة: ${lead.guardian_country}` : ""}
+                      {lead.guardian_nationality ? ` · الجنسية: ${lead.guardian_nationality}` : ""}
+                    </p>
+                    <div className="mt-1 flex flex-wrap gap-1.5 text-xs">
+                      <span className="rounded-full bg-brand-50 px-2 py-0.5 text-ink-soft">التعليم: {labelOf("schoolType", lead.school_type)}</span>
+                      <span className="rounded-full bg-brand-50 px-2 py-0.5 text-ink-soft">الهدف: {labelOf("goal", lead.learning_goal)}</span>
+                      {lead.prior_study && <span className="rounded-full bg-brand-50 px-2 py-0.5 text-ink-soft">سابقاً: {labelOf("priorStudy", lead.prior_study)}</span>}
+                    </div>
+                    {lead.skill_levels && (
+                      <div className="mt-1 flex flex-wrap gap-1.5 text-xs">
+                        {ENROLL_SKILLS.filter((sk) => lead.skill_levels?.[sk]).map((sk) => (
+                          <span key={sk} className="rounded-full border border-brand-100 px-2 py-0.5 text-ink-soft">
+                            {SKILL_AR[sk]}: {labelOf("rating", lead.skill_levels[sk])}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     {lead.student_notes && <p className="mt-1 text-sm text-ink-soft">ملاحظات: {lead.student_notes}</p>}
                     <p className="mt-1 text-xs text-ink-soft">الموعد: {booked ? fmtUTC(booked.starts_at) : "لم يُحجز بعد"}</p>
                     {booked && (

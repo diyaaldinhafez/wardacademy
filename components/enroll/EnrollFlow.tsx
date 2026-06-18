@@ -1,9 +1,21 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { submitLead, bookSlot } from "@/app/enroll/actions";
 import FlowerMark from "../FlowerMark";
 import BudMark from "../BudMark";
+import {
+  COUNTRIES,
+  STAGES,
+  SCHOOL_TYPES,
+  GOALS,
+  LEVELS,
+  SKILL_RATINGS,
+  PRIOR_STUDY,
+  ENROLL_SKILLS,
+  SKILL_AR,
+  type Opt,
+} from "@/lib/enrollOptions";
 
 type Slot = { id: string; starts_at: string; duration_minutes: number };
 
@@ -11,6 +23,7 @@ const pill =
   "inline-flex h-12 items-center justify-center gap-2 rounded-full px-6 font-semibold transition-all active:scale-[0.97] disabled:opacity-60";
 const greenBtn = `${pill} bg-leaf text-white shadow-ward-1 hover:brightness-95`;
 const primaryBtn = `${pill} bg-brand text-white shadow-ward-1 hover:bg-brand-600`;
+const ghostBtn = `${pill} border border-brand-200 text-brand-700 hover:bg-brand-50`;
 const field =
   "w-full rounded-2xl border border-brand-100 bg-white px-4 py-3 text-ink outline-none transition-colors focus:border-brand-400";
 const labelCls = "mb-1.5 block text-sm font-semibold text-ink-soft";
@@ -28,40 +41,86 @@ function Header({ title, sub }: { title: string; sub: string }) {
   );
 }
 
+const STEP_LABELS = ["وليّ الأمر", "الطالب", "الحجز"];
+function Steps({ current }: { current: 1 | 2 | 3 }) {
+  return (
+    <div className="mb-6 flex items-center justify-center gap-2">
+      {STEP_LABELS.map((label, i) => {
+        const n = i + 1;
+        const done = n < current;
+        const active = n === current;
+        return (
+          <div key={label} className="flex items-center gap-2">
+            <span
+              className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+                active ? "bg-brand text-white" : done ? "bg-leaf text-white" : "bg-brand-50 text-ink-soft"
+              }`}
+            >
+              {done ? "✓" : n}
+            </span>
+            <span className={`text-sm font-semibold ${active ? "text-brand-700" : "text-ink-soft"}`}>{label}</span>
+            {n < 3 && <span className="mx-1 h-px w-5 bg-brand-100" />}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function RadioPills({ name, options, required, size = "md" }: { name: string; options: Opt[]; required?: boolean; size?: "md" | "sm" }) {
+  const cls =
+    size === "sm"
+      ? "cursor-pointer rounded-lg border border-brand-100 bg-white px-2.5 py-1 text-xs text-ink has-[:checked]:border-brand-400 has-[:checked]:bg-brand-50"
+      : "cursor-pointer rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink has-[:checked]:border-brand-400 has-[:checked]:bg-brand-50";
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((o) => (
+        <label key={o.value} className={cls}>
+          <input type="radio" name={name} value={o.value} required={required} className="sr-only" />
+          {o.label}
+        </label>
+      ))}
+    </div>
+  );
+}
+
 export default function EnrollFlow({ slots }: { slots: Slot[] }) {
   const [leadState, leadAction, leadPending] = useActionState(submitLead, undefined);
   const [bookState, bookAction, bookPending] = useActionState(bookSlot, undefined);
+  const [step, setStep] = useState<1 | 2>(1);
   const leadId = leadState?.leadId;
+  const current: 1 | 2 | 3 = bookState?.booked ? 3 : leadId ? 3 : step;
 
   // ---- Confirmation ----
   if (bookState?.booked) {
     return (
       <div className="mx-auto w-full max-w-md text-center">
         <FlowerMark className="mx-auto h-14 w-14" />
-        <h1 className="mt-4 text-2xl font-bold text-ink">تمّ الحجز بنجاح <BudMark size={26} /></h1>
+        <h1 className="mt-4 text-2xl font-bold text-ink">
+          تمّ الحجز بنجاح <BudMark size={26} />
+        </h1>
         <div className="mt-4 rounded-3xl border border-brand-100 bg-white p-6 shadow-ward-1">
           <p className="text-ink">
             موعد جلستك التعريفية: <span className="font-bold text-brand-700">{bookState.at ? fmtSlot(bookState.at) : ""}</span>
           </p>
           <p className="mt-3 text-sm text-ink-soft">
-            استلمنا طلبك. سيُجهّز المعلّم اختبار تحديد المستوى لطفلك ويُرسله إليك عبر واتساب قبل الجلسة، وبعد الجلسة يُنشئ حسابيكما ويُسلّمك بيانات الدخول.
+            استلمنا طلبك وأرسلنا تأكيداً إلى بريدك. سيُجهّز المعلّم اختبار تحديد المستوى ويُرسله إليك عبر واتساب قبل الجلسة، وبعد الجلسة يُنشئ حسابيكما ويُسلّمك رابط الدخول.
           </p>
         </div>
       </div>
     );
   }
 
-  // ---- Booking ----
+  // ---- Step 3: Booking ----
   if (leadId) {
     return (
       <div className="mx-auto w-full max-w-md">
+        <Steps current={3} />
         <Header title="احجز جلسةً تعريفيةً مجانية" sub="اختر وقتاً يناسبك من أوقات المعلّم المتاحة." />
         <form action={bookAction} className="rounded-3xl border border-brand-100 bg-cream/40 p-6 shadow-ward-1">
           <input type="hidden" name="leadId" value={leadId} />
           {slots.length === 0 ? (
-            <p className="text-sm text-ink-soft">
-              لا توجد أوقاتٌ متاحةٌ حالياً — سيتواصل المعلّم معك لتحديد موعدٍ مناسب.
-            </p>
+            <p className="text-sm text-ink-soft">لا توجد أوقاتٌ متاحةٌ حالياً — سيتواصل المعلّم معك لتحديد موعدٍ مناسب.</p>
           ) : (
             <div className="flex flex-col gap-2">
               {slots.map((s, i) => (
@@ -86,15 +145,36 @@ export default function EnrollFlow({ slots }: { slots: Slot[] }) {
     );
   }
 
-  // ---- Registration form (lead) ----
+  // ---- Steps 1–2: Registration (guardian → student) ----
+  function goNext(e: React.MouseEvent<HTMLButtonElement>) {
+    const form = e.currentTarget.form;
+    if (!form) return;
+    for (const n of ["guardianName", "guardianEmail", "guardianCountry"]) {
+      const el = form.elements.namedItem(n) as HTMLInputElement | HTMLSelectElement | null;
+      if (el && !el.reportValidity()) return;
+    }
+    setStep(2);
+  }
+
   return (
     <div className="mx-auto w-full max-w-md">
-      <Header title="سجّل طفلك في أكاديمية وَرد" sub="املأ النموذج واحجز جلسةً تعريفيةً مجانية — لا حاجة لإنشاء حساب الآن." />
-      <form action={leadAction} className="rounded-3xl border border-brand-100 bg-cream/40 p-6 shadow-ward-1">
-        <p className="mb-3 text-sm font-semibold text-brand-700">بياناتك (وليّ الأمر)</p>
-        <div className="flex flex-col gap-3">
+      <Steps current={current} />
+      <Header
+        title="سجّل طفلك في أكاديمية وَرد"
+        sub="نموذجٌ من ثلاث خطوات ثمّ احجز جلسةً تعريفيةً مجانية — لا حاجة لإنشاء حساب الآن."
+      />
+      <form
+        action={leadAction}
+        onKeyDown={(e) => {
+          if (step === 1 && e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") e.preventDefault();
+        }}
+        className="rounded-3xl border border-brand-100 bg-cream/40 p-6 shadow-ward-1"
+      >
+        {/* Step 1 — Guardian */}
+        <div className={step === 1 ? "flex flex-col gap-3" : "hidden"}>
+          <p className="text-sm font-semibold text-brand-700">بيانات وليّ الأمر</p>
           <div>
-            <label className={labelCls}>اسمك الكامل</label>
+            <label className={labelCls}>الاسم الكامل</label>
             <input name="guardianName" required className={field} placeholder="مثال: سارة محمد" />
           </div>
           <div>
@@ -105,44 +185,93 @@ export default function EnrollFlow({ slots }: { slots: Slot[] }) {
             <label className={labelCls}>رقم الواتساب</label>
             <input name="guardianPhone" type="tel" className={field} dir="ltr" placeholder="+9665…" />
           </div>
-        </div>
-
-        <p className="mb-3 mt-5 text-sm font-semibold text-brand-700">بيانات الطفل</p>
-        <div className="flex flex-col gap-3">
-          <div>
-            <label className={labelCls}>اسم الطفل</label>
-            <input name="studentName" required className={field} placeholder="مثال: يوسف" />
-          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>الصف</label>
-              <input name="studentGrade" className={field} placeholder="مثال: الثالث" />
-            </div>
-            <div>
-              <label className={labelCls}>مستوى الإنجليزية</label>
-              <select name="studentLevel" defaultValue="" className={field}>
+              <label className={labelCls}>بلد الإقامة</label>
+              <select name="guardianCountry" defaultValue="" required className={field}>
                 <option value="" disabled>اختر…</option>
-                <option value="beginner">مبتدئ</option>
-                <option value="intermediate">متوسّط</option>
-                <option value="advanced">متقدّم</option>
-                <option value="unknown">لا أعرف</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
               </select>
             </div>
+            <div>
+              <label className={labelCls}>الجنسية</label>
+              <input name="guardianNationality" className={field} placeholder="مثال: سعوديّة" />
+            </div>
+          </div>
+          <button type="button" onClick={goNext} className={`${primaryBtn} mt-2 w-full`}>
+            التالي ←
+          </button>
+        </div>
+
+        {/* Step 2 — Student */}
+        <div className={step === 2 ? "flex flex-col gap-4" : "hidden"}>
+          <p className="text-sm font-semibold text-brand-700">بيانات الطالب</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>اسم الطالب</label>
+              <input name="studentName" required={step === 2} className={field} placeholder="مثال: يوسف" />
+            </div>
+            <div>
+              <label className={labelCls}>تاريخ الميلاد</label>
+              <input name="studentDob" type="date" className={field} dir="ltr" />
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>المرحلة الدراسية</label>
+            <select name="studentGrade" defaultValue="" required={step === 2} className={field}>
+              <option value="" disabled>اختر المرحلة…</option>
+              {STAGES.map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>نوع التعليم الحاليّ</label>
+            <RadioPills name="schoolType" options={SCHOOL_TYPES} required={step === 2} />
+          </div>
+          <div>
+            <label className={labelCls}>هدفكم من الانضمام</label>
+            <RadioPills name="learningGoal" options={GOALS} required={step === 2} />
+          </div>
+          <div>
+            <label className={labelCls}>المستوى العامّ في الإنجليزية</label>
+            <RadioPills name="studentLevel" options={LEVELS} required={step === 2} />
+          </div>
+          <div>
+            <label className={labelCls}>قيّموا كلّ مهارة (تقديرٌ مبدئيّ)</label>
+            <div className="flex flex-col gap-2 rounded-2xl border border-brand-100 bg-white/60 p-3">
+              {ENROLL_SKILLS.map((sk) => (
+                <div key={sk} className="flex items-center justify-between gap-2">
+                  <span className="w-14 shrink-0 text-sm text-ink-soft">{SKILL_AR[sk]}</span>
+                  <RadioPills name={`skill_${sk}`} options={SKILL_RATINGS} required={step === 2} size="sm" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>هل درس الإنجليزية خارج المدرسة؟</label>
+            <RadioPills name="priorStudy" options={PRIOR_STUDY} />
           </div>
           <div>
             <label className={labelCls}>أهداف أو ملاحظات (اختياري)</label>
-            <textarea name="studentNotes" rows={3} className={field} placeholder="مثال: يحتاج تقويةً في المحادثة والقراءة." />
+            <textarea name="studentNotes" rows={2} className={field} placeholder="مثال: يحتاج تقويةً في المحادثة." />
+          </div>
+
+          {leadState?.error && <p className="text-sm font-semibold text-red-600">{leadState.error}</p>}
+          <div className="flex gap-3">
+            <button type="button" onClick={() => setStep(1)} className={`${ghostBtn} flex-1`}>
+              → السابق
+            </button>
+            <button type="submit" disabled={leadPending} className={`${primaryBtn} flex-[2]`}>
+              {leadPending ? "جارٍ الإرسال…" : "متابعة الحجز ←"}
+            </button>
           </div>
         </div>
 
         {/* honeypot */}
         <input type="text" name="company" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
-
-        {leadState?.error && <p className="mt-3 text-sm font-semibold text-red-600">{leadState.error}</p>}
-
-        <button type="submit" disabled={leadPending} className={`${primaryBtn} mt-5 w-full`}>
-          {leadPending ? "جارٍ الإرسال…" : "إرسال ومتابعة الحجز"}
-        </button>
       </form>
 
       <p className="mt-6 text-center text-sm text-ink-soft">
