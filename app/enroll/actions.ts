@@ -1,82 +1,72 @@
 "use server";
 
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-type EnrollState = { error?: string };
+type LeadState = { error?: string; leadId?: string };
+type BookState = { error?: string; booked?: boolean; at?: string };
 
-/**
- * One-shot enrolment: creates the guardian account, the child's prepared login,
- * the guardianship with consent, and (optionally) books a trial session — then
- * signs the guardian in. Done server-side (service role) so the whole journey
- * completes smoothly in one step. Placement happens later, after the session.
- */
-export async function enroll(_prev: EnrollState | undefined, formData: FormData): Promise<EnrollState> {
-  const gName = String(formData.get("gName") ?? "").trim();
-  const gEmail = String(formData.get("gEmail") ?? "").trim().toLowerCase();
-  const gPassword = String(formData.get("gPassword") ?? "");
-  const cName = String(formData.get("cName") ?? "").trim();
-  const cPassword = String(formData.get("cPassword") ?? "");
-  const consent = formData.get("consent") === "on";
-  const trialAt = String(formData.get("trialAt") ?? "");
-  // honeypot (bots fill hidden fields)
-  if (String(formData.get("company") ?? "")) return { error: "تعذّر إنشاء الحساب." };
+/** Public registration form — creates a LEAD (not an account). */
+export async function submitLead(_prev: LeadState | undefined, formData: FormData): Promise<LeadState> {
+  if (String(formData.get("company") ?? "")) return { error: "تعذّر الإرسال." }; // honeypot
 
-  if (!gName || !gEmail || gPassword.length < 8) return { error: "أدخِل اسمك وبريدك وكلمة مرور لا تقلّ عن 8 أحرف." };
-  if (!cName || cPassword.length < 6) return { error: "أدخِل اسم طفلك وكلمة مرور لا تقلّ عن 6 أحرف." };
-  if (!consent) return { error: "الموافقة على مشاركة طفلك شرطٌ للمتابعة." };
+  const guardian_name = String(formData.get("guardianName") ?? "").trim();
+  const guardian_email = String(formData.get("guardianEmail") ?? "").trim().toLowerCase();
+  const guardian_phone = String(formData.get("guardianPhone") ?? "").trim();
+  const student_name = String(formData.get("studentName") ?? "").trim();
+  const student_grade = String(formData.get("studentGrade") ?? "").trim();
+  const student_level = String(formData.get("studentLevel") ?? "").trim();
+  const student_notes = String(formData.get("studentNotes") ?? "").trim();
+
+  if (!guardian_name || !guardian_email || !student_name) {
+    return { error: "يرجى تعبئة اسمك وبريدك واسم الطفل." };
+  }
 
   const admin = createAdminClient();
   const { data: tenant } = await admin.from("tenants").select("id").eq("is_default", true).single();
   if (!tenant) return { error: "التسجيل غير متاح حالياً." };
 
-  // guardian
-  const { data: g, error: ge } = await admin.auth.admin.createUser({ email: gEmail, password: gPassword, email_confirm: true });
-  if (ge) return { error: /already|exists|registered/i.test(ge.message) ? "هذا البريد مسجَّلٌ مسبقاً." : ge.message };
-  const guardianId = g.user.id;
-  await admin.from("profiles").insert({ id: guardianId, tenant_id: tenant.id, full_name: gName, roles: ["guardian"], login_email: gEmail });
+  const { data: lead, error } = await admin
+    .from("leads")
+    .insert({
+      tenant_id: tenant.id,
+      guardian_name,
+      guardian_email,
+      guardian_phone: guardian_phone || null,
+      student_name,
+      student_grade: student_grade || null,
+      student_level: student_level || null,
+      student_notes: student_notes || null,
+    })
+    .select("id")
+    .single();
+  if (error || !lead) return { error: error?.message ?? "تعذّر الإرسال." };
 
-  // child (prepared login under a synthetic email)
-  const slug = cName.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 12) || "learner";
-  const cEmail = `${slug}-${Math.random().toString(36).slice(2, 7)}@learner.ward.local`;
-  const { data: ch, error: ce } = await admin.auth.admin.createUser({ email: cEmail, password: cPassword, email_confirm: true });
-  if (ce) {
-    await admin.auth.admin.deleteUser(guardianId); // roll back the guardian
-    return { error: ce.message };
-  }
-  const learnerId = ch.user.id;
-  await admin.from("profiles").insert({ id: learnerId, tenant_id: tenant.id, full_name: cName, roles: ["learner"], is_minor: true, login_email: cEmail });
-  await admin.from("guardianships").insert({
-    tenant_id: tenant.id,
-    guardian_id: guardianId,
-    learner_id: learnerId,
-    relationship: "parent",
-    consent_granted: true,
-    consent_at: new Date().toISOString(),
-  });
+  return { leadId: lead.id };
+}
 
-  // book the trial session with the tenant's instructor (best-effort)
-  if (trialAt) {
-    const { data: people } = await admin.from("profiles").select("id, roles").eq("tenant_id", tenant.id);
-    const instructor = (people ?? []).find((p) => ((p.roles as string[]) ?? []).includes("instructor"));
-    if (instructor) {
-      try {
-        await admin.from("sessions").insert({
-          tenant_id: tenant.id,
-          instructor_id: instructor.id,
-          learner_id: learnerId,
-          scheduled_at: trialAt,
-          duration_minutes: 30,
-          status: "scheduled",
-        });
-      } catch {
-        // time taken / invalid — enrolment still succeeds; can rebook later
-      }
-    }
-  }
+/** Book one of the teacher's open intro slots for this lead. */
+export async function bookSlot(_prev: BookState | undefined, formData: FormData): Promise<BookState> {
+  const leadId = String(formData.get("leadId") ?? "");
+  const slotId = String(formData.get("slotId") ?? "");
+  if (!leadId || !slotId) return { error: "اختر موعداً متاحاً." };
 
-  const supabase = await createClient();
-  await supabase.auth.signInWithPassword({ email: gEmail, password: gPassword });
-  redirect("/guardian");
+  const admin = createAdminClient();
+  const { data: slot } = await admin
+    .from("availability_slots")
+    .select("id, starts_at, status")
+    .eq("id", slotId)
+    .single();
+  if (!slot || slot.status !== "open") return { error: "هذا الموعد لم يعد متاحاً — اختر غيره." };
+
+  // atomic claim: only succeeds if still open
+  const { data: claimed, error } = await admin
+    .from("availability_slots")
+    .update({ status: "booked", lead_id: leadId })
+    .eq("id", slotId)
+    .eq("status", "open")
+    .select("id");
+  if (error || !claimed || claimed.length === 0) return { error: "حُجز هذا الموعد للتوّ — اختر غيره." };
+
+  await admin.from("leads").update({ status: "booked" }).eq("id", leadId);
+  return { booked: true, at: slot.starts_at };
 }

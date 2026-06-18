@@ -183,6 +183,25 @@ try {
     console.log("seeded: approved study plan");
   }
 
+  // open intro slots so the public booking calendar has options
+  if ((await cnt("availability_slots")) === 0) {
+    const slotTimes = [];
+    for (let d = 1; d <= 5; d++) {
+      for (const h of [16, 18]) {
+        const dt = new Date(Date.now() + d * 24 * 3600 * 1000);
+        dt.setUTCHours(h, 0, 0, 0);
+        slotTimes.push(dt.toISOString());
+      }
+    }
+    for (const at of slotTimes) {
+      await pg.query(
+        "insert into public.availability_slots(tenant_id,instructor_id,starts_at,duration_minutes,status) values ($1,$2,$3,30,'open') on conflict (instructor_id, starts_at) do nothing",
+        [tenantId, user.id, at],
+      );
+    }
+    console.log("seeded:", slotTimes.length, "open intro slots");
+  }
+
   console.log("\n=== Logins (http://localhost:3000/studio/login) ===");
   console.log("teacher :", EMAIL, "/", PASSWORD, "-> /studio");
   console.log("student :", LEARNER_EMAIL, "/", LEARNER_PASSWORD, "-> /learn");

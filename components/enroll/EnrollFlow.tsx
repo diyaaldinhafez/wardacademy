@@ -1,137 +1,147 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { enroll } from "@/app/enroll/actions";
+import { useActionState } from "react";
+import { submitLead, bookSlot } from "@/app/enroll/actions";
 import FlowerMark from "../FlowerMark";
+
+type Slot = { id: string; starts_at: string; duration_minutes: number };
 
 const pill =
   "inline-flex h-12 items-center justify-center gap-2 rounded-full px-6 font-semibold transition-all active:scale-[0.97] disabled:opacity-60";
-const primaryBtn = `${pill} bg-brand text-white shadow-ward-1 hover:bg-brand-600`;
 const greenBtn = `${pill} bg-leaf text-white shadow-ward-1 hover:brightness-95`;
-const softBtn = `${pill} bg-brand-100 text-brand-700 hover:bg-brand-200`;
+const primaryBtn = `${pill} bg-brand text-white shadow-ward-1 hover:bg-brand-600`;
 const field =
   "w-full rounded-2xl border border-brand-100 bg-white px-4 py-3 text-ink outline-none transition-colors focus:border-brand-400";
 const labelCls = "mb-1.5 block text-sm font-semibold text-ink-soft";
 
-const STEPS = ["وليّ الأمر", "الطفل", "الجلسة التجريبية"];
+const fmtSlot = (iso: string) =>
+  new Date(iso).toLocaleString("ar", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
 
-export default function EnrollFlow() {
-  const [state, action, pending] = useActionState(enroll, undefined);
-  const [step, setStep] = useState(0);
-  const [trialLocal, setTrialLocal] = useState("");
-  const trialUtc = trialLocal ? new Date(trialLocal).toISOString() : "";
+function Header({ title, sub }: { title: string; sub: string }) {
+  return (
+    <div className="mb-6 flex flex-col items-center text-center">
+      <FlowerMark className="h-12 w-12" />
+      <h1 className="mt-3 text-2xl font-bold text-ink">{title}</h1>
+      <p className="mt-1 text-sm text-ink-soft">{sub}</p>
+    </div>
+  );
+}
 
+export default function EnrollFlow({ slots }: { slots: Slot[] }) {
+  const [leadState, leadAction, leadPending] = useActionState(submitLead, undefined);
+  const [bookState, bookAction, bookPending] = useActionState(bookSlot, undefined);
+  const leadId = leadState?.leadId;
+
+  // ---- Confirmation ----
+  if (bookState?.booked) {
+    return (
+      <div className="mx-auto w-full max-w-md text-center">
+        <FlowerMark className="mx-auto h-14 w-14" />
+        <h1 className="mt-4 text-2xl font-bold text-ink">تمّ الحجز بنجاح 🌸</h1>
+        <div className="mt-4 rounded-3xl border border-brand-100 bg-white p-6 shadow-ward-1">
+          <p className="text-ink">
+            موعد جلستك التعريفية: <span className="font-bold text-brand-700">{bookState.at ? fmtSlot(bookState.at) : ""}</span>
+          </p>
+          <p className="mt-3 text-sm text-ink-soft">
+            استلمنا طلبك. سيُجهّز المعلّم اختبار تحديد المستوى لطفلك ويُرسله إليك عبر واتساب قبل الجلسة، وبعد الجلسة يُنشئ حسابيكما ويُسلّمك بيانات الدخول.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ---- Booking ----
+  if (leadId) {
+    return (
+      <div className="mx-auto w-full max-w-md">
+        <Header title="احجز جلسةً تعريفيةً مجانية" sub="اختر وقتاً يناسبك من أوقات المعلّم المتاحة." />
+        <form action={bookAction} className="rounded-3xl border border-brand-100 bg-cream/40 p-6 shadow-ward-1">
+          <input type="hidden" name="leadId" value={leadId} />
+          {slots.length === 0 ? (
+            <p className="text-sm text-ink-soft">
+              لا توجد أوقاتٌ متاحةٌ حالياً — سيتواصل المعلّم معك لتحديد موعدٍ مناسب.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {slots.map((s, i) => (
+                <label
+                  key={s.id}
+                  className="flex cursor-pointer items-center gap-3 rounded-2xl border border-brand-100 bg-white px-4 py-3 text-sm has-[:checked]:border-brand-400 has-[:checked]:bg-brand-50"
+                >
+                  <input type="radio" name="slotId" value={s.id} required defaultChecked={i === 0} className="h-4 w-4 accent-[#7F55D9]" />
+                  <span className="text-ink">
+                    {fmtSlot(s.starts_at)} · {s.duration_minutes} دقيقة
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+          {bookState?.error && <p className="mt-3 text-sm font-semibold text-red-600">{bookState.error}</p>}
+          <button type="submit" disabled={bookPending || slots.length === 0} className={`${greenBtn} mt-4 w-full`}>
+            {bookPending ? "جارٍ الحجز…" : "تأكيد الحجز"}
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  // ---- Registration form (lead) ----
   return (
     <div className="mx-auto w-full max-w-md">
-      <div className="mb-6 flex flex-col items-center text-center">
-        <FlowerMark className="h-12 w-12" />
-        <h1 className="mt-3 text-2xl font-bold text-ink">أنشئ حساب طفلك</h1>
-        <p className="mt-1 text-sm text-ink-soft">سجّل، احجز جلسةً تجريبية مجانية، وابدأ رحلة طفلك.</p>
-      </div>
-
-      {/* step indicator */}
-      <div className="mb-5 flex items-center justify-center gap-2">
-        {STEPS.map((s, i) => (
-          <div key={s} className="flex items-center gap-2">
-            <span
-              className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold ${
-                i <= step ? "bg-brand text-white" : "bg-brand-100 text-brand-400"
-              }`}
-            >
-              {i + 1}
-            </span>
-            {i < STEPS.length - 1 && <span className="h-px w-6 bg-brand-100" />}
-          </div>
-        ))}
-      </div>
-
-      <form
-        action={action}
-        onKeyDown={(e) => {
-          // Enter advances steps instead of submitting early
-          if (e.key === "Enter" && step < 2) {
-            e.preventDefault();
-            setStep((s) => Math.min(2, s + 1));
-          }
-        }}
-        className="rounded-3xl border border-brand-100 bg-cream/40 p-6 shadow-ward-1"
-      >
-        {/* Step 1 — guardian */}
-        <div className={step === 0 ? "flex flex-col gap-4" : "hidden"}>
-          <p className="text-sm font-semibold text-brand-700">بياناتك (وليّ الأمر)</p>
+      <Header title="سجّل طفلك في أكاديمية وَرد" sub="املأ النموذج واحجز جلسةً تعريفيةً مجانية — لا حاجة لإنشاء حساب الآن." />
+      <form action={leadAction} className="rounded-3xl border border-brand-100 bg-cream/40 p-6 shadow-ward-1">
+        <p className="mb-3 text-sm font-semibold text-brand-700">بياناتك (وليّ الأمر)</p>
+        <div className="flex flex-col gap-3">
           <div>
             <label className={labelCls}>اسمك الكامل</label>
-            <input name="gName" className={field} placeholder="مثال: سارة محمد" />
+            <input name="guardianName" required className={field} placeholder="مثال: سارة محمد" />
           </div>
           <div>
             <label className={labelCls}>البريد الإلكتروني</label>
-            <input name="gEmail" type="email" autoComplete="email" className={field} placeholder="you@example.com" dir="ltr" />
+            <input name="guardianEmail" type="email" required className={field} dir="ltr" placeholder="you@example.com" />
           </div>
           <div>
-            <label className={labelCls}>كلمة المرور (8 أحرف فأكثر)</label>
-            <input name="gPassword" type="password" autoComplete="new-password" className={field} dir="ltr" />
+            <label className={labelCls}>رقم الواتساب</label>
+            <input name="guardianPhone" type="tel" className={field} dir="ltr" placeholder="+9665…" />
           </div>
-          <button type="button" className={`${primaryBtn} mt-1`} onClick={() => setStep(1)}>
-            التالي
-          </button>
         </div>
 
-        {/* Step 2 — child + consent */}
-        <div className={step === 1 ? "flex flex-col gap-4" : "hidden"}>
-          <p className="text-sm font-semibold text-brand-700">بيانات طفلك</p>
+        <p className="mb-3 mt-5 text-sm font-semibold text-brand-700">بيانات الطفل</p>
+        <div className="flex flex-col gap-3">
           <div>
             <label className={labelCls}>اسم الطفل</label>
-            <input name="cName" className={field} placeholder="مثال: يوسف" />
+            <input name="studentName" required className={field} placeholder="مثال: يوسف" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>الصف</label>
+              <input name="studentGrade" className={field} placeholder="مثال: الثالث" />
+            </div>
+            <div>
+              <label className={labelCls}>مستوى الإنجليزية</label>
+              <select name="studentLevel" defaultValue="" className={field}>
+                <option value="" disabled>اختر…</option>
+                <option value="beginner">مبتدئ</option>
+                <option value="intermediate">متوسّط</option>
+                <option value="advanced">متقدّم</option>
+                <option value="unknown">لا أعرف</option>
+              </select>
+            </div>
           </div>
           <div>
-            <label className={labelCls}>كلمة مرور دخول الطفل (6 أحرف فأكثر)</label>
-            <input name="cPassword" type="text" className={field} dir="ltr" />
-            <p className="mt-1 text-xs text-ink-soft">يُنشأ لطفلك دخولٌ بسيطٌ خاصٌّ به (بريده يظهر لك في لوحتك).</p>
-          </div>
-          <label className="flex items-start gap-2 rounded-2xl bg-brand-50 p-3 text-sm text-ink">
-            <input name="consent" type="checkbox" className="mt-1 h-4 w-4 accent-[#7F55D9]" />
-            <span>أوافق على إنشاء حسابٍ لطفلي ومشاركة تقدّمه التعليميّ معي ومع معلّمه.</span>
-          </label>
-          <div className="mt-1 flex gap-2">
-            <button type="button" className={softBtn} onClick={() => setStep(0)}>
-              السابق
-            </button>
-            <button type="button" className={`${primaryBtn} flex-1`} onClick={() => setStep(2)}>
-              التالي
-            </button>
+            <label className={labelCls}>أهداف أو ملاحظات (اختياري)</label>
+            <textarea name="studentNotes" rows={3} className={field} placeholder="مثال: يحتاج تقويةً في المحادثة والقراءة." />
           </div>
         </div>
 
-        {/* Step 3 — book trial */}
-        <div className={step === 2 ? "flex flex-col gap-4" : "hidden"}>
-          <p className="text-sm font-semibold text-brand-700">احجز الجلسة التجريبية المجانية</p>
-          <div>
-            <label className={labelCls}>اختر وقتاً يناسبك</label>
-            <input
-              type="datetime-local"
-              value={trialLocal}
-              onChange={(e) => setTrialLocal(e.target.value)}
-              className={field}
-              dir="ltr"
-            />
-            <input type="hidden" name="trialAt" value={trialUtc} />
-            <p className="mt-1 text-xs text-ink-soft">اختياريّ — يمكنك تحديد الوقت لاحقاً مع المعلّم. اختبار تحديد المستوى يكون بعد الجلسة.</p>
-          </div>
+        {/* honeypot */}
+        <input type="text" name="company" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
 
-          {/* honeypot */}
-          <input type="text" name="company" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
+        {leadState?.error && <p className="mt-3 text-sm font-semibold text-red-600">{leadState.error}</p>}
 
-          {state?.error && <p className="text-sm font-semibold text-red-600">{state.error}</p>}
-
-          <div className="mt-1 flex gap-2">
-            <button type="button" className={softBtn} onClick={() => setStep(1)}>
-              السابق
-            </button>
-            <button type="submit" disabled={pending} className={`${greenBtn} flex-1`}>
-              {pending ? "جارٍ الإنشاء…" : "أنشئ الحساب وابدأ"}
-            </button>
-          </div>
-        </div>
+        <button type="submit" disabled={leadPending} className={`${primaryBtn} mt-5 w-full`}>
+          {leadPending ? "جارٍ الإرسال…" : "إرسال ومتابعة الحجز"}
+        </button>
       </form>
 
       <p className="mt-6 text-center text-sm text-ink-soft">
