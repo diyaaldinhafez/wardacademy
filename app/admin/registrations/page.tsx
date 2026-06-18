@@ -83,18 +83,24 @@ export default async function RegistrationsPage({
           const phone = (l.guardian_phone ?? "").replace(/[^0-9]/g, "");
           return (
             <Card key={l.id} style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-              <Avatar name={l.student_name ?? "?"} size={40} />
-              <div style={{ flex: 1, minWidth: 180 }}>
-                <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>
-                  {l.student_name}{" "}
-                  <span style={{ fontWeight: 400, fontSize: 13, color: "var(--text-muted)" }}>
-                    · {l.student_age ? `${l.student_age} سنة` : "—"} · {labelOf("level", l.student_level)}
-                  </span>
+              <Link
+                href={`/admin/registrations/${l.id}`}
+                title="عرض كلّ بيانات الطلب"
+                style={{ display: "flex", alignItems: "center", gap: 14, flex: 1, minWidth: 180, textDecoration: "none" }}
+              >
+                <Avatar name={l.student_name ?? "?"} size={40} />
+                <div>
+                  <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>
+                    {l.student_name}{" "}
+                    <span style={{ fontWeight: 400, fontSize: 13, color: "var(--text-muted)" }}>
+                      · {l.student_age ? `${l.student_age} سنة` : "—"} · {labelOf("level", l.student_level)}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
+                    {l.guardian_name} {booked ? `· موعد: ${fmtUTC(booked)}` : "· بلا حجز"}
+                  </div>
                 </div>
-                <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
-                  {l.guardian_name} {booked ? `· موعد: ${fmtUTC(booked)}` : "· بلا حجز"}
-                </div>
-              </div>
+              </Link>
               <Badge tone={LEAD_STATUS_TONE[l.status] ?? "neutral"}>{LEAD_STATUS_AR[l.status] ?? l.status}</Badge>
               {phone && (
                 <a href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer" className="ward-btn ward-btn--ghost ward-btn--sm">
