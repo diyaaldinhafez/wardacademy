@@ -60,6 +60,27 @@ export const ENGLISH_USE: Opt[] = [
   { value: "rarely", label: "نادراً — لغته اليومية غير الإنجليزية" },
 ];
 
+export const RELATIONS: Opt[] = [
+  { value: "father", label: "الأب" },
+  { value: "mother", label: "الأمّ" },
+  { value: "guardian", label: "وصيّ" },
+  { value: "other", label: "آخر" },
+];
+
+export const REFERRALS: Opt[] = [
+  { value: "instagram", label: "إنستغرام" },
+  { value: "friend", label: "صديق أو معرفة" },
+  { value: "search", label: "بحث Google" },
+  { value: "school", label: "المدرسة" },
+  { value: "other", label: "مصدرٌ آخر" },
+];
+
+export const ONLINE_READY: Opt[] = [
+  { value: "ready", label: "نعم، جهاز وإنترنت مستقرّ" },
+  { value: "partial", label: "جزئياً (جهازٌ مشترك/إنترنت ضعيف)" },
+  { value: "unsure", label: "غير متأكّد" },
+];
+
 // The four assessed skills on the enrolment form (vocabulary excluded here).
 export const ENROLL_SKILLS: Skill[] = ["listening", "speaking", "reading", "writing"];
 export { SKILL_AR };
@@ -74,6 +95,9 @@ export const LABELS: Record<string, Record<string, string>> = {
   rating: toMap(SKILL_RATINGS),
   priorStudy: toMap(PRIOR_STUDY),
   englishUse: toMap(ENGLISH_USE),
+  relation: toMap(RELATIONS),
+  referral: toMap(REFERRALS),
+  onlineReady: toMap(ONLINE_READY),
 };
 export const labelOf = (group: keyof typeof LABELS, value?: string | null) =>
   value ? LABELS[group]?.[value] ?? value : "—";

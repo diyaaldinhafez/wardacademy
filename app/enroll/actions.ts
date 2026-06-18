@@ -17,6 +17,10 @@ export async function submitLead(_prev: LeadState | undefined, formData: FormDat
   const guardian_phone = get("guardianPhone");
   const guardian_country = get("guardianCountry");
   const guardian_nationality = get("guardianNationality");
+  const guardian_relation = get("guardianRelation");
+  const referral_source = get("referralSource");
+  const online_ready = get("onlineReady");
+  const consent = formData.get("consent") === "1";
   const student_name = get("studentName");
   const student_dob = get("studentDob");
   const student_grade = get("studentGrade"); // stage code
@@ -38,6 +42,9 @@ export async function submitLead(_prev: LeadState | undefined, formData: FormDat
   if (!guardian_name || !guardian_email || !student_name) {
     return { error: "يرجى تعبئة اسمك وبريدك واسم الطفل." };
   }
+  if (!consent) {
+    return { error: "يرجى الموافقة على معالجة البيانات للمتابعة." };
+  }
 
   const admin = createAdminClient();
   const { data: tenant } = await admin.from("tenants").select("id").eq("is_default", true).single();
@@ -52,6 +59,11 @@ export async function submitLead(_prev: LeadState | undefined, formData: FormDat
       guardian_phone: guardian_phone || null,
       guardian_country: guardian_country || null,
       guardian_nationality: guardian_nationality || null,
+      guardian_relation: guardian_relation || null,
+      referral_source: referral_source || null,
+      online_ready: online_ready || null,
+      consent_accepted: consent,
+      consent_at: consent ? new Date().toISOString() : null,
       student_name,
       student_dob: student_dob || null,
       student_grade: student_grade || null,

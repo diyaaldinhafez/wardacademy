@@ -12,6 +12,9 @@ import {
   SKILL_RATINGS,
   PRIOR_STUDY,
   ENGLISH_USE,
+  RELATIONS,
+  REFERRALS,
+  ONLINE_READY,
   ENROLL_SKILLS,
   SKILL_AR,
   type Opt,
@@ -237,9 +240,20 @@ export default function EnrollFlow({ slots }: { slots: Slot[] }) {
         {/* Step 2 — Guardian */}
         <div className={step === 2 ? "flex flex-col gap-3" : "hidden"}>
           <p className="text-sm font-semibold text-brand-700">بيانات وليّ الأمر</p>
-          <div>
-            <label className={labelCls}>الاسم الكامل</label>
-            <input name="guardianName" required={step === 2} className={field} placeholder="مثال: سارة محمد" />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>الاسم الكامل</label>
+              <input name="guardianName" required={step === 2} className={field} placeholder="مثال: سارة محمد" />
+            </div>
+            <div>
+              <label className={labelCls}>صلة القرابة</label>
+              <select name="guardianRelation" defaultValue="" className={field}>
+                <option value="" disabled>اختر…</option>
+                {RELATIONS.map((r) => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
           <div>
             <label className={labelCls}>البريد الإلكتروني</label>
@@ -259,6 +273,23 @@ export default function EnrollFlow({ slots }: { slots: Slot[] }) {
               <input name="guardianNationality" className={field} placeholder="مثال: سعوديّة" />
             </div>
           </div>
+          <div>
+            <label className={labelCls}>كيف عرفتم عنّا؟</label>
+            <select name="referralSource" defaultValue="" className={field}>
+              <option value="" disabled>اختر…</option>
+              {REFERRALS.map((r) => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>جاهزية الجلسة أونلاين (جهاز + إنترنت)</label>
+            <RadioPills name="onlineReady" options={ONLINE_READY} required={step === 2} />
+          </div>
+          <label className="flex cursor-pointer items-start gap-2 rounded-2xl border border-brand-100 bg-white p-3 text-sm text-ink has-[:checked]:border-brand-400 has-[:checked]:bg-brand-50">
+            <input type="checkbox" name="consent" value="1" required={step === 2} className="mt-0.5 h-4 w-4 accent-[#7F55D9]" />
+            <span>أوافق على معالجة بيانات طفلي لغرض التسجيل والتعليم وفق سياسة الخصوصية.</span>
+          </label>
 
           {leadState?.error && <p className="text-sm font-semibold text-red-600">{leadState.error}</p>}
           <div className="flex gap-3">
