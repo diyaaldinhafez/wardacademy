@@ -262,6 +262,70 @@ export async function generateLeadTest(input: {
   return out.questions ?? [];
 }
 
+export type IntroReportInput = {
+  studentName: string;
+  engagement?: string; // Arabic label
+  strengths?: string[]; // Arabic labels
+  focus?: string[]; // Arabic labels
+  level?: string;
+  decision: "enroll" | "considering" | "declined";
+  teacherNote?: string;
+};
+
+const introTool: Anthropic.Tool = {
+  name: "emit_intro_report",
+  description: "Return a warm Arabic intro-session report for the guardian.",
+  input_schema: {
+    type: "object",
+    properties: { report: { type: "string", description: "The full report text in Arabic." } },
+    required: ["report"],
+  },
+};
+
+const DECISION_GUIDE: Record<string, string> = {
+  enroll:
+    "العائلة قرّرت التسجيل في الجلسة. اختم بلُطفٍ بأنّ الخطوة التالية هي تجهيز حسابَي وليّ الأمر والطالب ودعوتهم للدخول للمنصّة قريباً.",
+  considering:
+    "العائلة ما زالت تفكّر. اختم بدعوةٍ دافئةٍ غير ضاغطةٍ لاتخاذ خطوة التسجيل، مع الاستعداد للإجابة عن أيّ سؤال.",
+  declined:
+    "العائلة ليست مهتمّةً الآن. اختم بشكرٍ راقٍ وبابٍ مفتوحٍ للعودة متى رغبوا — دون أيّ ضغطٍ أو دعوةٍ للتسجيل.",
+};
+
+/** Draft a warm Arabic intro-session report for the guardian (operator edits + sends). */
+export async function generateIntroReport(input: IntroReportInput): Promise<string> {
+  const lines = [
+    `اسم الطالب: ${input.studentName}`,
+    input.engagement ? `تفاعل الطفل: ${input.engagement}` : "",
+    input.strengths?.length ? `نقاط القوّة: ${input.strengths.join("، ")}` : "",
+    input.focus?.length ? `أولويات التركيز: ${input.focus.join("، ")}` : "",
+    input.level ? `المستوى المؤكَّد: ${input.level}` : "",
+    input.teacherNote ? `ملاحظة المعلّم: ${input.teacherNote}` : "",
+    `توجيه الخاتمة: ${DECISION_GUIDE[input.decision] ?? DECISION_GUIDE.considering}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const res = await client().messages.create({
+    model: MODEL,
+    max_tokens: 700,
+    system:
+      "تكتب تقريراً عربياً دافئاً ومهنياً لوليّ أمرٍ بعد جلسةٍ تعريفيةٍ مجانيةٍ لطفله في أكاديمية وَرد (أعمار 9–13). " +
+      "ابنِ التقرير فقط على المُدخَلات المُعطاة ولا تختلق وقائع أو أرقاماً. اكتب بنبرةٍ لطيفةٍ مشجّعةٍ غير تسويقية: " +
+      "ابدأ بشكرٍ على الحضور، ثمّ ملخّصٌ موجزٌ وإيجابيٌّ للجلسة يُبرز نقاط قوّة الطفل، ثمّ نقطةٌ أو نقطتان للتركيز بلُطف، " +
+      "ثمّ اختم حسب التوجيه المُعطى. فقرتان إلى ثلاث قصيرة، بصيغة المخاطب لوليّ الأمر، دون عناوين أو رموز. " +
+      "أعِد النصّ عبر أداة emit_intro_report فقط.",
+    tools: [introTool],
+    tool_choice: { type: "tool", name: "emit_intro_report" },
+    messages: [{ role: "user", content: `${lines}\n\nاكتب التقرير الآن.` }],
+  });
+
+  const toolUse = res.content.find(
+    (b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === "emit_intro_report",
+  );
+  if (!toolUse) throw new Error("Intro report generation returned nothing");
+  return (toolUse.input as { report: string }).report;
+}
+
 export type PlanObjective = { description: string; level: string };
 export type GeneratedPlan = { title: string; items: PlanObjective[] };
 

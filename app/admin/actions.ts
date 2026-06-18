@@ -3,10 +3,11 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { generateLeadTest } from "@/lib/generation/service";
+import { generateLeadTest, generateIntroReport } from "@/lib/generation/service";
 import { assertAdmin } from "@/lib/auth";
 import { expandSlots, type Rule } from "@/lib/availability";
-import { sendBookingConfirmation, sendAccountInvite } from "@/lib/email";
+import { sendBookingConfirmation, sendAccountInvite, sendIntroReport } from "@/lib/email";
+import { introLabel, introLabels } from "@/lib/introReport";
 
 const HORIZON_WEEKS = 4;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://ward.academy";
@@ -333,18 +334,80 @@ export async function resendConfirmation(formData: FormData) {
   revalidatePath(`/admin/registrations`);
 }
 
-/** Record the outcome of the free intro session on the lead. */
-export async function saveIntroReport(formData: FormData) {
+/** Generate (or regenerate) the AI intro-session report draft from the form inputs. */
+export async function generateIntroReportAction(formData: FormData) {
   const leadId = String(formData.get("leadId") ?? "");
-  const outcome = String(formData.get("outcome") ?? "").trim() || null;
-  const notes = String(formData.get("notes") ?? "").trim() || null;
-  const { supabase } = await assertAdmin();
-  const { error } = await supabase
-    .from("leads")
-    .update({ intro_outcome: outcome, intro_notes: notes, intro_done_at: new Date().toISOString() })
-    .eq("id", leadId);
+  const engagement = String(formData.get("engagement") ?? "").trim() || null;
+  const strengths = formData.getAll("strengths").map(String);
+  const focus = formData.getAll("focus").map(String);
+  const level = String(formData.get("level") ?? "").trim() || null;
+  const decision = String(formData.get("decision") ?? "considering").trim();
+  const teacherNote = String(formData.get("teacherNote") ?? "").trim() || null;
+
+  const { supabase, user, profile } = await assertAdmin();
+  const { data: lead } = await supabase.from("leads").select("id, student_name").eq("id", leadId).single();
+  if (!lead) throw new Error("الطلب غير موجود.");
+
+  const report = await generateIntroReport({
+    studentName: lead.student_name,
+    engagement: introLabel("engagement", engagement) || undefined,
+    strengths: introLabels("strengths", strengths),
+    focus: introLabels("focus", focus),
+    level: level || undefined,
+    decision: (["enroll", "considering", "declined"].includes(decision) ? decision : "considering") as "enroll" | "considering" | "declined",
+    teacherNote: teacherNote || undefined,
+  });
+
+  const { error } = await supabase.from("intro_reports").upsert(
+    {
+      tenant_id: profile.tenant_id,
+      lead_id: leadId,
+      engagement,
+      strengths,
+      focus,
+      level,
+      decision,
+      teacher_note: teacherNote,
+      ai_report: report,
+      status: "draft",
+      created_by: user.id,
+    },
+    { onConflict: "lead_id" },
+  );
   if (error) throw new Error(error.message);
-  revalidatePath("/admin/registrations");
+  revalidatePath(`/admin/registrations/${leadId}`);
+}
+
+/** Save edits to the generated report text. */
+export async function updateIntroReport(formData: FormData) {
+  const leadId = String(formData.get("leadId") ?? "");
+  const aiReport = String(formData.get("aiReport") ?? "").trim();
+  const { supabase } = await assertAdmin();
+  const { error } = await supabase.from("intro_reports").update({ ai_report: aiReport }).eq("lead_id", leadId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/registrations/${leadId}`);
+}
+
+/** Approve and send the intro report to the guardian. */
+export async function sendIntroReportAction(formData: FormData) {
+  const leadId = String(formData.get("leadId") ?? "");
+  const { supabase } = await assertAdmin();
+
+  const { data: report } = await supabase.from("intro_reports").select("ai_report, status").eq("lead_id", leadId).maybeSingle();
+  if (!report?.ai_report) throw new Error("ولّد التقرير أولاً.");
+  const { data: lead } = await supabase.from("leads").select("guardian_name, guardian_email, student_name").eq("id", leadId).single();
+  if (!lead) throw new Error("الطلب غير موجود.");
+
+  const res = await sendIntroReport({
+    to: lead.guardian_email,
+    guardianName: lead.guardian_name,
+    studentName: lead.student_name,
+    body: report.ai_report,
+  });
+  if (!res.ok && !res.skipped) throw new Error(res.error ?? "تعذّر الإرسال.");
+
+  await supabase.from("intro_reports").update({ status: "sent", sent_at: new Date().toISOString() }).eq("lead_id", leadId);
+  revalidatePath(`/admin/registrations/${leadId}`);
 }
 
 /** Admin sign-out. */

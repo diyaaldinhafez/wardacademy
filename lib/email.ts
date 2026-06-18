@@ -65,6 +65,26 @@ export async function sendBookingConfirmation(opts: {
   return sendEmail({ to: opts.to, subject: "تأكيد حجز الجلسة التعريفية — أكاديمية وَرد", html });
 }
 
+/** Send the guardian the warm intro-session report after the free session. */
+export async function sendIntroReport(opts: {
+  to: string;
+  guardianName: string;
+  studentName: string;
+  body: string;
+}): Promise<SendResult> {
+  const paragraphs = opts.body
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => `<p style="margin:0 0 12px;line-height:1.9">${p.replace(/\n/g, "<br>")}</p>`)
+    .join("");
+  const html = layout(
+    `جلسة ${opts.studentName} التعريفية`,
+    `<p style="margin:0 0 12px">عزيزي/عزيزتي ${opts.guardianName}،</p>${paragraphs}`,
+  );
+  return sendEmail({ to: opts.to, subject: `تقرير جلسة ${opts.studentName} التعريفية — أكاديمية وَرد`, html });
+}
+
 /** Send a guardian/student their account set-up (invite) link. */
 export async function sendAccountInvite(opts: {
   to: string;

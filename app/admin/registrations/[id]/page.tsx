@@ -1,13 +1,49 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { generateLeadTestAction, approveLeadTestAction, resendConfirmation, saveIntroReport } from "@/app/admin/actions";
+import {
+  generateLeadTestAction,
+  approveLeadTestAction,
+  resendConfirmation,
+  generateIntroReportAction,
+  updateIntroReport,
+  sendIntroReportAction,
+} from "@/app/admin/actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import ProvisionPanel from "@/components/studio/ProvisionPanel";
-import { Card, Badge, Avatar } from "@/components/ward/ui";
-import { labelOf, SKILL_AR, ENROLL_SKILLS } from "@/lib/enrollOptions";
+import { Card, Badge, Avatar, Spark } from "@/components/ward/ui";
+import { labelOf, SKILL_AR, ENROLL_SKILLS, LEVELS } from "@/lib/enrollOptions";
+import { ENGAGEMENT, STRENGTHS, FOCUS, DECISION } from "@/lib/introReport";
 import { LEAD_STATUS_AR, LEAD_STATUS_TONE } from "@/lib/leads";
 import { fmtUTC } from "@/lib/datetime";
+
+const pillCls =
+  "cursor-pointer rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink has-[:checked]:border-brand-400 has-[:checked]:bg-brand-50";
+const flabel = { fontSize: 13, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 6 } as const;
+
+function Pills({
+  name,
+  options,
+  type,
+  selected,
+}: {
+  name: string;
+  options: { value: string; label: string }[];
+  type: "radio" | "checkbox";
+  selected: string | string[] | null | undefined;
+}) {
+  const isSel = (v: string) => (Array.isArray(selected) ? selected.includes(v) : selected === v);
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((o) => (
+        <label key={o.value} className={pillCls}>
+          <input type={type} name={name} value={o.value} defaultChecked={isSel(o.value)} className="sr-only" />
+          {o.label}
+        </label>
+      ))}
+    </div>
+  );
+}
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const SITE_URL = "https://ward.academy";
@@ -47,6 +83,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
       .order("position");
     qs = data ?? [];
   }
+
+  const { data: intro } = await supabase.from("intro_reports").select("*").eq("lead_id", id).maybeSingle();
 
   const phone = (lead.guardian_phone ?? "").replace(/[^0-9]/g, "");
   const shareLink = test?.share_token ? `${SITE_URL}/t/${test.share_token}` : "";
@@ -199,20 +237,59 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         )}
       </Card>
 
-      {/* Intro report */}
-      <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <div style={secTitle}>تقرير الجلسة التعريفية {lead.intro_done_at && <Badge tone="success">سُجّل ✓</Badge>}</div>
-        <form action={saveIntroReport} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {/* Intro session report (AI) */}
+      <Card style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={secTitle}>تقرير الجلسة التعريفية {intro?.status === "sent" && <Badge tone="success">أُرسل ✓</Badge>}</div>
+
+        <form action={generateIntroReportAction} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <input type="hidden" name="leadId" value={lead.id} />
-          <select name="outcome" defaultValue={lead.intro_outcome ?? ""} className={ctl}>
-            <option value="">— النتيجة —</option>
-            <option value="interested">مهتمّ — نُكمل التسجيل</option>
-            <option value="follow_up">يحتاج متابعة</option>
-            <option value="declined">اعتذر</option>
-          </select>
-          <textarea name="notes" rows={2} defaultValue={lead.intro_notes ?? ""} placeholder="ملاحظات الجلسة التعريفية" className={ctl} />
-          <SubmitButton pendingText="…" className={btn("secondary", "md")} >{lead.intro_done_at ? "حدّث التقرير" : "احفظ التقرير"}</SubmitButton>
+          <div>
+            <label style={flabel}>تفاعل الطفل</label>
+            <Pills name="engagement" type="radio" options={ENGAGEMENT} selected={intro?.engagement} />
+          </div>
+          <div>
+            <label style={flabel}>أبرز نقاط القوّة</label>
+            <Pills name="strengths" type="checkbox" options={STRENGTHS} selected={intro?.strengths} />
+          </div>
+          <div>
+            <label style={flabel}>أولويات التركيز</label>
+            <Pills name="focus" type="checkbox" options={FOCUS} selected={intro?.focus} />
+          </div>
+          <div>
+            <label style={flabel}>المستوى المؤكَّد</label>
+            <Pills name="level" type="radio" options={LEVELS} selected={intro?.level ?? lead.student_level} />
+          </div>
+          <div>
+            <label style={flabel}>قرار التسجيل</label>
+            <Pills name="decision" type="radio" options={DECISION} selected={intro?.decision} />
+          </div>
+          <textarea name="teacherNote" rows={2} defaultValue={intro?.teacher_note ?? ""} placeholder="ملاحظةٌ تثري التقرير (اختياريّة)" className={ctl} />
+          <SubmitButton pendingText="جارٍ التوليد…" className={btn("soft", "md")}>
+            <Spark size={15} /> {intro?.ai_report ? "أعِد توليد التقرير" : "ولّد التقرير بالذكاء"}
+          </SubmitButton>
         </form>
+
+        {intro?.ai_report && (
+          <div style={{ borderTop: "1px solid var(--border-soft)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Spark size={16} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ward-purple-800)" }}>مسودّة التقرير — راجِعها وعدّلها قبل الإرسال</span>
+            </div>
+            <form action={updateIntroReport} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <input type="hidden" name="leadId" value={lead.id} />
+              <textarea name="aiReport" rows={9} defaultValue={intro.ai_report} className={ctl} dir="rtl" />
+              <SubmitButton pendingText="…" className={btn("secondary")}>احفظ التعديلات</SubmitButton>
+            </form>
+            {intro.status === "sent" ? (
+              <p style={{ fontSize: 13, color: "var(--leaf-700)", fontWeight: 600 }}>أُرسل التقرير لوليّ الأمر ✓</p>
+            ) : (
+              <form action={sendIntroReportAction}>
+                <input type="hidden" name="leadId" value={lead.id} />
+                <SubmitButton pendingText="جارٍ الإرسال…" className={btn("success", "md")}>اعتمِد وأرسِل لوليّ الأمر</SubmitButton>
+              </form>
+            )}
+          </div>
+        )}
       </Card>
 
       {/* Provisioning */}
