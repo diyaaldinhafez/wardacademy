@@ -1,7 +1,7 @@
 import type { BloomStage } from "@/lib/skills";
 
 const PETAL = "M50,50 C38,46 30,34 33,22 C35,12 42,6 50,2 C58,6 65,12 67,22 C70,34 62,46 50,50 Z";
-const STAGE_AR: Record<BloomStage, string> = { bud: "برعم 🌱", balloon: "بالون — تنمو", bloom: "تفتّحت! 🌸" };
+const STAGE_AR: Record<BloomStage, string> = { bud: "برعم", balloon: "بالون — تنمو", bloom: "تفتّحت!" };
 const STAGE_HINT: Record<BloomStage, string> = {
   bud: "ابدأ بحلّ الأسئلة لتنمو وردتك.",
   balloon: "أحسنت! واصل لتتفتّح بالكامل.",

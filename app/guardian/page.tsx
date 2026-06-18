@@ -14,7 +14,7 @@ const AR_STAGE: Record<string, string> = {
   Sprouting: "بذرة",
   Budding: "برعم",
   Growing: "ينمو",
-  Blooming: "متفتّح 🌸",
+  Blooming: "متفتّح",
 };
 const card = "rounded-2xl border border-brand-100 bg-white p-4 shadow-ward-1";
 const field = "rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm outline-none focus:border-brand-400";

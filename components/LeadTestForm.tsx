@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { submitLeadTest } from "@/app/t/actions";
 import FlowerMark from "./FlowerMark";
+import BudMark from "./BudMark";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Q = { id: string; prompt: string; content: any };
@@ -14,7 +15,7 @@ export default function LeadTestForm({ token, questions }: { token: string; ques
     return (
       <div className="rounded-3xl border border-emerald-200 bg-white p-8 text-center shadow-ward-1">
         <FlowerMark className="mx-auto h-12 w-12" />
-        <h2 className="mt-3 text-xl font-bold text-ink">تمّ — أحسنت! 🌸</h2>
+        <h2 className="mt-3 text-xl font-bold text-ink">تمّ — أحسنت! <BudMark size={22} /></h2>
         <p className="mt-3 text-ink">
           المستوى المقترح: <span className="text-2xl font-bold text-brand-700">{state.result.level}</span>
         </p>

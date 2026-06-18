@@ -60,7 +60,7 @@ export async function sendBookingConfirmation(opts: {
      <p style="margin:0 0 10px">تمّ تأكيد حجز الجلسة التعريفية المجانية للطالب <strong>${opts.studentName}</strong>:</p>
      <div style="background:#F6F3FE;border:1px solid #EDE7FD;border-radius:12px;padding:14px;margin:0 0 12px;font-weight:700;color:#3D2371">📅 ${when}</div>
      <p style="margin:0 0 10px;color:#5E5778">سنرسل لك اختبار تحديد المستوى قبل الجلسة عبر واتساب. إن رغبت بتغيير الموعد، تواصل معنا.</p>
-     <p style="margin:0;color:#5E5778">بالتوفيق! 🌸</p>`,
+     <p style="margin:0;color:#5E5778">بالتوفيق!</p>`,
   );
   return sendEmail({ to: opts.to, subject: "تأكيد حجز الجلسة التعريفية — أكاديمية وَرد", html });
 }

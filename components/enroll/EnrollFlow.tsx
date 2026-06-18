@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { submitLead, bookSlot } from "@/app/enroll/actions";
 import FlowerMark from "../FlowerMark";
+import BudMark from "../BudMark";
 
 type Slot = { id: string; starts_at: string; duration_minutes: number };
 
@@ -37,7 +38,7 @@ export default function EnrollFlow({ slots }: { slots: Slot[] }) {
     return (
       <div className="mx-auto w-full max-w-md text-center">
         <FlowerMark className="mx-auto h-14 w-14" />
-        <h1 className="mt-4 text-2xl font-bold text-ink">تمّ الحجز بنجاح 🌸</h1>
+        <h1 className="mt-4 text-2xl font-bold text-ink">تمّ الحجز بنجاح <BudMark size={26} /></h1>
         <div className="mt-4 rounded-3xl border border-brand-100 bg-white p-6 shadow-ward-1">
           <p className="text-ink">
             موعد جلستك التعريفية: <span className="font-bold text-brand-700">{bookState.at ? fmtSlot(bookState.at) : ""}</span>

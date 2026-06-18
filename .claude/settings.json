@@ -13,7 +13,11 @@
       "Bash(node -e \"console.log\\(require\\('resend/package.json'\\).version\\)\")",
       "Bash(echo \"resend installed: $\\(node -e \"console.log\\(require\\('resend/package.json'\\).version\\)\"\\)\")",
       "Bash(pkill -f \"next dev\")",
-      "Bash(curl -s -o /dev/null -w \"set-password: %{http_code}\\\\n\" --retry 30 --retry-delay 2 --retry-connrefused --max-time 90 http://localhost:3000/set-password)"
+      "Bash(curl -s -o /dev/null -w \"set-password: %{http_code}\\\\n\" --retry 30 --retry-delay 2 --retry-connrefused --max-time 90 http://localhost:3000/set-password)",
+      "Bash(node -e ' *)",
+      "Bash(curl -s -o /dev/null -w \"set-password page: %{http_code}\\\\n\" --max-time 10 http://localhost:3000/set-password)",
+      "Bash(curl -s -o /dev/null -w \"dev ready: %{http_code}\\\\n\" --retry 30 --retry-delay 2 --retry-connrefused --max-time 90 http://localhost:3000/studio/login)",
+      "Bash(curl -s -o /dev/null -w \"icon-options: %{http_code}\\\\n\" --retry 15 --retry-delay 1 --retry-connrefused --max-time 60 http://localhost:3000/icon-options)"
     ]
   }
 }
