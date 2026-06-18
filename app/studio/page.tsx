@@ -14,13 +14,22 @@ import {
   startPlan,
   approvePlan,
   materializePlanObjectives,
-  logout,
 } from "./actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import ScheduleForm from "@/components/studio/ScheduleForm";
 import { bloomStage } from "@/lib/progress";
 import { fmtUTC } from "@/lib/datetime";
 import Onboarding from "./onboarding";
+import WorkspaceHeader from "@/components/studio/WorkspaceHeader";
+
+const AR_STAGE: Record<string, string> = {
+  "Not started": "لم يبدأ بعد",
+  Practiced: "تدرّب",
+  Sprouting: "بذرة",
+  Budding: "برعم",
+  Growing: "ينمو",
+  Blooming: "متفتّح 🌸",
+};
 
 type EmbeddedObjective = { description?: string; level?: string };
 type ProgRow = {
@@ -119,23 +128,11 @@ export default async function StudioPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
-      <header className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Ward Academy Studio</h1>
-          <p className="text-sm text-slate-500">
-            {profile?.full_name ?? user.email} · {(profile?.roles ?? []).join(", ") || "no role"}
-          </p>
-        </div>
-        <form action={logout}>
-          <button className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100">
-            Sign out
-          </button>
-        </form>
-      </header>
+      <WorkspaceHeader title="استوديو المعلّم" subtitle={profile?.full_name ?? user.email ?? ""} />
 
       {!isInstructor && (
-        <p className="mb-6 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-          This account is not an instructor, so generation is disabled.
+        <p className="mb-6 rounded-2xl bg-amber/15 p-3 text-sm text-brand-900">
+          هذا الحساب ليس معلّماً، فالتوليد معطّل.
         </p>
       )}
 
@@ -143,28 +140,28 @@ export default async function StudioPage() {
 
       {/* Objectives → generate */}
       <section className="mb-10">
-        <h2 className="mb-3 text-lg font-semibold">Objectives</h2>
+        <h2 className="mb-3 text-lg font-bold text-ink">الأهداف</h2>
         <ul className="flex flex-col gap-3">
           {(objectives ?? []).map((o) => (
-            <li key={o.id} className="rounded-xl border border-slate-200 bg-white p-4">
+            <li key={o.id} className="rounded-xl border border-brand-100 bg-white p-4">
               <div className="mb-3">
-                <span className="mr-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                <span className="mr-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-ink-soft">
                   {o.track.toUpperCase()}
                   {o.level ? ` · ${o.level}` : ""}
                 </span>
-                <span className="text-slate-900">{o.description}</span>
+                <span className="text-ink">{o.description}</span>
               </div>
               {isInstructor && (
                 <form action={generateDraft} className="flex flex-wrap items-end gap-2">
                   <input type="hidden" name="objectiveId" value={o.id} />
-                  <select name="format" defaultValue="multiple_choice" className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm">
+                  <select name="format" defaultValue="multiple_choice" className="rounded-lg border border-brand-200 px-2 py-1.5 text-sm">
                     {ITEM_FORMATS.map((f) => (
                       <option key={f} value={f}>
                         {FORMAT_LABELS[f]}
                       </option>
                     ))}
                   </select>
-                  <select name="difficulty" defaultValue="easy" className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm">
+                  <select name="difficulty" defaultValue="easy" className="rounded-lg border border-brand-200 px-2 py-1.5 text-sm">
                     {DIFFICULTIES.map((d) => (
                       <option key={d} value={d}>
                         {d}
@@ -172,10 +169,10 @@ export default async function StudioPage() {
                     ))}
                   </select>
                   <SubmitButton
-                    pendingText="Generating…"
-                    className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+                    pendingText="جارٍ التوليد…"
+                    className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60"
                   >
-                    Generate draft
+                    ولّد مسودّة
                   </SubmitButton>
                 </form>
               )}
@@ -187,9 +184,9 @@ export default async function StudioPage() {
       {/* Drafts → review */}
       <section className="mb-10">
         <h2 className="mb-3 text-lg font-semibold">
-          Drafts to review <span className="text-slate-400">({drafts.length})</span>
+          مسودّات للمراجعة <span className="text-ink-soft">({drafts.length})</span>
         </h2>
-        {drafts.length === 0 && <p className="text-sm text-slate-500">No drafts yet.</p>}
+        {drafts.length === 0 && <p className="text-sm text-ink-soft">لا مسودّات بعد.</p>}
         <ul className="flex flex-col gap-3">
           {drafts.map((it) => (
             <li key={it.id} className="rounded-xl border border-amber-200 bg-amber-50/40 p-4">
@@ -198,13 +195,13 @@ export default async function StudioPage() {
                 <form action={approveItem}>
                   <input type="hidden" name="itemId" value={it.id} />
                   <SubmitButton className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">
-                    Approve
+                    اعتمِد
                   </SubmitButton>
                 </form>
                 <form action={rejectItem}>
                   <input type="hidden" name="itemId" value={it.id} />
-                  <SubmitButton className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100 disabled:opacity-60">
-                    Reject
+                  <SubmitButton className="rounded-lg border border-brand-200 px-3 py-1.5 text-sm hover:bg-brand-50 disabled:opacity-60">
+                    ارفض
                   </SubmitButton>
                 </form>
               </div>
@@ -213,24 +210,24 @@ export default async function StudioPage() {
         </ul>
       </section>
 
-      {/* Approved */}
+      {/* اعتمِدd */}
       <section>
         <h2 className="mb-3 text-lg font-semibold">
-          Approved <span className="text-slate-400">({approved.length})</span>
+          المعتمَدة <span className="text-ink-soft">({approved.length})</span>
         </h2>
-        {approved.length === 0 && <p className="text-sm text-slate-500">Nothing approved yet.</p>}
+        {approved.length === 0 && <p className="text-sm text-ink-soft">لا شيء معتمَدٌ بعد.</p>}
         <ul className="flex flex-col gap-3">
           {approved.map((it) => {
             const assigned = assigneesByItem.get(it.id) ?? [];
             return (
               <li key={it.id} className="rounded-xl border border-emerald-200 bg-white p-4">
                 <ItemBody it={it} />
-                <div className="mt-3 border-t border-slate-100 pt-3">
-                  <p className="text-xs text-slate-500">
-                    Assigned to:{" "}
+                <div className="mt-3 border-t border-brand-100 pt-3">
+                  <p className="text-xs text-ink-soft">
+                    مُسنَدٌ إلى:{" "}
                     {assigned.length
                       ? assigned.map((id) => learnerName.get(id) ?? id).join(", ")
-                      : "no one yet"}
+                      : "لا أحد بعد"}
                   </p>
                   {learners.length > 0 && (
                     <form action={assignItem} className="mt-2 flex items-center gap-2">
@@ -238,10 +235,10 @@ export default async function StudioPage() {
                       <select
                         name="learnerId"
                         defaultValue=""
-                        className="rounded-lg border border-slate-300 px-2 py-1 text-sm"
+                        className="rounded-lg border border-brand-200 px-2 py-1 text-sm"
                       >
                         <option value="" disabled>
-                          Choose a student…
+                          اختر طالباً…
                         </option>
                         {learners.map((l) => (
                           <option key={l.id} value={l.id}>
@@ -250,10 +247,10 @@ export default async function StudioPage() {
                         ))}
                       </select>
                       <SubmitButton
-                        pendingText="Assigning…"
-                        className="rounded-lg border border-slate-300 px-3 py-1 text-sm hover:bg-slate-100 disabled:opacity-60"
+                        pendingText="جارٍ الإسناد…"
+                        className="rounded-lg border border-brand-200 px-3 py-1 text-sm hover:bg-brand-50 disabled:opacity-60"
                       >
-                        Assign
+                        أسنِد
                       </SubmitButton>
                     </form>
                   )}
@@ -266,74 +263,74 @@ export default async function StudioPage() {
 
       {/* Sessions */}
       <section className="mt-10">
-        <h2 className="mb-3 text-lg font-semibold">Sessions</h2>
+        <h2 className="mb-3 text-lg font-bold text-ink">الجلسات</h2>
         {learnersForForm.length > 0 ? (
-          <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4">
-            <p className="mb-2 text-sm font-medium text-slate-700">Schedule a session</p>
+          <div className="mb-4 rounded-xl border border-brand-100 bg-white p-4">
+            <p className="mb-2 text-sm font-medium text-ink">جدوِل جلسة</p>
             <ScheduleForm learners={learnersForForm} />
-            <p className="mt-2 text-xs text-slate-400">Entered in your local time, stored and shown as UTC.</p>
+            <p className="mt-2 text-xs text-ink-soft">يُدخَل بتوقيتك المحلّي ويُعرَض UTC.</p>
           </div>
         ) : (
-          <p className="mb-4 text-sm text-slate-500">Add a student first to schedule a session.</p>
+          <p className="mb-4 text-sm text-ink-soft">أضِف طالباً أولاً لجدولة جلسة.</p>
         )}
-        {(sessions ?? []).length === 0 && <p className="text-sm text-slate-500">No sessions yet.</p>}
+        {(sessions ?? []).length === 0 && <p className="text-sm text-ink-soft">لا جلسات بعد.</p>}
         <ul className="flex flex-col gap-3">
           {(sessions ?? []).map((s) => {
             const report = Array.isArray(s.session_reports) ? s.session_reports[0] : s.session_reports;
             return (
-              <li key={s.id} className="rounded-xl border border-slate-200 bg-white p-4">
+              <li key={s.id} className="rounded-xl border border-brand-100 bg-white p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-slate-900">{learnerName.get(s.learner_id) ?? s.learner_id}</p>
-                    <p className="text-sm text-slate-500">
-                      {fmtUTC(s.scheduled_at)} · {s.duration_minutes} min
+                    <p className="font-medium text-ink">{learnerName.get(s.learner_id) ?? s.learner_id}</p>
+                    <p className="text-sm text-ink-soft">
+                      {fmtUTC(s.scheduled_at)} · {s.duration_minutes} دقيقة
                     </p>
                   </div>
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{s.status}</span>
+                  <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-ink-soft">{s.status}</span>
                 </div>
-                <div className="mt-3 border-t border-slate-100 pt-3">
+                <div className="mt-3 border-t border-brand-100 pt-3">
                   {!report && (
                     <div className="flex flex-col gap-3">
                       <form action={draftReportWithAI}>
                         <input type="hidden" name="sessionId" value={s.id} />
-                        <SubmitButton pendingText="Drafting…" className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-100 disabled:opacity-60">
-                          Draft report with AI
+                        <SubmitButton pendingText="جارٍ التوليد…" className="rounded-lg border border-brand-200 px-3 py-1.5 text-sm font-medium hover:bg-brand-50 disabled:opacity-60">
+                          ولّد التقرير بالذكاء
                         </SubmitButton>
                       </form>
                       <form action={createReport} className="flex flex-col gap-2">
                         <input type="hidden" name="sessionId" value={s.id} />
-                        <p className="text-sm font-medium text-slate-700">…or write it</p>
-                        <textarea name="summary" required rows={2} placeholder="Summary" className="rounded border border-slate-300 px-2 py-1 text-sm" />
-                        <input name="strengths" placeholder="Strengths (optional)" className="rounded border border-slate-300 px-2 py-1 text-sm" />
-                        <input name="improve" placeholder="To improve (optional)" className="rounded border border-slate-300 px-2 py-1 text-sm" />
-                        <SubmitButton pendingText="Saving…" className="self-start rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">
-                          Save report (draft)
+                        <p className="text-sm font-medium text-ink">…أو اكتبه يدوياً</p>
+                        <textarea name="summary" required rows={2} placeholder="ملخّص" className="rounded border border-brand-200 px-2 py-1 text-sm" />
+                        <input name="strengths" placeholder="نقاط القوة (اختياري)" className="rounded border border-brand-200 px-2 py-1 text-sm" />
+                        <input name="improve" placeholder="للتحسين (اختياري)" className="rounded border border-brand-200 px-2 py-1 text-sm" />
+                        <SubmitButton pendingText="جارٍ الحفظ…" className="self-start rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60">
+                          احفظ التقرير (مسودّة)
                         </SubmitButton>
                       </form>
                     </div>
                   )}
                   {report && report.status === "draft" && (
                     <div className="flex flex-col gap-2">
-                      <p className="text-xs font-medium text-amber-700">Draft — edit if needed, then approve</p>
+                      <p className="text-xs font-medium text-amber-700">مسودّة — عدّل ثمّ اعتمِد</p>
                       <form action={updateReport} className="flex flex-col gap-2">
                         <input type="hidden" name="reportId" value={report.id} />
-                        <textarea name="summary" required rows={2} defaultValue={report.summary ?? ""} className="rounded border border-slate-300 px-2 py-1 text-sm" />
-                        <input name="strengths" defaultValue={report.strengths ?? ""} placeholder="Strengths" className="rounded border border-slate-300 px-2 py-1 text-sm" />
-                        <input name="improve" defaultValue={report.improve ?? ""} placeholder="To improve" className="rounded border border-slate-300 px-2 py-1 text-sm" />
-                        <SubmitButton pendingText="Saving…" className="self-start rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100 disabled:opacity-60">
-                          Save edits
+                        <textarea name="summary" required rows={2} defaultValue={report.summary ?? ""} className="rounded border border-brand-200 px-2 py-1 text-sm" />
+                        <input name="strengths" defaultValue={report.strengths ?? ""} placeholder="نقاط القوة" className="rounded border border-brand-200 px-2 py-1 text-sm" />
+                        <input name="improve" defaultValue={report.improve ?? ""} placeholder="للتحسين" className="rounded border border-brand-200 px-2 py-1 text-sm" />
+                        <SubmitButton pendingText="جارٍ الحفظ…" className="self-start rounded-lg border border-brand-200 px-3 py-1.5 text-sm hover:bg-brand-50 disabled:opacity-60">
+                          احفظ التعديلات
                         </SubmitButton>
                       </form>
                       <form action={approveReport}>
                         <input type="hidden" name="reportId" value={report.id} />
-                        <SubmitButton pendingText="Approving…" className="self-start rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">
-                          Approve report
+                        <SubmitButton pendingText="جارٍ الاعتماد…" className="self-start rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">
+                          اعتمِد التقرير
                         </SubmitButton>
                       </form>
                     </div>
                   )}
                   {report && report.status === "approved" && (
-                    <p className="text-sm text-emerald-700">Report approved — visible to the family.</p>
+                    <p className="text-sm text-emerald-700">اعتُمِد التقرير — ظاهرٌ للعائلة.</p>
                   )}
                 </div>
               </li>
@@ -345,46 +342,46 @@ export default async function StudioPage() {
       {/* Students & progress */}
       <section className="mt-10">
         <h2 className="mb-3 text-lg font-semibold">
-          Students &amp; progress <span className="text-slate-400">({learners.length})</span>
+          الطلاب والتقدّم <span className="text-ink-soft">({learners.length})</span>
         </h2>
-        {learners.length === 0 && <p className="text-sm text-slate-500">No students yet.</p>}
+        {learners.length === 0 && <p className="text-sm text-ink-soft">لا طلاب بعد.</p>}
         <ul className="flex flex-col gap-3">
           {learners.map((l) => {
             const rows = progByLearner.get(l.id) ?? [];
             const pl = placementByLearner.get(l.id);
             const plan = planByLearner.get(l.id);
             return (
-              <li key={l.id} className="rounded-xl border border-slate-200 bg-white p-4">
-                <p className="font-medium text-slate-900">{l.full_name ?? l.id}</p>
+              <li key={l.id} className="rounded-xl border border-brand-100 bg-white p-4">
+                <p className="font-medium text-ink">{l.full_name ?? l.id}</p>
                 <div className="mb-2 mt-1 flex items-center gap-2 text-xs">
                   {pl?.status === "completed" && (
                     <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">
-                      Placement: {pl.suggested_level}
+                      التحديد: {pl.suggested_level}
                     </span>
                   )}
                   {pl?.status === "in_progress" && (
                     <span className="rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-700">
-                      Placement in progress
+                      التحديد جارٍ
                     </span>
                   )}
                   {pl?.status !== "in_progress" && (
                     <form action={startPlacement}>
                       <input type="hidden" name="learnerId" value={l.id} />
                       <SubmitButton
-                        pendingText="Generating…"
-                        className="rounded-lg border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-100 disabled:opacity-60"
+                        pendingText="جارٍ التوليد…"
+                        className="rounded-lg border border-brand-200 px-2 py-0.5 text-xs hover:bg-brand-50 disabled:opacity-60"
                       >
-                        {pl?.status === "completed" ? "Re-run placement" : "Start placement"}
+                        {pl?.status === "completed" ? "أعِد التحديد" : "ابدأ التحديد"}
                       </SubmitButton>
                     </form>
                   )}
                 </div>
                 {plan ? (
-                  <div className="mb-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
-                    <p className="text-xs font-medium text-slate-700">
-                      Plan: {plan.title} {plan.status === "draft" ? "(draft)" : "✓"}
+                  <div className="mb-2 rounded-lg border border-brand-100 bg-brand-50 p-2">
+                    <p className="text-xs font-medium text-ink">
+                      الخطّة: {plan.title} {plan.status === "draft" ? "(مسودّة)" : "✓"}
                     </p>
-                    <ol className="mt-1 list-decimal pl-4 text-xs text-slate-600">
+                    <ol className="mt-1 list-decimal pl-4 text-xs text-ink-soft">
                       {plan.items.map((it, i) => (
                         <li key={i}>
                           {it.level ? `${it.level} · ` : ""}
@@ -396,16 +393,16 @@ export default async function StudioPage() {
                       {plan.status === "draft" && (
                         <form action={approvePlan}>
                           <input type="hidden" name="planId" value={plan.id} />
-                          <SubmitButton pendingText="Approving…" className="rounded-lg bg-emerald-600 px-2 py-0.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">
-                            Approve plan
+                          <SubmitButton pendingText="جارٍ الاعتماد…" className="rounded-lg bg-emerald-600 px-2 py-0.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">
+                            اعتمِد الخطّة
                           </SubmitButton>
                         </form>
                       )}
                       {plan.status === "approved" && (
                         <form action={materializePlanObjectives}>
                           <input type="hidden" name="planId" value={plan.id} />
-                          <SubmitButton pendingText="Adding…" className="rounded-lg border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-100 disabled:opacity-60">
-                            Add objectives
+                          <SubmitButton pendingText="جارٍ الإضافة…" className="rounded-lg border border-brand-200 px-2 py-0.5 text-xs hover:bg-brand-50 disabled:opacity-60">
+                            أضِف الأهداف
                           </SubmitButton>
                         </form>
                       )}
@@ -414,13 +411,13 @@ export default async function StudioPage() {
                 ) : (
                   <form action={startPlan} className="mb-2">
                     <input type="hidden" name="learnerId" value={l.id} />
-                    <SubmitButton pendingText="Generating…" className="rounded-lg border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-100 disabled:opacity-60">
-                      Generate plan
+                    <SubmitButton pendingText="جارٍ التوليد…" className="rounded-lg border border-brand-200 px-2 py-0.5 text-xs hover:bg-brand-50 disabled:opacity-60">
+                      ولّد خطّة
                     </SubmitButton>
                   </form>
                 )}
                 {rows.length === 0 ? (
-                  <p className="mt-1 text-sm text-slate-500">No activity yet.</p>
+                  <p className="mt-1 text-sm text-ink-soft">لا نشاط بعد.</p>
                 ) : (
                   <ul className="mt-2 flex flex-col gap-1">
                     {rows.map((r, i) => {
@@ -428,15 +425,15 @@ export default async function StudioPage() {
                       const stage = bloomStage(r);
                       return (
                         <li key={i} className="flex items-center justify-between text-sm">
-                          <span className="text-slate-700">
+                          <span className="text-ink">
                             {o.level ? `${o.level} · ` : ""}
-                            {o.description ?? "Objective"}
+                            {o.description ?? "هدف"}
                           </span>
                           <span>
-                            <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">{stage.label}</span>
-                            <span className="ml-2 text-slate-400">
+                            <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">{AR_STAGE[stage.label] ?? stage.label}</span>
+                            <span className="ml-2 text-ink-soft">
                               {r.correct}/{r.attempts}
-                              {r.completions ? ` · ${r.completions} practiced` : ""}
+                              {r.completions ? ` · ${r.completions} تدريب` : ""}
                             </span>
                           </span>
                         </li>
@@ -475,13 +472,13 @@ function ItemBody({ it }: { it: any }) {
   const rubric: string | undefined = keys.rubric ?? undefined;
   return (
     <div>
-      <div className="mb-1 flex gap-2 text-xs text-slate-500">
-        <span className="rounded bg-slate-100 px-1.5 py-0.5">{FORMAT_LABELS[it.format as keyof typeof FORMAT_LABELS] ?? it.format}</span>
-        <span className="rounded bg-slate-100 px-1.5 py-0.5">{it.difficulty}</span>
+      <div className="mb-1 flex gap-2 text-xs text-ink-soft">
+        <span className="rounded bg-brand-50 px-1.5 py-0.5">{FORMAT_LABELS[it.format as keyof typeof FORMAT_LABELS] ?? it.format}</span>
+        <span className="rounded bg-brand-50 px-1.5 py-0.5">{it.difficulty}</span>
       </div>
-      <p className="font-medium whitespace-pre-line text-slate-900">{it.prompt}</p>
+      <p className="font-medium whitespace-pre-line text-ink">{it.prompt}</p>
       {Array.isArray(content.options) && (
-        <ul className="mt-2 list-disc pl-5 text-sm text-slate-700">
+        <ul className="mt-2 list-disc pl-5 text-sm text-ink">
           {content.options.map((opt, i) => (
             <li key={i}>{opt}</li>
           ))}
@@ -489,18 +486,18 @@ function ItemBody({ it }: { it: any }) {
       )}
       {answer !== undefined && answer !== null && (
         <p className="mt-2 text-sm">
-          <span className="font-semibold text-emerald-700">Answer:</span>{" "}
+          <span className="font-semibold text-emerald-700">الإجابة:</span>{" "}
           {formatAnswer(answer, content.options)}
         </p>
       )}
       {rubric && (
-        <p className="mt-1 whitespace-pre-line text-sm text-slate-600">
-          <span className="font-semibold">Rubric:</span> {rubric}
+        <p className="mt-1 whitespace-pre-line text-sm text-ink-soft">
+          <span className="font-semibold">سلّم التصحيح:</span> {rubric}
         </p>
       )}
       {explanation && (
-        <p className="mt-1 text-sm text-slate-600">
-          <span className="font-semibold">Why:</span> {explanation}
+        <p className="mt-1 text-sm text-ink-soft">
+          <span className="font-semibold">السبب:</span> {explanation}
         </p>
       )}
     </div>

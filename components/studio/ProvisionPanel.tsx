@@ -17,7 +17,7 @@ export default function ProvisionPanel({ leadId, guardianPhone }: { leadId: stri
     return (
       <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 text-sm">
         <p className="mb-2 font-semibold text-emerald-800">تمّ تجهيز الحسابات — احفظ البيانات الآن (لن تظهر ثانيةً):</p>
-        <div className="space-y-1 text-slate-700" dir="ltr">
+        <div className="space-y-1 text-ink" dir="ltr">
           <p>👤 {state.guardian.email} · {state.guardian.password}</p>
           <p>🧒 {state.student.email} · {state.student.password}</p>
         </div>
@@ -36,7 +36,7 @@ export default function ProvisionPanel({ leadId, guardianPhone }: { leadId: stri
       <button
         type="submit"
         disabled={pending}
-        className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-100 disabled:opacity-60"
+        className="rounded-lg border border-brand-200 px-3 py-1.5 text-sm font-medium hover:bg-brand-50 disabled:opacity-60"
       >
         {pending ? "جارٍ التجهيز…" : "جهّز حسابات وليّ الأمر والطالب"}
       </button>
