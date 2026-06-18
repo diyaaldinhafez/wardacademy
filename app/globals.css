@@ -313,3 +313,10 @@ body {
     transition: none;
   }
 }
+
+/* Unit bud -> balloon -> bloom (child dashboard hero) */
+@keyframes unit-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+.unit-balloon { transform-origin: 50% 62%; animation: unit-pulse 2.4s ease-in-out infinite; }
+@keyframes unit-pop { 0% { transform: scale(0.55); opacity: 0; } 60% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
+.unit-bloom { transform-origin: 50% 62%; animation: unit-pop 0.6s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .unit-balloon, .unit-bloom { animation: none; } }
