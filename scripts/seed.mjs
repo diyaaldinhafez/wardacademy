@@ -78,6 +78,24 @@ try {
     console.log("objectives already present:", c[0].n);
   }
 
+  // Tag objectives with a skill (5 petals = 5 skills) where missing.
+  const skillMap = [
+    ["past simple", "writing"],
+    ["daily routines", "speaking"],
+    ["opinion", "speaking"],
+    ["main idea", "reading"],
+    ["read", "reading"],
+    ["write", "writing"],
+    ["listen", "listening"],
+    ["speak", "speaking"],
+    ["vocab", "vocabulary"],
+  ];
+  const { rows: untagged } = await pg.query("select id, description from public.objectives where tenant_id=$1 and skill is null", [tenantId]);
+  for (const o of untagged) {
+    const hit = skillMap.find(([k]) => new RegExp(k, "i").test(o.description));
+    await pg.query("update public.objectives set skill=$1::public.skill where id=$2", [hit ? hit[1] : "vocabulary", o.id]);
+  }
+
   // A guardian + a learner (their child), so the learner practice view has an
   // account to sign in as. Guardian-anchored with consent granted.
   const GUARDIAN_EMAIL = process.env.SEED_GUARDIAN_EMAIL ?? "parent@ward.local";
