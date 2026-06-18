@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { generateLeadTestAction, approveLeadTestAction, removeSlot } from "./actions";
+import { generateLeadTestAction, approveLeadTestAction } from "./actions";
 import SubmitButton from "@/components/studio/SubmitButton";
-import SlotForm from "@/components/studio/SlotForm";
 import ProvisionPanel from "@/components/studio/ProvisionPanel";
 import { fmtUTC } from "@/lib/datetime";
 
@@ -37,34 +36,8 @@ export default async function Onboarding() {
     a.push(q);
     qByTest.set(q.lead_test_id, a);
   }
-  const openSlots = (slots ?? []).filter((s: any) => s.status === "open");
-
   return (
     <>
-      {/* Availability */}
-      <section className="mb-10">
-        <h2 className="mb-3 text-lg font-semibold">المواعيد المتاحة (جلسات تعريفية)</h2>
-        <div className="mb-3 rounded-xl border border-brand-100 bg-white p-4">
-          <SlotForm />
-          <p className="mt-2 text-xs text-ink-soft">يُدخَل بتوقيتك المحلّي ويُخزَّن UTC. المواعيد المفتوحة تظهر في صفحة الحجز العامّة.</p>
-        </div>
-        {openSlots.length === 0 ? (
-          <p className="text-sm text-ink-soft">لا مواعيد مفتوحة — أضِف موعداً أعلاه.</p>
-        ) : (
-          <ul className="flex flex-wrap gap-2">
-            {openSlots.map((s: any) => (
-              <li key={s.id} className="flex items-center gap-2 rounded-lg border border-brand-100 bg-white px-3 py-1.5 text-sm">
-                <span>{fmtUTC(s.starts_at)}</span>
-                <form action={removeSlot}>
-                  <input type="hidden" name="slotId" value={s.id} />
-                  <SubmitButton className="text-xs font-medium text-rose-600 hover:underline">إزالة</SubmitButton>
-                </form>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
       {/* Registration requests */}
       <section className="mb-10">
         <h2 className="mb-3 text-lg font-semibold">

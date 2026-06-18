@@ -10,7 +10,8 @@ import FlowerMark from "@/components/FlowerMark";
 const NAV = [
   { href: "/admin", label: "اللوحة", d: "M3 11l9-8 9 8M5 9v11h14V9" },
   { href: "/admin/registrations", label: "طلبات التسجيل", d: "M4 4h16v16H4zM4 9h16M9 4v5", badge: "leads" as const },
-  // المواعيد + اختبارات التحديد تُضاف في المراحل التالية
+  { href: "/admin/availability", label: "المواعيد", d: "M7 3v3m10-3v3M4 8h16M5 6h14a1 1 0 011 1v12a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1z" },
+  // اختبارات التحديد تُضاف لاحقاً
 ];
 
 function NavIcon({ d }: { d: string }) {

@@ -5,7 +5,10 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateLeadTest } from "@/lib/generation/service";
 import { assertAdmin } from "@/lib/auth";
+import { expandSlots, type Rule } from "@/lib/availability";
 import type { SupabaseClient } from "@supabase/supabase-js";
+
+const HORIZON_WEEKS = 4;
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -154,6 +157,112 @@ export async function provisionAccounts(
   await admin.from("leads").update({ status: "converted" }).eq("id", leadId);
   revalidatePath(`/admin/registrations/${leadId}`);
   return { guardian: { email: lead.guardian_email, password: gPassword }, student: { email: sEmail, password: sPassword } };
+}
+
+/**
+ * Expand the active weekly rules (minus exception dates) into concrete bookable
+ * slots over a rolling horizon. UPSERT (never duplicates), then prune only the
+ * rule-generated OPEN future slots that no longer match — booked and manually
+ * added slots are never touched.
+ */
+export async function regenerateSlots() {
+  const { supabase, profile } = await assertAdmin();
+  const tenantId = profile.tenant_id;
+
+  const { data: tenant } = await supabase.from("tenants").select("timezone").eq("id", tenantId).maybeSingle();
+  const timezone = tenant?.timezone ?? "Asia/Riyadh";
+
+  const { data: rules } = await supabase
+    .from("availability_rules")
+    .select("id, instructor_id, weekday, start_time, end_time, slot_minutes")
+    .eq("active", true);
+  const { data: exceptions } = await supabase.from("availability_exceptions").select("on_date").eq("kind", "block");
+  const exceptionDates = new Set<string>((exceptions ?? []).map((e: any) => e.on_date));
+
+  const desired = expandSlots({ rules: (rules ?? []) as Rule[], exceptionDates, timezone, horizonWeeks: HORIZON_WEEKS });
+
+  if (desired.length) {
+    const rows = desired.map((d) => ({
+      tenant_id: tenantId,
+      instructor_id: d.instructor_id,
+      starts_at: d.starts_at,
+      duration_minutes: d.duration_minutes,
+      status: "open",
+      source_rule_id: d.source_rule_id,
+    }));
+    const { error } = await supabase.from("availability_slots").upsert(rows, { onConflict: "instructor_id,starts_at", ignoreDuplicates: true });
+    if (error) throw new Error(error.message);
+  }
+
+  // Prune stale generated-open future slots (compare by epoch, not string).
+  const desiredEpochs = new Set(desired.map((d) => Date.parse(d.starts_at)));
+  const nowIso = new Date().toISOString();
+  const { data: existing } = await supabase
+    .from("availability_slots")
+    .select("id, starts_at")
+    .eq("status", "open")
+    .not("source_rule_id", "is", null)
+    .gte("starts_at", nowIso);
+  const stale = (existing ?? []).filter((s: any) => !desiredEpochs.has(Date.parse(s.starts_at))).map((s: any) => s.id);
+  if (stale.length) {
+    const { error } = await supabase.from("availability_slots").delete().in("id", stale);
+    if (error) throw new Error(error.message);
+  }
+
+  revalidatePath("/admin/availability");
+}
+
+/** Add a recurring weekly availability rule, then regenerate slots. */
+export async function createRule(formData: FormData) {
+  const weekday = Number(formData.get("weekday"));
+  const startTime = String(formData.get("startTime") ?? "");
+  const endTime = String(formData.get("endTime") ?? "");
+  const slotMinutes = Number(formData.get("slotMinutes") ?? 30);
+  if (Number.isNaN(weekday) || !startTime || !endTime) throw new Error("أكمِل بيانات القاعدة.");
+  if (endTime <= startTime) throw new Error("وقت النهاية يجب أن يكون بعد البداية.");
+
+  const { supabase, profile } = await assertAdmin();
+  const instructorId = await defaultInstructorId(supabase, profile.tenant_id);
+  const { error } = await supabase.from("availability_rules").insert({
+    tenant_id: profile.tenant_id,
+    instructor_id: instructorId,
+    weekday,
+    start_time: startTime,
+    end_time: endTime,
+    slot_minutes: slotMinutes,
+  });
+  if (error) throw new Error(error.message);
+  await regenerateSlots();
+}
+
+export async function deleteRule(formData: FormData) {
+  const id = String(formData.get("ruleId") ?? "");
+  const { supabase } = await assertAdmin();
+  // Drop this rule's future open slots first (FK would otherwise orphan them).
+  await supabase.from("availability_slots").delete().eq("source_rule_id", id).eq("status", "open").gte("starts_at", new Date().toISOString());
+  const { error } = await supabase.from("availability_rules").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  await regenerateSlots();
+}
+
+export async function addException(formData: FormData) {
+  const onDate = String(formData.get("onDate") ?? "");
+  const reason = String(formData.get("reason") ?? "").trim() || null;
+  if (!onDate) throw new Error("اختر تاريخاً.");
+  const { supabase, profile } = await assertAdmin();
+  const { error } = await supabase
+    .from("availability_exceptions")
+    .upsert({ tenant_id: profile.tenant_id, on_date: onDate, reason, kind: "block" }, { onConflict: "tenant_id,on_date" });
+  if (error) throw new Error(error.message);
+  await regenerateSlots();
+}
+
+export async function removeException(formData: FormData) {
+  const id = String(formData.get("exceptionId") ?? "");
+  const { supabase } = await assertAdmin();
+  const { error } = await supabase.from("availability_exceptions").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  await regenerateSlots();
 }
 
 /** Admin sign-out. */
