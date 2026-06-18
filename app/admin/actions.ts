@@ -61,12 +61,16 @@ export async function generateLeadTestAction(formData: FormData) {
 
   const { data: lead } = await supabase
     .from("leads")
-    .select("id, tenant_id, student_grade, student_level")
+    .select("id, tenant_id, student_age, student_level")
     .eq("id", leadId)
     .single();
   if (!lead) throw new Error("الطلب غير موجود.");
 
-  const questions = await generateLeadTest({ grade: lead.student_grade, level: lead.student_level, count: 10 });
+  const questions = await generateLeadTest({
+    grade: lead.student_age ? `عمر ${lead.student_age} سنة` : null,
+    level: lead.student_level,
+    count: 10,
+  });
   if (!questions.length) throw new Error("تعذّر توليد الاختبار.");
 
   const { data: test, error } = await supabase

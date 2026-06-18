@@ -19,11 +19,9 @@ export async function submitLead(_prev: LeadState | undefined, formData: FormDat
   const guardian_nationality = get("guardianNationality");
   const guardian_relation = get("guardianRelation");
   const referral_source = get("referralSource");
-  const online_ready = get("onlineReady");
   const consent = formData.get("consent") === "1";
   const student_name = get("studentName");
-  const student_dob = get("studentDob");
-  const student_grade = get("studentGrade"); // stage code
+  const student_age = get("studentAge");
   const student_level = get("studentLevel"); // overall level code
   const school_type = get("schoolType");
   const learning_goal = get("learningGoal");
@@ -61,12 +59,10 @@ export async function submitLead(_prev: LeadState | undefined, formData: FormDat
       guardian_nationality: guardian_nationality || null,
       guardian_relation: guardian_relation || null,
       referral_source: referral_source || null,
-      online_ready: online_ready || null,
       consent_accepted: consent,
       consent_at: consent ? new Date().toISOString() : null,
       student_name,
-      student_dob: student_dob || null,
-      student_grade: student_grade || null,
+      student_age: student_age ? Number(student_age) : null,
       student_level: student_level || null,
       school_type: school_type || null,
       learning_goal: learning_goal || null,

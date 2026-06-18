@@ -5,16 +5,6 @@ import ProvisionPanel from "@/components/studio/ProvisionPanel";
 import { fmtUTC } from "@/lib/datetime";
 import { labelOf, SKILL_AR, ENROLL_SKILLS } from "@/lib/enrollOptions";
 
-function ageFrom(dob?: string | null): string {
-  if (!dob) return "—";
-  const d = new Date(dob);
-  if (isNaN(d.getTime())) return "—";
-  const now = new Date();
-  let a = now.getFullYear() - d.getFullYear();
-  if (now.getMonth() < d.getMonth() || (now.getMonth() === d.getMonth() && now.getDate() < d.getDate())) a--;
-  return `${a} سنة`;
-}
-
 const SITE_URL = "https://ward.academy";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -22,7 +12,7 @@ export default async function Onboarding() {
   const supabase = await createClient();
   const { data: leads } = await supabase
     .from("leads")
-    .select("id, guardian_name, guardian_email, guardian_phone, guardian_country, guardian_nationality, guardian_relation, referral_source, online_ready, consent_accepted, student_name, student_dob, student_grade, student_level, school_type, learning_goal, prior_study, english_use, home_language, skill_levels, student_notes, status, created_at, intro_outcome, intro_notes, intro_done_at")
+    .select("id, guardian_name, guardian_email, guardian_phone, guardian_country, guardian_nationality, guardian_relation, referral_source, consent_accepted, student_name, student_age, student_level, school_type, learning_goal, prior_study, english_use, home_language, skill_levels, student_notes, status, created_at, intro_outcome, intro_notes, intro_done_at")
     .order("created_at", { ascending: false });
   const { data: slots } = await supabase
     .from("availability_slots")
@@ -70,7 +60,7 @@ export default async function Onboarding() {
                     <p className="font-medium text-ink">
                       {lead.student_name}{" "}
                       <span className="text-sm text-ink-soft">
-                        · {labelOf("stage", lead.student_grade)} · {labelOf("level", lead.student_level)} · {ageFrom(lead.student_dob)}
+                        · {lead.student_age ? `${lead.student_age} سنة` : "—"} · {labelOf("level", lead.student_level)}
                       </span>
                     </p>
                     <p className="text-sm text-ink-soft">
@@ -89,7 +79,6 @@ export default async function Onboarding() {
                       <span className="rounded-full bg-brand-50 px-2 py-0.5 text-ink-soft">الاستخدام: {labelOf("englishUse", lead.english_use)}</span>
                       {lead.home_language && <span className="rounded-full bg-brand-50 px-2 py-0.5 text-ink-soft">لغة البيت: {lead.home_language}</span>}
                       {lead.prior_study && <span className="rounded-full bg-brand-50 px-2 py-0.5 text-ink-soft">سابقاً: {labelOf("priorStudy", lead.prior_study)}</span>}
-                      {lead.online_ready && <span className="rounded-full bg-brand-50 px-2 py-0.5 text-ink-soft">أونلاين: {labelOf("onlineReady", lead.online_ready)}</span>}
                       {lead.consent_accepted && <span className="rounded-full bg-leaf/10 px-2 py-0.5 font-medium text-leaf">وافق على الخصوصية ✓</span>}
                     </div>
                     {lead.skill_levels && (

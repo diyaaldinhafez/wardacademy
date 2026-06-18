@@ -5,7 +5,7 @@ import { submitLead, bookSlot } from "@/app/enroll/actions";
 import FlowerMark from "../FlowerMark";
 import BudMark from "../BudMark";
 import {
-  STAGES,
+  AGES,
   SCHOOL_TYPES,
   GOALS,
   LEVELS,
@@ -14,7 +14,6 @@ import {
   ENGLISH_USE,
   RELATIONS,
   REFERRALS,
-  ONLINE_READY,
   ENROLL_SKILLS,
   SKILL_AR,
   type Opt,
@@ -176,22 +175,18 @@ export default function EnrollFlow({ slots }: { slots: Slot[] }) {
           <p className="text-sm font-semibold text-brand-700">بيانات الطالب</p>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>الاسم الكامل للطالب</label>
+              <label className={labelCls}>الاسم الكامل</label>
               <input name="studentName" required={step === 1} className={field} placeholder="الاسم الأوّل والأخير" />
             </div>
             <div>
-              <label className={labelCls}>تاريخ الميلاد</label>
-              <input name="studentDob" type="date" required={step === 1} className={field} dir="ltr" />
+              <label className={labelCls}>العمر</label>
+              <select name="studentAge" defaultValue="" required={step === 1} className={field}>
+                <option value="" disabled>اختر…</option>
+                {AGES.map((a) => (
+                  <option key={a} value={a}>{a} سنة</option>
+                ))}
+              </select>
             </div>
-          </div>
-          <div>
-            <label className={labelCls}>المرحلة الدراسية</label>
-            <select name="studentGrade" defaultValue="" required={step === 1} className={field}>
-              <option value="" disabled>اختر المرحلة…</option>
-              {STAGES.map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
           </div>
           <div>
             <label className={labelCls}>نوع التعليم الحاليّ</label>
@@ -281,10 +276,6 @@ export default function EnrollFlow({ slots }: { slots: Slot[] }) {
                 <option key={r.value} value={r.value}>{r.label}</option>
               ))}
             </select>
-          </div>
-          <div>
-            <label className={labelCls}>جاهزية الجلسة أونلاين (جهاز + إنترنت)</label>
-            <RadioPills name="onlineReady" options={ONLINE_READY} required={step === 2} />
           </div>
           <label className="flex cursor-pointer items-start gap-2 rounded-2xl border border-brand-100 bg-white p-3 text-sm text-ink has-[:checked]:border-brand-400 has-[:checked]:bg-brand-50">
             <input type="checkbox" name="consent" value="1" required={step === 2} className="mt-0.5 h-4 w-4 accent-[#7F55D9]" />

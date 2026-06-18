@@ -5,18 +5,8 @@ import { SKILL_AR, type Skill } from "@/lib/skills";
 
 export type Opt = { value: string; label: string };
 
-// Current school stage — Grade 1 through end of middle school (9 levels).
-export const STAGES: Opt[] = [
-  { value: "g1", label: "الأول الابتدائي" },
-  { value: "g2", label: "الثاني الابتدائي" },
-  { value: "g3", label: "الثالث الابتدائي" },
-  { value: "g4", label: "الرابع الابتدائي" },
-  { value: "g5", label: "الخامس الابتدائي" },
-  { value: "g6", label: "السادس الابتدائي" },
-  { value: "g7", label: "الأول المتوسط" },
-  { value: "g8", label: "الثاني المتوسط" },
-  { value: "g9", label: "الثالث المتوسط" },
-];
+// Selectable ages for the student (7–15).
+export const AGES: number[] = Array.from({ length: 9 }, (_, i) => i + 7);
 
 export const SCHOOL_TYPES: Opt[] = [
   { value: "public", label: "مدرسة حكوميّة" },
@@ -68,17 +58,11 @@ export const RELATIONS: Opt[] = [
 ];
 
 export const REFERRALS: Opt[] = [
+  { value: "facebook", label: "فيسبوك" },
   { value: "instagram", label: "إنستغرام" },
   { value: "friend", label: "صديق أو معرفة" },
   { value: "search", label: "بحث Google" },
-  { value: "school", label: "المدرسة" },
   { value: "other", label: "مصدرٌ آخر" },
-];
-
-export const ONLINE_READY: Opt[] = [
-  { value: "ready", label: "نعم، جهاز وإنترنت مستقرّ" },
-  { value: "partial", label: "جزئياً (جهازٌ مشترك/إنترنت ضعيف)" },
-  { value: "unsure", label: "غير متأكّد" },
 ];
 
 // The four assessed skills on the enrolment form (vocabulary excluded here).
@@ -88,7 +72,6 @@ export { SKILL_AR };
 // value → label lookups for the admin display.
 const toMap = (opts: Opt[]) => Object.fromEntries(opts.map((o) => [o.value, o.label]));
 export const LABELS: Record<string, Record<string, string>> = {
-  stage: toMap(STAGES),
   schoolType: toMap(SCHOOL_TYPES),
   goal: toMap(GOALS),
   level: toMap(LEVELS),
@@ -97,7 +80,6 @@ export const LABELS: Record<string, Record<string, string>> = {
   englishUse: toMap(ENGLISH_USE),
   relation: toMap(RELATIONS),
   referral: toMap(REFERRALS),
-  onlineReady: toMap(ONLINE_READY),
 };
 export const labelOf = (group: keyof typeof LABELS, value?: string | null) =>
   value ? LABELS[group]?.[value] ?? value : "—";
