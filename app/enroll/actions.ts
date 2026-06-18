@@ -27,7 +27,7 @@ export async function submitLead(_prev: LeadState | undefined, formData: FormDat
   const learning_goal = get("learningGoal");
   const prior_study = get("priorStudy");
   const english_use = get("englishUse");
-  const home_language = get("homeLanguage");
+  const home_language = formData.getAll("homeLanguage").map(String).map((s) => s.trim()).filter(Boolean).join("، ");
   const student_notes = get("studentNotes");
 
   // Per-skill self-assessment → { listening, speaking, ... }.

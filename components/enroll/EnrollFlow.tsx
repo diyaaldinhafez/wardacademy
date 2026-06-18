@@ -6,6 +6,8 @@ import FlowerMark from "../FlowerMark";
 import BudMark from "../BudMark";
 import {
   AGES,
+  COUNTRIES_ALL,
+  HOME_LANGUAGES,
   SCHOOL_TYPES,
   GOALS,
   LEVELS,
@@ -80,6 +82,22 @@ function RadioPills({ name, options, required, size = "md" }: { name: string; op
         <label key={o.value} className={cls}>
           <input type="radio" name={name} value={o.value} required={required} className="sr-only" />
           {o.label}
+        </label>
+      ))}
+    </div>
+  );
+}
+
+function CheckPills({ name, values }: { name: string; values: string[] }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {values.map((v) => (
+        <label
+          key={v}
+          className="cursor-pointer rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink has-[:checked]:border-brand-400 has-[:checked]:bg-brand-50"
+        >
+          <input type="checkbox" name={name} value={v} className="sr-only" />
+          {v}
         </label>
       ))}
     </div>
@@ -193,8 +211,8 @@ export default function EnrollFlow({ slots }: { slots: Slot[] }) {
             <RadioPills name="schoolType" options={SCHOOL_TYPES} required={step === 1} />
           </div>
           <div>
-            <label className={labelCls}>اللغة الأساسية في البيت</label>
-            <input name="homeLanguage" className={field} placeholder="مثال: العربية، أو العربية والألمانية" />
+            <label className={labelCls}>اللغة/اللغات الأساسية في البيت (يمكن اختيار أكثر من واحدة)</label>
+            <CheckPills name="homeLanguage" values={HOME_LANGUAGES} />
           </div>
           <div>
             <label className={labelCls}>استخدام الإنجليزية في حياته اليومية</label>
@@ -261,13 +279,18 @@ export default function EnrollFlow({ slots }: { slots: Slot[] }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>بلد الإقامة</label>
-              <input name="guardianCountry" required={step === 2} className={field} placeholder="مثال: ألمانيا" />
+              <input name="guardianCountry" list="countries-list" required={step === 2} className={field} placeholder="ابدأ الكتابة…" />
             </div>
             <div>
               <label className={labelCls}>الجنسية</label>
-              <input name="guardianNationality" className={field} placeholder="مثال: سعوديّة" />
+              <input name="guardianNationality" list="countries-list" className={field} placeholder="ابدأ الكتابة…" />
             </div>
           </div>
+          <datalist id="countries-list">
+            {COUNTRIES_ALL.map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
           <div>
             <label className={labelCls}>كيف عرفتم عنّا؟</label>
             <select name="referralSource" defaultValue="" className={field}>
