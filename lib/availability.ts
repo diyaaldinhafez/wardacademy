@@ -1,5 +1,8 @@
 import { DateTime } from "luxon";
 
+// A break between consecutive sessions, so the teacher isn't booked back-to-back.
+export const BREAK_MINUTES = 15;
+
 export type Rule = {
   id: string;
   instructor_id: string;
@@ -51,7 +54,8 @@ export function expandSlots(opts: {
       const e = parseHM(r.end_time);
       let t = day.set({ hour: s.hour, minute: s.minute, second: 0, millisecond: 0 });
       const end = day.set({ hour: e.hour, minute: e.minute, second: 0, millisecond: 0 });
-      for (; t.plus({ minutes: r.slot_minutes }) <= end; t = t.plus({ minutes: r.slot_minutes })) {
+      // Step by session length + a 15-minute break before the next slot.
+      for (; t.plus({ minutes: r.slot_minutes }) <= end; t = t.plus({ minutes: r.slot_minutes + BREAK_MINUTES })) {
         if (t <= now) continue;
         out.push({
           instructor_id: r.instructor_id,

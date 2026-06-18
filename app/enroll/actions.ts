@@ -52,6 +52,7 @@ export async function submitLead(_prev: LeadState | undefined, formData: FormDat
     .from("leads")
     .insert({
       tenant_id: tenant.id,
+      book_token: crypto.randomUUID().replace(/-/g, ""),
       guardian_name,
       guardian_email,
       guardian_phone: guardian_phone || null,
@@ -79,21 +80,13 @@ export async function submitLead(_prev: LeadState | undefined, formData: FormDat
   return { leadId: lead.id };
 }
 
-/** Book one of the teacher's open intro slots for this lead. */
-export async function bookSlot(_prev: BookState | undefined, formData: FormData): Promise<BookState> {
-  const leadId = String(formData.get("leadId") ?? "");
-  const slotId = String(formData.get("slotId") ?? "");
-  if (!leadId || !slotId) return { error: "اختر موعداً متاحاً." };
-
-  const admin = createAdminClient();
-  const { data: slot } = await admin
-    .from("availability_slots")
-    .select("id, starts_at, status")
-    .eq("id", slotId)
-    .single();
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Atomically claim an open slot for a lead, mark the lead booked, and send the
+// confirmation email (best-effort). Shared by the inline flow and the /book link.
+async function claimAndConfirm(admin: any, leadId: string, slotId: string): Promise<BookState> {
+  const { data: slot } = await admin.from("availability_slots").select("id, starts_at, status").eq("id", slotId).single();
   if (!slot || slot.status !== "open") return { error: "هذا الموعد لم يعد متاحاً — اختر غيره." };
 
-  // atomic claim: only succeeds if still open
   const { data: claimed, error } = await admin
     .from("availability_slots")
     .update({ status: "booked", lead_id: leadId })
@@ -104,7 +97,6 @@ export async function bookSlot(_prev: BookState | undefined, formData: FormData)
 
   await admin.from("leads").update({ status: "booked" }).eq("id", leadId);
 
-  // Best-effort confirmation email — never fail the booking on email errors.
   try {
     const { data: lead } = await admin
       .from("leads")
@@ -122,8 +114,28 @@ export async function bookSlot(_prev: BookState | undefined, formData: FormData)
       });
     }
   } catch (e) {
-    console.error("[bookSlot] confirmation email failed:", e);
+    console.error("[booking] confirmation email failed:", e);
   }
 
   return { booked: true, at: slot.starts_at };
+}
+
+/** Book one of the teacher's open intro slots for this lead (inline flow). */
+export async function bookSlot(_prev: BookState | undefined, formData: FormData): Promise<BookState> {
+  const leadId = String(formData.get("leadId") ?? "");
+  const slotId = String(formData.get("slotId") ?? "");
+  if (!leadId || !slotId) return { error: "اختر موعداً متاحاً." };
+  return claimAndConfirm(createAdminClient(), leadId, slotId);
+}
+
+/** Book via a lead's dedicated /book/<token> link (no account, no leadId). */
+export async function bookSlotByToken(_prev: BookState | undefined, formData: FormData): Promise<BookState> {
+  const token = String(formData.get("token") ?? "");
+  const slotId = String(formData.get("slotId") ?? "");
+  if (!token || !slotId) return { error: "اختر موعداً متاحاً." };
+  const admin = createAdminClient();
+  const { data: lead } = await admin.from("leads").select("id, status").eq("book_token", token).maybeSingle();
+  if (!lead) return { error: "رابط الحجز غير صالح." };
+  if (lead.status === "converted") return { error: "اكتمل تسجيلك بالفعل." };
+  return claimAndConfirm(admin, lead.id, slotId);
 }

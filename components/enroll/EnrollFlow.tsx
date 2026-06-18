@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { submitLead, bookSlot } from "@/app/enroll/actions";
 import FlowerMark from "../FlowerMark";
 import BudMark from "../BudMark";
+import SlotPicker from "./SlotPicker";
 import {
   AGES,
   COUNTRIES_ALL,
@@ -140,23 +141,7 @@ export default function EnrollFlow({ slots }: { slots: Slot[] }) {
         <Header title="احجز جلسةً تعريفيةً مجانية" sub="اختر وقتاً يناسبك من أوقات المعلّم المتاحة." />
         <form action={bookAction} className="rounded-3xl border border-brand-100 bg-cream/40 p-6 shadow-ward-1">
           <input type="hidden" name="leadId" value={leadId} />
-          {slots.length === 0 ? (
-            <p className="text-sm text-ink-soft">لا توجد أوقاتٌ متاحةٌ حالياً — سيتواصل المعلّم معك لتحديد موعدٍ مناسب.</p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {slots.map((s, i) => (
-                <label
-                  key={s.id}
-                  className="flex cursor-pointer items-center gap-3 rounded-2xl border border-brand-100 bg-white px-4 py-3 text-sm has-[:checked]:border-brand-400 has-[:checked]:bg-brand-50"
-                >
-                  <input type="radio" name="slotId" value={s.id} required defaultChecked={i === 0} className="h-4 w-4 accent-[#7F55D9]" />
-                  <span className="text-ink">
-                    {fmtSlot(s.starts_at)} · {s.duration_minutes} دقيقة
-                  </span>
-                </label>
-              ))}
-            </div>
-          )}
+          <SlotPicker slots={slots} />
           {bookState?.error && <p className="mt-3 text-sm font-semibold text-red-600">{bookState.error}</p>}
           <button type="submit" disabled={bookPending || slots.length === 0} className={`${greenBtn} mt-4 w-full`}>
             {bookPending ? "جارٍ الحجز…" : "تأكيد الحجز"}

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/purity -- server component: date math per request is intentional */
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import EnrollFlow from "@/components/enroll/EnrollFlow";
@@ -13,14 +14,17 @@ export default async function EnrollPage() {
 
   let slots: { id: string; starts_at: string; duration_minutes: number }[] = [];
   if (tenant) {
+    // Visitors see only the next two weeks of openings.
+    const twoWeeks = new Date(Date.now() + 14 * 24 * 3600 * 1000).toISOString();
     const { data } = await admin
       .from("availability_slots")
       .select("id, starts_at, duration_minutes")
       .eq("tenant_id", tenant.id)
       .eq("status", "open")
       .gte("starts_at", new Date().toISOString())
+      .lt("starts_at", twoWeeks)
       .order("starts_at")
-      .limit(24);
+      .limit(40);
     slots = data ?? [];
   }
 

@@ -51,6 +51,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const phone = (lead.guardian_phone ?? "").replace(/[^0-9]/g, "");
   const shareLink = test?.share_token ? `${SITE_URL}/t/${test.share_token}` : "";
   const waTest = phone && shareLink ? `https://wa.me/${phone}?text=${encodeURIComponent("اختبار تحديد المستوى لطفلك: " + shareLink)}` : "";
+  const bookUrl = lead.book_token ? `${SITE_URL}/book/${lead.book_token}` : "";
+  const waBook = phone && bookUrl ? `https://wa.me/${phone}?text=${encodeURIComponent("احجز جلسة طفلك التعريفية المجانية: " + bookUrl)}` : "";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 760 }}>
@@ -107,16 +109,29 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
       </Card>
 
       {/* Booking */}
-      <Card style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <div style={{ flex: 1 }}>
-          <div style={secTitle}>الجلسة التعريفية</div>
-          <p style={{ fontSize: 13.5, color: "var(--text-body)" }}>{slot ? `الموعد: ${fmtUTC(slot.starts_at)}` : "لم يُحجز موعدٌ بعد."}</p>
+      <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ flex: 1 }}>
+            <div style={secTitle}>الجلسة التعريفية</div>
+            <p style={{ fontSize: 13.5, color: "var(--text-body)" }}>{slot ? `الموعد: ${fmtUTC(slot.starts_at)}` : "لم يُحجز موعدٌ بعد."}</p>
+          </div>
+          {slot && (
+            <form action={resendConfirmation}>
+              <input type="hidden" name="leadId" value={lead.id} />
+              <SubmitButton pendingText="…" className={btn("ghost")}>أعِد إرسال بريد التأكيد</SubmitButton>
+            </form>
+          )}
         </div>
-        {slot && (
-          <form action={resendConfirmation}>
-            <input type="hidden" name="leadId" value={lead.id} />
-            <SubmitButton pendingText="…" className={btn("ghost")}>أعِد إرسال بريد التأكيد</SubmitButton>
-          </form>
+        {!slot && lead.book_token && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--border-soft)", paddingTop: 10 }}>
+            <p style={{ fontSize: 12.5, color: "var(--text-muted)" }}>أرسِل رابط الحجز لوليّ الأمر ليختار موعداً:</p>
+            <p dir="ltr" style={{ wordBreak: "break-all", background: "var(--surface-soft)", borderRadius: 8, padding: 8, fontSize: 12 }}>{bookUrl}</p>
+            {waBook && (
+              <a href={waBook} target="_blank" rel="noopener noreferrer" className={btn("success", "md")} style={{ alignSelf: "flex-start" }}>
+                أرسِل رابط الحجز عبر واتساب
+              </a>
+            )}
+          </div>
         )}
       </Card>
 
