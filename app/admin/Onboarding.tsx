@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { generateLeadTestAction, approveLeadTestAction, resendConfirmation } from "./actions";
+import { generateLeadTestAction, approveLeadTestAction, resendConfirmation, saveIntroReport } from "./actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import ProvisionPanel from "@/components/studio/ProvisionPanel";
 import { fmtUTC } from "@/lib/datetime";
@@ -11,7 +11,7 @@ export default async function Onboarding() {
   const supabase = await createClient();
   const { data: leads } = await supabase
     .from("leads")
-    .select("id, guardian_name, guardian_email, guardian_phone, student_name, student_grade, student_level, student_notes, status, created_at")
+    .select("id, guardian_name, guardian_email, guardian_phone, student_name, student_grade, student_level, student_notes, status, created_at, intro_outcome, intro_notes, intro_done_at")
     .order("created_at", { ascending: false });
   const { data: slots } = await supabase
     .from("availability_slots")
@@ -153,6 +153,26 @@ export default async function Onboarding() {
                       </ol>
                     </div>
                   )}
+                </div>
+
+                {/* Intro session report */}
+                <div className="mt-3 border-t border-brand-100 pt-3">
+                  <p className="mb-2 text-xs font-medium text-ink">
+                    تقرير الجلسة التعريفية {lead.intro_done_at && <span className="text-emerald-700">· سُجّل ✓</span>}
+                  </p>
+                  <form action={saveIntroReport} className="flex flex-col gap-2">
+                    <input type="hidden" name="leadId" value={lead.id} />
+                    <select name="outcome" defaultValue={lead.intro_outcome ?? ""} className="rounded-lg border border-brand-200 px-2 py-1.5 text-sm">
+                      <option value="">— النتيجة —</option>
+                      <option value="interested">مهتمّ — نُكمل التسجيل</option>
+                      <option value="follow_up">يحتاج متابعة</option>
+                      <option value="declined">اعتذر</option>
+                    </select>
+                    <textarea name="notes" rows={2} defaultValue={lead.intro_notes ?? ""} placeholder="ملاحظات الجلسة التعريفية" className="rounded border border-brand-200 px-2 py-1 text-sm" />
+                    <SubmitButton pendingText="…" className="self-start rounded-lg border border-brand-200 px-3 py-1.5 text-sm hover:bg-brand-50 disabled:opacity-60">
+                      {lead.intro_done_at ? "حدّث التقرير" : "احفظ التقرير"}
+                    </SubmitButton>
+                  </form>
                 </div>
 
                 {lead.status === "converted" ? (

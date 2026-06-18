@@ -15,8 +15,14 @@ const AR_STAGE: Record<string, string> = {
 export default async function StudentsPage() {
   const supabase = await createClient();
 
-  const { data: people } = await supabase.from("profiles").select("id, full_name, roles");
-  const learners = (people ?? []).filter((p: any) => ((p.roles as string[]) ?? []).includes("learner"));
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: people } = await supabase.from("profiles").select("id, full_name, roles, assigned_instructor_id");
+  const learners = (people ?? []).filter(
+    (p: any) =>
+      ((p.roles as string[]) ?? []).includes("learner") && (!p.assigned_instructor_id || p.assigned_instructor_id === user?.id),
+  );
 
   const { data: prog } = await supabase
     .from("progress_records")

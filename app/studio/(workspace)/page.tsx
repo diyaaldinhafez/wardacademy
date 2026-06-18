@@ -19,8 +19,14 @@ export default async function TodayPage() {
   const end = new Date(start);
   end.setUTCDate(end.getUTCDate() + 1);
 
-  const { data: people } = await supabase.from("profiles").select("id, full_name, roles");
-  const learners = (people ?? []).filter((p: any) => ((p.roles as string[]) ?? []).includes("learner"));
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: people } = await supabase.from("profiles").select("id, full_name, roles, assigned_instructor_id");
+  const learners = (people ?? []).filter(
+    (p: any) =>
+      ((p.roles as string[]) ?? []).includes("learner") && (!p.assigned_instructor_id || p.assigned_instructor_id === user?.id),
+  );
   const nameOf = new Map<string, string>();
   for (const l of learners) nameOf.set(l.id, (l.full_name as string) ?? l.id);
 

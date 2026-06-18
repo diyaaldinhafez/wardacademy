@@ -124,6 +124,7 @@ export async function provisionAccounts(
   if (!lead) return { error: "الطلب غير موجود." };
   if (lead.status === "converted") return { error: "جُهّزت الحسابات مسبقاً." };
 
+  const instructorId = await defaultInstructorId(supabase, lead.tenant_id);
   const admin = createAdminClient();
   const gPassword = "Ward-" + Math.random().toString(36).slice(2, 8);
   const sPassword = "Ward-" + Math.random().toString(36).slice(2, 8);
@@ -139,7 +140,7 @@ export async function provisionAccounts(
     await admin.auth.admin.deleteUser(g.user.id);
     return { error: se.message };
   }
-  await admin.from("profiles").insert({ id: s.user.id, tenant_id: lead.tenant_id, full_name: lead.student_name, roles: ["learner"], is_minor: true, login_email: sEmail });
+  await admin.from("profiles").insert({ id: s.user.id, tenant_id: lead.tenant_id, full_name: lead.student_name, roles: ["learner"], is_minor: true, login_email: sEmail, assigned_instructor_id: instructorId });
   await admin.from("guardianships").insert({ tenant_id: lead.tenant_id, guardian_id: g.user.id, learner_id: s.user.id, relationship: "parent", consent_granted: true, consent_at: new Date().toISOString() });
 
   // carry over placement level
@@ -296,6 +297,20 @@ export async function resendConfirmation(formData: FormData) {
   });
   if (!res.ok && !res.skipped) throw new Error(res.error ?? "تعذّر الإرسال.");
   revalidatePath(`/admin/registrations`);
+}
+
+/** Record the outcome of the free intro session on the lead. */
+export async function saveIntroReport(formData: FormData) {
+  const leadId = String(formData.get("leadId") ?? "");
+  const outcome = String(formData.get("outcome") ?? "").trim() || null;
+  const notes = String(formData.get("notes") ?? "").trim() || null;
+  const { supabase } = await assertAdmin();
+  const { error } = await supabase
+    .from("leads")
+    .update({ intro_outcome: outcome, intro_notes: notes, intro_done_at: new Date().toISOString() })
+    .eq("id", leadId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/registrations");
 }
 
 /** Admin sign-out. */
