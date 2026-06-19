@@ -47,7 +47,7 @@ export default async function TodayPage() {
   const levelOf = new Map<string, string>();
   for (const pl of (placements ?? []) as any[]) if (pl.status === "completed" && !levelOf.has(pl.learner_id)) levelOf.set(pl.learner_id, pl.suggested_level);
 
-  const { data: drafts } = await supabase.from("items").select("id, prompt, format").eq("status", "draft").order("created_at", { ascending: false }).limit(4);
+  const { data: drafts } = await supabase.from("items").select("id, prompt, format, target_learner_id").eq("status", "draft").order("created_at", { ascending: false }).limit(4);
   const { count: reportDraftCount } = await supabase.from("session_reports").select("id", { count: "exact", head: true }).eq("status", "draft");
   const draftCount = (drafts ?? []).length;
   const totalReviews = draftCount + (reportDraftCount ?? 0);
@@ -61,7 +61,7 @@ export default async function TodayPage() {
         {/* Sessions */}
         <Card>
           <div style={secTitle}>{sessionsLabel}</div>
-          {sessions.length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا جلسات مجدولة. جدوِلها من «تقارير الجلسات».</p>}
+          {sessions.length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا جلسات مجدولة. جدوِلها من صفحة الطالب.</p>}
           {sessions.map((s: any, i: number) => (
             <div key={s.id} style={{ ...row, ...(i === sessions.length - 1 ? { borderBottom: "none" } : {}) }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-brand)", width: 56, flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>{timeOf(s.scheduled_at)}</span>
@@ -71,7 +71,7 @@ export default async function TodayPage() {
                 <br />
                 <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{fmtUTC(s.scheduled_at)} · {s.duration_minutes} دقيقة</span>
               </span>
-              <Link href="/studio/homework" className="ward-btn ward-btn--ghost ward-btn--sm">التحضير</Link>
+              <Link href={`/studio/students/${s.learner_id}`} className="ward-btn ward-btn--ghost ward-btn--sm">التحضير</Link>
             </div>
           ))}
         </Card>
@@ -107,11 +107,11 @@ export default async function TodayPage() {
                 <span dir="ltr" style={{ fontSize: 13, fontWeight: 600, color: "var(--text-strong)", flex: 1, fontFamily: "var(--font-en-body)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.prompt}</span>
                 <AITrustBadge status="draft" compact />
               </div>
-              <Link href="/studio/reviews" className="ward-btn ward-btn--soft ward-btn--sm" style={{ alignSelf: "flex-start" }}>راجِع واعتمِد</Link>
+              <Link href={d.target_learner_id ? `/studio/students/${d.target_learner_id}` : "/studio/students"} className="ward-btn ward-btn--soft ward-btn--sm" style={{ alignSelf: "flex-start" }}>راجِع واعتمِد</Link>
             </div>
           ))}
           {(reportDraftCount ?? 0) > 0 && (
-            <Link href="/studio/reviews" className="ward-btn ward-btn--ghost ward-btn--sm" style={{ alignSelf: "flex-start" }}>
+            <Link href="/studio/students" className="ward-btn ward-btn--ghost ward-btn--sm" style={{ alignSelf: "flex-start" }}>
               + {reportDraftCount} تقرير جلسة بانتظار الاعتماد ←
             </Link>
           )}

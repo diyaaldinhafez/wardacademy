@@ -5,14 +5,16 @@ import { createClient } from "@/lib/supabase/server";
 import {
   startPlacement, startPlan, approvePlan, materializePlanObjectives, draftReportWithAI, assignItem,
   addResource, removeResource, createAssessment, recordAssessment, removeAssessment,
+  generateDraft, approveItem, rejectItem, updateReport, approveReport,
 } from "@/app/studio/actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import SessionScheduleForm from "@/components/studio/SessionScheduleForm";
 import StudentTabs, { type StudentTab } from "@/components/studio/StudentTabs";
+import ItemCard from "@/components/studio/ItemCard";
 import { Card, Badge, Avatar, AITrustBadge, Spark } from "@/components/ward/ui";
 import { bloomStage } from "@/lib/progress";
 import { petalValues } from "@/lib/skills";
-import { FORMAT_LABELS } from "@/lib/items";
+import { FORMAT_LABELS, ITEM_FORMATS, DIFFICULTIES } from "@/lib/items";
 import { fmtUTC } from "@/lib/datetime";
 
 const objOf = (o: any) => (Array.isArray(o) ? o[0] : o) ?? {};
@@ -56,7 +58,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
   const { data: sessions } = await supabase
     .from("sessions")
-    .select("id, scheduled_at, duration_minutes, status, lesson_title, plan_item_index, session_reports(id, status)")
+    .select("id, scheduled_at, duration_minutes, status, lesson_title, plan_item_index, session_reports(id, status, summary, strengths, improve)")
     .eq("learner_id", id)
     .order("scheduled_at", { ascending: true });
   const nowIso = new Date().toISOString();
@@ -83,7 +85,16 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     } else looseAssigns.push(a);
   }
 
-  const { data: approvedItems } = await supabase.from("items").select("id, prompt, format").eq("status", "approved").order("created_at", { ascending: false });
+  // Approved items relevant to this learner (targeted to them, or untargeted/shared).
+  const { data: approvedItems } = await supabase.from("items").select("id, prompt, format").eq("status", "approved").or(`target_learner_id.eq.${id},target_learner_id.is.null`).order("created_at", { ascending: false });
+  // This learner's own AI homework drafts (await teacher approval).
+  const { data: draftItems } = await supabase
+    .from("items")
+    .select("id, prompt, content, format, difficulty, status, item_keys(answer, explanation, rubric), objectives(description, level)")
+    .eq("status", "draft").eq("target_learner_id", id)
+    .order("created_at", { ascending: false });
+  // The tenant's objectives — the bank the teacher generates homework from.
+  const { data: objectives } = await supabase.from("objectives").select("id, description, level").order("created_at", { ascending: false });
   const { data: resources } = await supabase.from("learning_resources").select("id, title, url, note, created_at").eq("learner_id", id).order("created_at", { ascending: false });
   const { data: assessments } = await supabase.from("assessments").select("id, title, scope, status, score, max_score, notes, scheduled_for, completed_at").eq("learner_id", id).order("created_at", { ascending: false });
 
@@ -142,16 +153,33 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           <AssignToSession sessionId={s.id} />
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8, borderTop: "1px solid var(--ink-100)", paddingTop: 8 }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>التقرير</span>
-          {!report && (
-            <form action={draftReportWithAI} style={{ marginInlineStart: "auto" }}>
-              <input type="hidden" name="sessionId" value={s.id} />
-              <SubmitButton pendingText="…" className={btn("soft")}><Spark size={13} /> ولّد</SubmitButton>
-            </form>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--ink-100)", paddingTop: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>التقرير</span>
+            {!report && (
+              <form action={draftReportWithAI} style={{ marginInlineStart: "auto" }}>
+                <input type="hidden" name="sessionId" value={s.id} />
+                <SubmitButton pendingText="…" className={btn("soft")}><Spark size={13} /> ولّد بالذكاء</SubmitButton>
+              </form>
+            )}
+            {report?.status === "approved" && <span style={{ marginInlineStart: "auto", display: "flex", alignItems: "center", gap: 6 }}><AITrustBadge status="approved" compact /><span style={{ fontSize: 12, color: "var(--leaf-700)" }}>ظاهرٌ للعائلة</span></span>}
+          </div>
+          {report?.status === "draft" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, background: "var(--surface-soft)", borderRadius: 10, padding: 10 }}>
+              <AITrustBadge status="draft" />
+              <form action={updateReport} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <input type="hidden" name="reportId" value={report.id} />
+                <textarea name="summary" required rows={2} defaultValue={report.summary ?? ""} className={ctl} placeholder="ملخّص" />
+                <input name="strengths" defaultValue={report.strengths ?? ""} className={ctl} placeholder="نقاط القوة" />
+                <input name="improve" defaultValue={report.improve ?? ""} className={ctl} placeholder="للتحسين" />
+                <SubmitButton pendingText="…" className={btn("secondary")}>احفظ التعديلات</SubmitButton>
+              </form>
+              <form action={approveReport}>
+                <input type="hidden" name="reportId" value={report.id} />
+                <SubmitButton pendingText="…" className={btn("success")}>اعتمِد — يظهر للعائلة</SubmitButton>
+              </form>
+            </div>
           )}
-          {report?.status === "draft" && <a href="/studio/reviews" className={btn("ghost")} style={{ marginInlineStart: "auto" }}><AITrustBadge status="draft" compact /> راجِع ←</a>}
-          {report?.status === "approved" && <span style={{ marginInlineStart: "auto" }}><AITrustBadge status="approved" compact /></span>}
         </div>
       </div>
     );
@@ -230,6 +258,56 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           <form action={startPlan}><input type="hidden" name="learnerId" value={id} /><SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}><Spark size={14} /> ولّد خطّةً بالذكاء</SubmitButton></form>
         )}
       </Card>
+
+      {/* Create homework with AI (targets this student) */}
+      <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={secTitle}>إنشاء واجبٍ بالذكاء</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}><Spark size={13} /> مسودّةٌ تُراجِعها قبل الإرسال</span>
+        </div>
+        {(objectives ?? []).length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>أضِف أهداف الخطّة أولاً («أضِف الأهداف للمنهاج»).</p>
+        ) : (
+          <form action={generateDraft} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
+            <input type="hidden" name="learnerId" value={id} />
+            <select name="objectiveId" required defaultValue="" className={sel} style={{ width: "auto", minHeight: 40, flex: 1, minWidth: 160, maxWidth: 280 }}>
+              <option value="" disabled>الهدف…</option>
+              {(objectives ?? []).map((o: any) => <option key={o.id} value={o.id}>{o.level ? `${o.level} · ` : ""}{o.description}</option>)}
+            </select>
+            <select name="format" defaultValue="multiple_choice" className={sel} style={{ width: "auto", minHeight: 40 }}>
+              {ITEM_FORMATS.map((f) => <option key={f} value={f}>{FORMAT_LABELS[f]}</option>)}
+            </select>
+            <select name="difficulty" defaultValue="easy" className={sel} style={{ width: "auto", minHeight: 40 }}>
+              {DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+            <SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}>ولّد مسودّة</SubmitButton>
+          </form>
+        )}
+      </Card>
+
+      {/* Drafts awaiting approval */}
+      {(draftItems ?? []).length > 0 && (
+        <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={secTitle}>مسودّاتٌ بانتظار اعتمادك</span>
+            <AITrustBadge status="draft" compact />
+            <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{(draftItems ?? []).length}</span>
+          </div>
+          {(draftItems ?? []).map((it: any) => (
+            <ItemCard
+              key={it.id}
+              it={it}
+              right={
+                <div style={{ display: "flex", gap: 8 }}>
+                  <form action={approveItem}><input type="hidden" name="itemId" value={it.id} /><SubmitButton pendingText="…" className={btn("success")}>اعتمِد</SubmitButton></form>
+                  <form action={rejectItem}><input type="hidden" name="itemId" value={it.id} /><SubmitButton pendingText="…" className={btn("ghost")}>ارفض</SubmitButton></form>
+                </div>
+              }
+            />
+          ))}
+          <p style={{ fontSize: 12, color: "var(--text-muted)" }}>بعد الاعتماد تُسنِدها لجلسةٍ من تبويب «الجلسات».</p>
+        </Card>
+      )}
 
       <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={secTitle}>مصادر التعلّم</div>

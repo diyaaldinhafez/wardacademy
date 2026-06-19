@@ -37,6 +37,7 @@ export async function generateDraft(formData: FormData) {
   const objectiveId = String(formData.get("objectiveId") ?? "");
   const format = String(formData.get("format") ?? "") as ItemFormat;
   const difficulty = String(formData.get("difficulty") ?? "") as Difficulty;
+  const targetLearnerId = String(formData.get("learnerId") ?? "").trim() || null;
 
   const supabase = await createClient();
   const {
@@ -77,6 +78,7 @@ export async function generateDraft(formData: FormData) {
       origin: "ai",
       status: "draft",
       created_by: user.id,
+      target_learner_id: targetLearnerId,
     })
     .select("id")
     .single();
@@ -91,7 +93,7 @@ export async function generateDraft(formData: FormData) {
   });
   if (keyErr) throw new Error(keyErr.message);
 
-  revalidatePath("/studio");
+  revalidatePath("/studio", "layout");
 }
 
 export async function approveItem(formData: FormData) {
@@ -107,7 +109,7 @@ export async function approveItem(formData: FormData) {
     .update({ status: "approved", approved_by: user.id, approved_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/studio");
+  revalidatePath("/studio", "layout");
 }
 
 export async function rejectItem(formData: FormData) {
@@ -115,7 +117,7 @@ export async function rejectItem(formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.from("items").update({ status: "rejected" }).eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/studio");
+  revalidatePath("/studio", "layout");
 }
 
 /** Assign an approved item to a learner (so it appears in their practice). */
@@ -212,7 +214,7 @@ export async function createReport(formData: FormData) {
     status: "draft",
   });
   if (error) throw new Error(error.code === "23505" ? "A report already exists for this session." : error.message);
-  revalidatePath("/studio");
+  revalidatePath("/studio", "layout");
 }
 
 export async function approveReport(formData: FormData) {
@@ -223,7 +225,7 @@ export async function approveReport(formData: FormData) {
     .update({ status: "approved", approved_at: new Date().toISOString() })
     .eq("id", reportId);
   if (error) throw new Error(error.message);
-  revalidatePath("/studio");
+  revalidatePath("/studio", "layout");
 }
 
 /** Generate a draft report from the learner's progress (teacher edits + approves). */
@@ -273,7 +275,7 @@ export async function draftReportWithAI(formData: FormData) {
     status: "draft",
   });
   if (error) throw new Error(error.code === "23505" ? "A report already exists for this session." : error.message);
-  revalidatePath("/studio");
+  revalidatePath("/studio", "layout");
 }
 
 /** Start a placement test for a learner: generate questions across CEFR levels. */
@@ -313,7 +315,7 @@ export async function startPlacement(formData: FormData) {
   const { error: qErr } = await supabase.from("placement_questions").insert(rows);
   if (qErr) throw new Error(qErr.message);
 
-  revalidatePath("/studio");
+  revalidatePath("/studio", "layout");
 }
 
 /** Generate a draft study plan for a learner (informed by their placement level). */
@@ -353,7 +355,7 @@ export async function startPlan(formData: FormData) {
     created_by: user.id,
   });
   if (error) throw new Error(error.message);
-  revalidatePath("/studio");
+  revalidatePath("/studio", "layout");
 }
 
 export async function approvePlan(formData: FormData) {
@@ -364,7 +366,7 @@ export async function approvePlan(formData: FormData) {
     .update({ status: "approved", approved_at: new Date().toISOString() })
     .eq("id", planId);
   if (error) throw new Error(error.message);
-  revalidatePath("/studio");
+  revalidatePath("/studio", "layout");
 }
 
 /** Turn a plan's objectives into real objectives so items can be generated/assigned. */
@@ -395,7 +397,7 @@ export async function materializePlanObjectives(formData: FormData) {
   }));
   const { error } = await supabase.from("objectives").insert(rows);
   if (error) throw new Error(error.message);
-  revalidatePath("/studio");
+  revalidatePath("/studio", "layout");
 }
 
 /** Edit a draft report's text before approving. */
@@ -412,7 +414,7 @@ export async function updateReport(formData: FormData) {
     .update({ summary, strengths: strengths || null, improve: improve || null })
     .eq("id", reportId);
   if (error) throw new Error(error.message);
-  revalidatePath("/studio");
+  revalidatePath("/studio", "layout");
 }
 
 // — Curriculum resources & assessments (the student detail page) —
