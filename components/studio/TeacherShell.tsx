@@ -9,10 +9,7 @@ import FlowerMark from "@/components/FlowerMark";
 
 const NAV = [
   { href: "/studio", label: "اليوم", d: "M3 11l9-8 9 8M5 9v11h14V9" },
-  { href: "/studio/reviews", label: "مراجعات الذكاء", d: "M12 3l1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5L12 3z", badge: "reviews" as const },
   { href: "/studio/students", label: "الطلاب", d: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21v-1a6 6 0 0112 0v1" },
-  { href: "/studio/homework", label: "الواجبات", d: "M9 3h6l5 5v13H4V3h5zM9 13h6M9 17h4" },
-  { href: "/studio/reports", label: "تقارير الجلسات", d: "M4 19V5m0 14h16M8 15v-4m4 4V8m4 7v-6" },
   { href: "/studio/availability", label: "تفرّغي", d: "M7 3v3m10-3v3M4 8h16M5 6h14a1 1 0 011 1v12a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1z" },
 ];
 
