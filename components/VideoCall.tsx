@@ -19,6 +19,9 @@ export default function VideoCall({ sessionId, label = "انضمام للجلس�
     try {
       const { url, token } = await joinVideoSession(sessionId);
       const Daily = (await import("@daily-co/daily-js")).default;
+      // Daily forbids two call instances on a page — reuse/destroy any existing one.
+      const existing = Daily.getCallInstance?.();
+      if (existing) await existing.destroy();
       const frame = Daily.createFrame(containerRef.current!, {
         showLeaveButton: true,
         iframeStyle: { width: "100%", height: "100%", border: "0", borderRadius: "12px" },
@@ -28,11 +31,17 @@ export default function VideoCall({ sessionId, label = "انضمام للجلس�
         frameRef.current = null;
         setState("idle");
       });
+      frame.on("error", (ev) => {
+        console.error("[VideoCall] daily error", ev);
+        setErr(`Daily: ${ev?.errorMsg ?? "خطأ غير معروف"}`);
+      });
       frameRef.current = frame;
       await frame.join({ url, token });
       setState("in");
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "تعذّر الانضمام للجلسة.");
+      console.error("[VideoCall] join failed", e);
+      const msg = (e as { errorMsg?: string; message?: string })?.errorMsg ?? (e as Error)?.message ?? (typeof e === "string" ? e : JSON.stringify(e));
+      setErr(`تعذّر الانضمام: ${msg}`);
       setState("error");
     }
   }
