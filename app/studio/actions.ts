@@ -589,3 +589,75 @@ export async function generateLessonSessions(formData: FormData) {
   }
   revalidatePath(`/studio/students/${learnerId}`);
 }
+
+// — Manual homework path (Note 4): teacher side —
+
+const HOMEWORK_BUCKET = "homework-files";
+
+async function uploadHomeworkFile(admin: ReturnType<typeof createAdminClient>, tenantId: string, learnerId: string, file: File) {
+  const safe = file.name.replace(/[^\w.\-]+/g, "_").slice(-80);
+  const path = `${tenantId}/${learnerId}/${crypto.randomUUID()}-${safe}`;
+  const buf = Buffer.from(await file.arrayBuffer());
+  const up = await admin.storage.from(HOMEWORK_BUCKET).upload(path, buf, { contentType: file.type || "application/octet-stream", upsert: false });
+  if (up.error) throw new Error(up.error.message);
+  return { path, file };
+}
+
+/** Post a manual homework (textbook image + optional worksheets) for a student. */
+export async function createManualHomework(formData: FormData) {
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const sessionId = String(formData.get("sessionId") ?? "").trim() || null;
+  const title = String(formData.get("title") ?? "").trim();
+  const instructions = String(formData.get("instructions") ?? "").trim() || null;
+  const prompt = formData.get("prompt") as File | null;
+  const worksheets = formData.getAll("worksheets").filter((f): f is File => f instanceof File && f.size > 0);
+  if (!learnerId || !title) throw new Error("أدخِل عنوان الواجب.");
+  if (!prompt || prompt.size === 0) throw new Error("أرفِق صورة الواجب من الكتاب.");
+  if (prompt.size > RESOURCE_MAX_BYTES) throw new Error("حجم الصورة أكبر من 25 ميغابايت.");
+
+  const { user, tenantId } = await instructorCtx();
+  const admin = createAdminClient();
+  const { data: hw, error } = await admin.from("manual_homework").insert({
+    tenant_id: tenantId, learner_id: learnerId, instructor_id: user.id, session_id: sessionId, title, instructions, status: "assigned",
+  }).select("id").single();
+  if (error || !hw) throw new Error(error?.message ?? "تعذّر إنشاء الواجب.");
+
+  const files: { kind: string; f: File }[] = [{ kind: "prompt", f: prompt }, ...worksheets.map((f) => ({ kind: "worksheet", f }))];
+  for (const { kind, f } of files) {
+    const { path } = await uploadHomeworkFile(admin, tenantId, learnerId, f);
+    await admin.from("homework_files").insert({ tenant_id: tenantId, manual_homework_id: hw.id, kind, file_path: path, file_name: f.name, mime_type: f.type || null, size_bytes: f.size, uploaded_by: user.id });
+  }
+  revalidatePath(`/studio/students/${learnerId}`);
+}
+
+/** Grade a submitted manual homework. */
+export async function gradeManualHomework(formData: FormData) {
+  const id = String(formData.get("manualHomeworkId") ?? "");
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const rawScore = String(formData.get("score") ?? "").trim();
+  const rawMax = String(formData.get("maxScore") ?? "").trim();
+  const feedback = String(formData.get("feedback") ?? "").trim() || null;
+  const { supabase } = await instructorCtx();
+  const { error } = await supabase.from("manual_homework").update({
+    status: "graded",
+    score: rawScore === "" ? null : Number(rawScore),
+    max_score: rawMax === "" ? null : Number(rawMax),
+    feedback,
+    graded_at: new Date().toISOString(),
+  }).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/studio/students/${learnerId}`);
+}
+
+export async function removeManualHomework(formData: FormData) {
+  const id = String(formData.get("manualHomeworkId") ?? "");
+  const learnerId = String(formData.get("learnerId") ?? "");
+  await instructorCtx();
+  const admin = createAdminClient();
+  const { data: files } = await admin.from("homework_files").select("file_path").eq("manual_homework_id", id);
+  const { error } = await admin.from("manual_homework").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  const paths = (files ?? []).map((f: { file_path: string }) => f.file_path);
+  if (paths.length) await admin.storage.from(HOMEWORK_BUCKET).remove(paths);
+  revalidatePath(`/studio/students/${learnerId}`);
+}

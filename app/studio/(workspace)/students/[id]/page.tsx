@@ -8,6 +8,7 @@ import {
   addResource, removeResource, createAssessment, recordAssessment, removeAssessment,
   generateDraft, approveItem, rejectItem, updateReport, approveReport,
   setLessonSchedule, generateLessonSessions,
+  createManualHomework, gradeManualHomework, removeManualHomework,
 } from "@/app/studio/actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import SessionScheduleForm from "@/components/studio/SessionScheduleForm";
@@ -131,6 +132,31 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const { data: assessments } = await supabase.from("assessments").select("id, title, scope, status, score, max_score, notes, scheduled_for, completed_at").eq("learner_id", id).order("created_at", { ascending: false });
   const { data: lessonSchedule } = await supabase.from("lesson_schedules").select("weekday, time_of_day, duration_minutes").eq("learner_id", id).maybeSingle();
 
+  // Manual homework (image-based) + signed URLs for its files, grouped by session.
+  const { data: manualHw } = await supabase
+    .from("manual_homework")
+    .select("id, session_id, title, instructions, status, score, max_score, feedback, homework_files(id, kind, file_name, file_path)")
+    .eq("learner_id", id)
+    .order("created_at", { ascending: false });
+  const hwFileUrls = new Map<string, string>();
+  {
+    const allFiles = (manualHw ?? []).flatMap((h: any) => h.homework_files ?? []);
+    if (allFiles.length) {
+      const admin = createAdminClient();
+      await Promise.all(allFiles.map(async (f: any) => {
+        const { data } = await admin.storage.from("homework-files").createSignedUrl(f.file_path, 3600);
+        if (data?.signedUrl) hwFileUrls.set(f.id, data.signedUrl);
+      }));
+    }
+  }
+  const manualBySession = new Map<string, any[]>();
+  const looseManual: any[] = [];
+  for (const h of (manualHw ?? []) as any[]) {
+    if (h.session_id) { const arr = manualBySession.get(h.session_id) ?? []; arr.push(h); manualBySession.set(h.session_id, arr); }
+    else looseManual.push(h);
+  }
+  const HW_KIND_AR: Record<string, string> = { prompt: "صورة الواجب", worksheet: "ورقة عمل", submission: "حلّ الطالب" };
+
   // Alerts
   const pastNoReport = past.filter((s: any) => !one(s.session_reports)).length;
   const ungraded = (subs ?? []).filter((s: any) => !s.graded).length;
@@ -160,16 +186,74 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         <input type="hidden" name="learnerId" value={id} />
         <input type="hidden" name="sessionId" value={sessionId} />
         <select name="itemId" required defaultValue="" className={sel} style={{ width: "auto", minHeight: 34, maxWidth: 220, fontSize: 12.5 }}>
-          <option value="" disabled>أسنِد واجباً…</option>
+          <option value="" disabled>أسنِد واجباً رقمياً…</option>
           {(approvedItems ?? []).map((it: any) => <option key={it.id} value={it.id}>{it.prompt.slice(0, 40)}</option>)}
         </select>
         <SubmitButton pendingText="…" className={btn("ghost")}>أضِف</SubmitButton>
       </form>
     );
 
+  // A manual homework: teacher files, the student's uploaded solution, grading.
+  const ManualHwItem = ({ h }: { h: any }) => {
+    const tFiles = (h.homework_files ?? []).filter((f: any) => f.kind !== "submission");
+    const subFiles = (h.homework_files ?? []).filter((f: any) => f.kind === "submission");
+    const tone = h.status === "graded" ? "success" : h.status === "submitted" ? "warning" : "neutral";
+    const label = h.status === "graded" ? `مُصحَّح${h.score != null ? `: ${h.score}${h.max_score != null ? `/${h.max_score}` : ""}` : ""}` : h.status === "submitted" ? "بانتظار التصحيح" : "بانتظار حلّ الطالب";
+    return (
+      <div style={{ borderRadius: 10, background: "var(--surface-soft)", padding: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <Badge tone="brand">يدويّ</Badge>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-strong)", flex: 1 }}>{h.title}</span>
+          <Badge tone={tone}>{label}</Badge>
+          <form action={removeManualHomework}><input type="hidden" name="manualHomeworkId" value={h.id} /><input type="hidden" name="learnerId" value={id} /><SubmitButton className={btn("ghost")}>✕</SubmitButton></form>
+        </div>
+        {h.instructions && <p style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{h.instructions}</p>}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {[...tFiles, ...subFiles].map((f: any) => {
+            const href = hwFileUrls.get(f.id);
+            return href ? (
+              <a key={f.id} href={href} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: f.kind === "submission" ? "var(--leaf-700)" : "var(--brand)", textDecoration: "none", border: "1px solid var(--border-soft)", borderRadius: 8, padding: "3px 8px" }}>
+                {HW_KIND_AR[f.kind]} ↓
+              </a>
+            ) : null;
+          })}
+        </div>
+        {h.status === "submitted" && (
+          <form action={gradeManualHomework} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
+            <input type="hidden" name="manualHomeworkId" value={h.id} />
+            <input type="hidden" name="learnerId" value={id} />
+            <input name="score" type="number" placeholder="الدرجة" className={ctl} style={{ width: 90 }} />
+            <input name="maxScore" type="number" placeholder="من" className={ctl} style={{ width: 80 }} />
+            <input name="feedback" placeholder="ملاحظة" className={ctl} style={{ width: "auto", flex: 1, minWidth: 120 }} />
+            <SubmitButton pendingText="…" className={btn("success")}>صحّح</SubmitButton>
+          </form>
+        )}
+        {h.status === "graded" && h.feedback && <p style={{ fontSize: 12.5, color: "var(--text-muted)" }}>ملاحظة: {h.feedback}</p>}
+      </div>
+    );
+  };
+
+  const ManualHwCreate = ({ sessionId }: { sessionId: string | null }) => (
+    <details>
+      <summary style={{ fontSize: 12.5, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>+ واجبٌ يدويّ (من الكتاب)</summary>
+      <form action={createManualHomework} style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+        <input type="hidden" name="learnerId" value={id} />
+        {sessionId && <input type="hidden" name="sessionId" value={sessionId} />}
+        <input name="title" required placeholder="عنوان الواجب" className={ctl} />
+        <input name="instructions" placeholder="تعليمات (اختياري)" className={ctl} />
+        <label style={{ fontSize: 11.5, color: "var(--text-muted)" }}>صورة الواجب من الكتاب (مطلوبة)</label>
+        <input name="prompt" type="file" required accept="image/*,.pdf" className={ctl} />
+        <label style={{ fontSize: 11.5, color: "var(--text-muted)" }}>أوراق عمل (اختياري، متعدّدة)</label>
+        <input name="worksheets" type="file" multiple accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" className={ctl} />
+        <SubmitButton pendingText="جارٍ الرفع…" className={btn("secondary")}>أنشئ الواجب اليدويّ</SubmitButton>
+      </form>
+    </details>
+  );
+
   const SessionCard = ({ s }: { s: any }) => {
     const report = one(s.session_reports);
     const hw = assignsBySession.get(s.id) ?? [];
+    const mhw = manualBySession.get(s.id) ?? [];
     return (
       <div style={{ borderRadius: 12, border: "1px solid var(--border-soft)", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -181,9 +265,11 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>الواجب</span>
-          {hw.length === 0 && <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>لا واجب لهذه الجلسة.</span>}
+          {hw.length === 0 && mhw.length === 0 && <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>لا واجب لهذه الجلسة.</span>}
           {hw.map((a: any) => <HomeworkRow key={a.id} a={a} />)}
+          {mhw.map((h: any) => <ManualHwItem key={h.id} h={h} />)}
           <AssignToSession sessionId={s.id} />
+          <ManualHwCreate sessionId={s.id} />
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--ink-100)", paddingTop: 8 }}>
@@ -432,10 +518,11 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         </div>
       )}
       {(sessions ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا جلسات بعد.</p>}
-      {looseAssigns.length > 0 && (
-        <Card style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {(looseAssigns.length > 0 || looseManual.length > 0) && (
+        <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={secTitle}>واجباتٌ غير مرتبطةٍ بجلسة</div>
           {looseAssigns.map((a: any) => <HomeworkRow key={a.id} a={a} />)}
+          {looseManual.map((h: any) => <ManualHwItem key={h.id} h={h} />)}
         </Card>
       )}
     </div>
