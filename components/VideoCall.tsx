@@ -60,7 +60,12 @@ export default function VideoCall({ sessionId, label = "انضمام للجلس�
         </button>
       )}
       {err && <p style={{ fontSize: 12, color: "var(--rose-700, #b4435f)" }}>{err}</p>}
-      <div ref={containerRef} style={{ width: "100%", height: state === "in" ? 460 : 0, overflow: "hidden", borderRadius: 12, transition: "height .2s" }} />
+      {state === "in" && (
+        <button onClick={() => containerRef.current?.requestFullscreen?.()} className="ward-btn ward-btn--ghost ward-btn--sm" style={{ alignSelf: "flex-start" }}>
+          ⛶ ملء الشاشة
+        </button>
+      )}
+      <div ref={containerRef} style={{ width: "100%", height: state === "in" ? "min(72vh, 680px)" : 0, minHeight: state === "in" ? 420 : 0, overflow: "hidden", borderRadius: 12, background: "#000", transition: "height .2s" }} />
     </div>
   );
 }
