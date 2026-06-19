@@ -328,7 +328,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             <form action={setPaymentStatus}>
               <input type="hidden" name="leadId" value={lead.id} />
               <input type="hidden" name="status" value="link_sent" />
-              <SubmitButton pendingText="…" className={btn("soft")}>سجّل: أُرسل رابط الدفع</SubmitButton>
+              <SubmitButton pendingText="…" className={btn("warm")}>سجّل: أُرسل رابط الدفع</SubmitButton>
             </form>
           )}
           {lead.payment_status !== "paid" && (

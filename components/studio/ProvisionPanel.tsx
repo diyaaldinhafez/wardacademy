@@ -38,11 +38,7 @@ export default function ProvisionPanel({ leadId, guardianPhone }: { leadId: stri
   return (
     <form action={action}>
       <input type="hidden" name="leadId" value={leadId} />
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-lg border border-brand-200 px-3 py-1.5 text-sm font-medium hover:bg-brand-50 disabled:opacity-60"
-      >
+      <button type="submit" disabled={pending} className="ward-btn ward-btn--success ward-btn--md">
         {pending ? "جارٍ التجهيز…" : "جهّز حسابات وليّ الأمر والطالب"}
       </button>
       {state?.error && <p className="mt-2 text-sm font-semibold text-red-600">{state.error}</p>}

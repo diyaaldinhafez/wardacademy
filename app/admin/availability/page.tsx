@@ -65,7 +65,7 @@ export default async function AvailabilityPage() {
             <Badge tone="success">≈ {sessionsPerRule(r.start_time, r.end_time, r.slot_minutes, brk)} جلسة/أسبوع</Badge>
             <form action={deleteRule} style={{ marginInlineStart: "auto" }}>
               <input type="hidden" name="ruleId" value={r.id} />
-              <SubmitButton className={btn("ghost")}>حذف</SubmitButton>
+              <SubmitButton className={btn("danger")}>حذف</SubmitButton>
             </form>
           </div>
         ))}
