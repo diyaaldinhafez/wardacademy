@@ -1,21 +1,14 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { bloomStage } from "@/lib/progress";
 import { addChild, grantConsent } from "./actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import WorkspaceHeader from "@/components/studio/WorkspaceHeader";
+import { FlowerProgress } from "@/components/bloom/Bloom";
+import { SKILLS, SKILL_AR } from "@/lib/skills";
 import { fmtUTC } from "@/lib/datetime";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const first = (x: any) => (Array.isArray(x) ? x[0] : x) ?? {};
-const AR_STAGE: Record<string, string> = {
-  "Not started": "لم يبدأ بعد",
-  Practiced: "تدرّب",
-  Sprouting: "بذرة",
-  Budding: "برعم",
-  Growing: "ينمو",
-  Blooming: "متفتّح",
-};
 const card = "rounded-2xl border border-brand-100 bg-white p-4 shadow-ward-1";
 const field = "rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm outline-none focus:border-brand-400";
 
@@ -32,7 +25,7 @@ export default async function GuardianPage() {
     .select("learner_id, consent_granted, profiles!guardianships_learner_id_fkey(full_name, login_email)");
   const { data: prog } = await supabase
     .from("progress_records")
-    .select("learner_id, attempts, correct, completions, objectives(description, level)");
+    .select("learner_id, attempts, correct, completions, objectives(description, level, skill)");
   const progByLearner = new Map<string, any[]>();
   for (const r of (prog ?? []) as any[]) {
     const arr = progByLearner.get(r.learner_id) ?? [];
@@ -138,30 +131,37 @@ export default async function GuardianPage() {
                 </div>
               )}
               {rows.length === 0 ? (
-                <p className="text-sm text-ink-soft">لا نشاط بعد.</p>
-              ) : (
-                <ul className="flex flex-col gap-1">
-                  {rows.map((r, i) => {
-                    const o = first(r.objectives);
-                    const stage = bloomStage(r);
-                    return (
-                      <li key={i} className="flex items-center justify-between text-sm">
-                        <span className="text-ink">
-                          {o.level ? `${o.level} · ` : ""}
-                          {o.description ?? "هدف"}
-                        </span>
-                        <span className="flex items-center gap-2">
-                          <span className="rounded-full bg-leaf/10 px-2 py-0.5 font-medium text-leaf">{AR_STAGE[stage.label] ?? stage.label}</span>
-                          <span className="text-ink-soft">
-                            {r.correct}/{r.attempts}
-                            {r.completions ? ` · ${r.completions} تدريب` : ""}
-                          </span>
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
+                <p className="text-sm text-ink-soft">لا نشاط بعد — سيبدأ تقرير التفتّح بمجرّد أوّل واجب.</p>
+              ) : (() => {
+                const isM = (r: any) => r.attempts >= 1 && r.correct / Math.max(1, r.attempts) >= 0.6;
+                const stats = SKILLS.map((sk) => {
+                  const inSkill = rows.filter((r: any) => first(r.objectives).skill === sk);
+                  return { skill: sk, total: inSkill.length, mastered: inSkill.filter(isM).length };
+                });
+                const totalM = stats.reduce((a, s) => a + s.mastered, 0);
+                const totalT = stats.reduce((a, s) => a + s.total, 0);
+                const readOf = (m: number, t: number) => t === 0 ? "لم تبدأ بعد" : m / t >= 0.85 ? "تتفتّح — أداءٌ قويّ" : m / t >= 0.4 ? "تنمو بثبات" : "تحتاج رعاية";
+                return (
+                  <div className="rounded-2xl border border-brand-100 bg-white p-3">
+                    <div className="flex items-center gap-4">
+                      <FlowerProgress size={96} skills={stats.map((s) => ({ label: SKILL_AR[s.skill], value: s.total ? s.mastered / s.total : 0, detail: `${s.mastered}/${s.total}` }))} />
+                      <p className="flex-1 text-sm text-ink" style={{ lineHeight: 1.8 }}>
+                        وردة {name} هذا الأسبوع — أتقن <b>{totalM} من {totalT}</b> هدفاً. أرقامٌ حقيقيةٌ بلا تجميل.
+                      </p>
+                    </div>
+                    <ul className="mt-2 flex flex-col">
+                      {stats.map((s) => (
+                        <li key={s.skill} className="flex items-center gap-2 py-1.5 text-sm" style={{ borderTop: "1px solid var(--ink-100)" }}>
+                          <span className="flex-1 font-medium text-ink">{SKILL_AR[s.skill]}</span>
+                          <span className="text-ink-soft">{readOf(s.mastered, s.total)}</span>
+                          <span className="font-bold text-brand-700" style={{ fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{s.mastered} من {s.total}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-2 text-xs text-ink-soft">«الأساس اللغوي» = المفردات والقواعد. التحدّث يُقيّمه المعلّم.</p>
+                  </div>
+                );
+              })()}
               {(sessionsByLearner.get(c.learner_id) ?? []).length > 0 && (
                 <div className="mt-3 border-t border-brand-100 pt-3">
                   <p className="mb-1 text-xs font-bold text-ink-soft">الجلسات</p>
