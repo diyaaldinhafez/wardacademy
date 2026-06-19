@@ -55,7 +55,7 @@ export async function addSlot(formData: FormData) {
     status: "open",
   });
   if (error) throw new Error(error.code === "23505" ? "هذا الوقت مُضافٌ مسبقاً." : error.message);
-  revalidatePath("/admin/availability");
+  revalidatePath("/admin/teachers", "layout");
 }
 
 export async function removeSlot(formData: FormData) {
@@ -63,7 +63,7 @@ export async function removeSlot(formData: FormData) {
   const { supabase } = await assertAdmin();
   const { error } = await supabase.from("availability_slots").delete().eq("id", id).eq("status", "open");
   if (error) throw new Error(error.message);
-  revalidatePath("/admin/availability");
+  revalidatePath("/admin/teachers", "layout");
 }
 
 /** Generate a tailored placement test for a lead (draft → admin reviews → approves). */
@@ -250,7 +250,7 @@ export async function regenerateSlots() {
     if (error) throw new Error(error.message);
   }
 
-  revalidatePath("/admin/availability");
+  revalidatePath("/admin/teachers", "layout");
 }
 
 /** Add a recurring weekly availability rule, then regenerate slots. */
@@ -702,6 +702,29 @@ export async function saveEvaluation(formData: FormData) {
     );
   if (error) throw new Error(error.message);
   revalidatePath(`/admin/students/${learnerId}`);
+}
+
+/** Update (upsert) a teacher's profile metadata. */
+export async function updateTeacherProfile(formData: FormData) {
+  const instructorId = String(formData.get("instructorId") ?? "");
+  const get = (k: string) => String(formData.get(k) ?? "").trim() || null;
+  const { supabase, profile } = await assertAdmin();
+  const { error } = await supabase.from("teacher_profiles").upsert(
+    {
+      tenant_id: profile.tenant_id,
+      instructor_id: instructorId,
+      bio: get("bio"),
+      languages: get("languages"),
+      specialties: get("specialties"),
+      phone: get("phone"),
+      start_date: get("startDate"),
+      status: get("status") === "inactive" ? "inactive" : "active",
+      notes: get("notes"),
+    },
+    { onConflict: "instructor_id" },
+  );
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/teachers/${instructorId}`);
 }
 
 /** Admin sign-out. */

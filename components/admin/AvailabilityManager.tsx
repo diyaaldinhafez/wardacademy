@@ -10,7 +10,8 @@ import { WEEKDAY_AR, sessionsPerRule } from "@/lib/availability";
 const btn = (v: string, s = "sm") => `ward-btn ward-btn--${v} ward-btn--${s}`;
 const hm = (t: string) => (t ? t.slice(0, 5) : "");
 
-export default async function AvailabilityPage() {
+/** The full availability manager (a teacher's schedule). Self-fetching. */
+export default async function AvailabilityManager() {
   const supabase = await createClient();
   const { data: tenant } = await supabase.from("tenants").select("timezone, slot_break_minutes").maybeSingle();
   const tz = tenant?.timezone ?? "Asia/Riyadh";
@@ -22,7 +23,6 @@ export default async function AvailabilityPage() {
   const open = (slots ?? []).filter((s: any) => s.status === "open");
   const booked = (slots ?? []).filter((s: any) => s.status === "booked");
 
-  // Group open slots by day, in the platform timezone.
   const fmtDate = (iso: string) => new Intl.DateTimeFormat("ar", { timeZone: tz, weekday: "long", day: "numeric", month: "long" }).format(new Date(iso));
   const fmtTime = (iso: string) => new Intl.DateTimeFormat("ar", { timeZone: tz, hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
   const keyOf = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso));
@@ -34,7 +34,7 @@ export default async function AvailabilityPage() {
   }
 
   return (
-    <>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <Card style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <p style={{ fontSize: 13.5, color: "var(--text-muted)", flex: 1, minWidth: 220 }}>
           الأوقات بالمنطقة الزمنية <Badge tone="neutral">{tz}</Badge> · التوليد لأربعة أسابيع (يرى الزائر أسبوعين).
@@ -120,6 +120,6 @@ export default async function AvailabilityPage() {
           </div>
         ))}
       </Card>
-    </>
+    </div>
   );
 }
