@@ -7,6 +7,7 @@ import {
   startPlacement, startPlan, approvePlan, draftReportWithAI, assignItem,
   addResource, removeResource, createAssessment, recordAssessment, removeAssessment,
   generateDraft, approveItem, rejectItem, updateReport, approveReport,
+  setLessonSchedule, generateLessonSessions,
 } from "@/app/studio/actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import SessionScheduleForm from "@/components/studio/SessionScheduleForm";
@@ -16,6 +17,7 @@ import { Card, Badge, Avatar, AITrustBadge, Spark } from "@/components/ward/ui";
 import { bloomStage } from "@/lib/progress";
 import { petalValues, SKILL_AR } from "@/lib/skills";
 import { FORMAT_LABELS, ITEM_FORMATS, DIFFICULTIES } from "@/lib/items";
+import { WEEKDAY_AR } from "@/lib/availability";
 import { fmtUTC } from "@/lib/datetime";
 
 const objOf = (o: any) => (Array.isArray(o) ? o[0] : o) ?? {};
@@ -127,6 +129,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     }));
   }
   const { data: assessments } = await supabase.from("assessments").select("id, title, scope, status, score, max_score, notes, scheduled_for, completed_at").eq("learner_id", id).order("created_at", { ascending: false });
+  const { data: lessonSchedule } = await supabase.from("lesson_schedules").select("weekday, time_of_day, duration_minutes").eq("learner_id", id).maybeSingle();
 
   // Alerts
   const pastNoReport = past.filter((s: any) => !one(s.session_reports)).length;
@@ -385,8 +388,34 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
   const Sessions = (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* Fixed weekly slot → generate the plan's sessions ahead */}
+      <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={secTitle}>الموعد الأسبوعيّ الثابت</div>
+        <form action={setLessonSchedule} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
+          <input type="hidden" name="learnerId" value={id} />
+          <select name="weekday" defaultValue={lessonSchedule?.weekday ?? 0} className={sel} style={{ width: "auto", minHeight: 40 }}>
+            {WEEKDAY_AR.map((w, i) => <option key={i} value={i}>{w}</option>)}
+          </select>
+          <input name="time" type="time" required defaultValue={lessonSchedule ? String(lessonSchedule.time_of_day).slice(0, 5) : "16:00"} className={ctl} style={{ width: "auto" }} />
+          <select name="duration" defaultValue={String(lessonSchedule?.duration_minutes ?? 30)} className={sel} style={{ width: "auto", minHeight: 40 }}>
+            <option value="30">30 دقيقة</option>
+            <option value="45">45 دقيقة</option>
+            <option value="60">60 دقيقة</option>
+          </select>
+          <SubmitButton pendingText="…" className={btn("secondary")}>احفظ الموعد</SubmitButton>
+        </form>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <form action={generateLessonSessions}>
+            <input type="hidden" name="learnerId" value={id} />
+            <SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}>ولّد جلسات الخطّة</SubmitButton>
+          </form>
+          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>يجدول دروس الخطّة أسبوعياً ابتداءً من الموعد، ويربط كلّ جلسةٍ بدرسها.</span>
+        </div>
+      </Card>
+
+      {/* One-off extra session */}
       <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={secTitle}>جدوِل جلسة</div>
+        <div style={secTitle}>جلسةٌ إضافية (مفردة)</div>
         <SessionScheduleForm learnerId={id} planItems={planItems.map((it: any, i: number) => ({ index: i, label: it.description }))} />
         <p style={{ fontSize: 12, color: "var(--text-muted)" }}>يُدخَل بتوقيتك المحلّي ويُعرَض بـ UTC.</p>
       </Card>

@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { DateTime } from "luxon";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -525,5 +526,66 @@ export async function removeAssessment(formData: FormData) {
   const { supabase } = await instructorCtx();
   const { error } = await supabase.from("assessments").delete().eq("id", id);
   if (error) throw new Error(error.message);
+  revalidatePath(`/studio/students/${learnerId}`);
+}
+
+// — Recurring weekly lessons (Note 3) —
+
+/** Set a student's fixed weekly lesson slot (weekday 0=Sunday + local time). */
+export async function setLessonSchedule(formData: FormData) {
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const weekday = Number(formData.get("weekday"));
+  const time = String(formData.get("time") ?? "").trim();
+  const duration = Number(formData.get("duration") ?? 30);
+  if (!learnerId || Number.isNaN(weekday) || !time) throw new Error("أكمِل بيانات الموعد.");
+  const { user, tenantId } = await instructorCtx();
+  const admin = createAdminClient();
+  const { error } = await admin.from("lesson_schedules").upsert(
+    { tenant_id: tenantId, learner_id: learnerId, instructor_id: user.id, weekday, time_of_day: time, duration_minutes: duration, active: true },
+    { onConflict: "learner_id" },
+  );
+  if (error) throw new Error(error.message);
+  revalidatePath(`/studio/students/${learnerId}`);
+}
+
+/**
+ * Generate the upcoming weekly sessions for a student from their fixed slot,
+ * tying each (in order) to the next not-yet-scheduled lesson in the plan.
+ */
+export async function generateLessonSessions(formData: FormData) {
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const { supabase, user, tenantId } = await instructorCtx();
+
+  const { data: sched } = await supabase.from("lesson_schedules").select("weekday, time_of_day, duration_minutes, active").eq("learner_id", learnerId).maybeSingle();
+  if (!sched || !sched.active) throw new Error("حدّد الموعد الأسبوعيّ الثابت أولاً.");
+
+  const { data: plan } = await supabase.from("study_plans").select("items, status").eq("learner_id", learnerId).order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (!plan || plan.status !== "approved") throw new Error("اعتمِد خطّةً دراسيةً أولاً.");
+  const lessons = (plan.items as { description: string }[]) ?? [];
+
+  const { data: existing } = await supabase.from("sessions").select("plan_item_index").eq("learner_id", learnerId);
+  const assigned = new Set<number>((existing ?? []).map((s: { plan_item_index: number | null }) => s.plan_item_index).filter((n): n is number => n != null));
+  const remaining = lessons.map((it, i) => ({ it, i })).filter(({ i }) => !assigned.has(i));
+  if (remaining.length === 0) throw new Error("كلّ دروس الخطّة مجدولةٌ بالفعل.");
+
+  const { data: tenant } = await supabase.from("tenants").select("timezone").eq("id", tenantId).maybeSingle();
+  const tz = tenant?.timezone ?? "Asia/Riyadh";
+  const [hh, mm] = String(sched.time_of_day).split(":").map(Number);
+  const luxonWd = sched.weekday === 0 ? 7 : sched.weekday; // luxon: 1=Mon..7=Sun
+  const now = DateTime.now().setZone(tz);
+  let first = now.set({ hour: hh, minute: mm, second: 0, millisecond: 0 });
+  first = first.plus({ days: (luxonWd - first.weekday + 7) % 7 });
+  if (first <= now) first = first.plus({ weeks: 1 });
+
+  for (let k = 0; k < remaining.length; k++) {
+    const when = first.plus({ weeks: k }).toUTC().toISO();
+    const { it, i } = remaining[k];
+    const { error } = await supabase.from("sessions").insert({
+      tenant_id: tenantId, instructor_id: user.id, learner_id: learnerId,
+      scheduled_at: when, duration_minutes: sched.duration_minutes,
+      lesson_title: it.description, plan_item_index: i,
+    });
+    if (error && error.code !== "23P01" && error.code !== "23505") throw new Error(error.message); // skip taken slots
+  }
   revalidatePath(`/studio/students/${learnerId}`);
 }
