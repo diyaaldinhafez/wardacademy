@@ -12,16 +12,10 @@ export default async function WorkspaceLayout({ children }: { children: ReactNod
 
   const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
 
-  // Sidebar badge: AI drafts (items + session reports) awaiting review.
-  const [{ count: itemDrafts }, { count: reportDrafts }] = await Promise.all([
-    supabase.from("items").select("id", { count: "exact", head: true }).eq("status", "draft"),
-    supabase.from("session_reports").select("id", { count: "exact", head: true }).eq("status", "draft"),
-  ]);
-
   const today = new Intl.DateTimeFormat("ar", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
 
   return (
-    <TeacherShell teacherName={profile?.full_name ?? user.email ?? "المعلّم"} today={today} reviewsCount={(itemDrafts ?? 0) + (reportDrafts ?? 0)}>
+    <TeacherShell teacherName={profile?.full_name ?? user.email ?? "المعلّم"} today={today}>
       {children}
     </TeacherShell>
   );

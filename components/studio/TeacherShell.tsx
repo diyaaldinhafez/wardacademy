@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { logout } from "@/app/studio/actions";
-import { Avatar, Badge } from "@/components/ward/ui";
+import { Avatar } from "@/components/ward/ui";
 import FlowerMark from "@/components/FlowerMark";
 
 const NAV = [
@@ -24,18 +24,15 @@ function NavIcon({ d }: { d: string }) {
 export default function TeacherShell({
   teacherName,
   today,
-  reviewsCount = 0,
   children,
 }: {
   teacherName: string;
   today: string;
-  reviewsCount?: number;
   children: ReactNode;
 }) {
   const pathname = usePathname();
   const isActive = (href: string) => (href === "/studio" ? pathname === "/studio" : pathname.startsWith(href));
   const title = NAV.find((n) => isActive(n.href))?.label ?? "استوديو المعلّم";
-  const counts: Record<string, number> = { reviews: reviewsCount };
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)", fontFamily: "var(--font-ar)" }} dir="rtl">
@@ -61,7 +58,6 @@ export default function TeacherShell({
         </Link>
         {NAV.map((it) => {
           const active = isActive(it.href);
-          const n = it.badge ? counts[it.badge] : 0;
           return (
             <Link
               key={it.href}
@@ -81,7 +77,6 @@ export default function TeacherShell({
             >
               <NavIcon d={it.d} />
               {it.label}
-              {it.badge && n > 0 ? <span style={{ marginInlineStart: "auto" }}><Badge tone={it.badge === "reviews" ? "brand" : "apricot"}>{n}</Badge></span> : null}
             </Link>
           );
         })}
