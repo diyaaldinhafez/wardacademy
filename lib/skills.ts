@@ -23,6 +23,14 @@ export const SKILL_EN: Record<Skill, string> = {
 // Speaking is filled by teacher assessment only (no auto pronunciation scoring).
 export const TEACHER_ASSESSED: Skill = "speaking";
 
+// The teacher rates Speaking on this scale; value (0..1) drives the petal.
+export const SPEAKING_LEVELS: { value: number; label: string }[] = [
+  { value: 0.25, label: "يبدأ" },
+  { value: 0.5, label: "تتطوّر" },
+  { value: 0.75, label: "جيّدة" },
+  { value: 1, label: "متمكّنة" },
+];
+
 export type Petal = { name: Skill; ar: string; value: number };
 
 type ProgressLike = { attempts: number; correct: number; skill?: string | null };

@@ -32,6 +32,9 @@ export default async function GuardianPage() {
     arr.push(r);
     progByLearner.set(r.learner_id, arr);
   }
+  const { data: assess } = await supabase.from("skill_assessments").select("learner_id, skill, value, label");
+  const speakingByLearner = new Map<string, { value: number; label: string | null }>();
+  for (const a of (assess ?? []) as any[]) if (a.skill === "speaking") speakingByLearner.set(a.learner_id, { value: a.value, label: a.label });
   const { data: sessions } = await supabase
     .from("sessions")
     .select("id, scheduled_at, duration_minutes, learner_id")
@@ -138,13 +141,15 @@ export default async function GuardianPage() {
                   const inSkill = rows.filter((r: any) => first(r.objectives).skill === sk);
                   return { skill: sk, total: inSkill.length, mastered: inSkill.filter(isM).length };
                 });
+                const sp = speakingByLearner.get(c.learner_id);
                 const totalM = stats.reduce((a, s) => a + s.mastered, 0);
                 const totalT = stats.reduce((a, s) => a + s.total, 0);
                 const readOf = (m: number, t: number) => t === 0 ? "لم تبدأ بعد" : m / t >= 0.85 ? "تتفتّح — أداءٌ قويّ" : m / t >= 0.4 ? "تنمو بثبات" : "تحتاج رعاية";
+                const valOf = (s: { skill: string; mastered: number; total: number }) => (s.skill === "speaking" ? sp?.value ?? 0 : s.total ? s.mastered / s.total : 0);
                 return (
                   <div className="rounded-2xl border border-brand-100 bg-white p-3">
                     <div className="flex items-center gap-4">
-                      <FlowerProgress size={96} skills={stats.map((s) => ({ label: SKILL_AR[s.skill], value: s.total ? s.mastered / s.total : 0, detail: `${s.mastered}/${s.total}` }))} />
+                      <FlowerProgress size={96} skills={stats.map((s) => ({ label: SKILL_AR[s.skill], value: valOf(s), detail: s.skill === "speaking" ? sp?.label ?? "—" : `${s.mastered}/${s.total}` }))} />
                       <p className="flex-1 text-sm text-ink" style={{ lineHeight: 1.8 }}>
                         وردة {name} هذا الأسبوع — أتقن <b>{totalM} من {totalT}</b> هدفاً. أرقامٌ حقيقيةٌ بلا تجميل.
                       </p>
@@ -153,8 +158,14 @@ export default async function GuardianPage() {
                       {stats.map((s) => (
                         <li key={s.skill} className="flex items-center gap-2 py-1.5 text-sm" style={{ borderTop: "1px solid var(--ink-100)" }}>
                           <span className="flex-1 font-medium text-ink">{SKILL_AR[s.skill]}</span>
-                          <span className="text-ink-soft">{readOf(s.mastered, s.total)}</span>
-                          <span className="font-bold text-brand-700" style={{ fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{s.mastered} من {s.total}</span>
+                          {s.skill === "speaking" ? (
+                            <span className="font-bold text-brand-700" style={{ whiteSpace: "nowrap" }}>{sp?.label ? `تقييم المعلّم: ${sp.label}` : "بانتظار تقييم المعلّم"}</span>
+                          ) : (
+                            <>
+                              <span className="text-ink-soft">{readOf(s.mastered, s.total)}</span>
+                              <span className="font-bold text-brand-700" style={{ fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{s.mastered} من {s.total}</span>
+                            </>
+                          )}
                         </li>
                       ))}
                     </ul>

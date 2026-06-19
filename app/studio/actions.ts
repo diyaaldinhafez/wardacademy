@@ -13,6 +13,7 @@ import {
   generateDiagnostic,
 } from "@/lib/generation/service";
 import { homePathForRoles } from "@/lib/roles";
+import { SPEAKING_LEVELS } from "@/lib/skills";
 import type { ItemFormat, Difficulty } from "@/lib/items";
 
 export async function login(_prev: { error?: string } | undefined, formData: FormData) {
@@ -723,6 +724,24 @@ export async function approveDiagnostic(formData: FormData) {
   const learnerId = String(formData.get("learnerId") ?? "");
   const { supabase } = await instructorCtx();
   const { error } = await supabase.from("diagnostics").update({ status: "approved", approved_at: new Date().toISOString() }).eq("learner_id", learnerId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/studio/students/${learnerId}`);
+}
+
+// — Teacher skill assessment (Speaking; Bloom Map 4/5) —
+
+export async function setSkillAssessment(formData: FormData) {
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const skill = String(formData.get("skill") ?? "");
+  const value = Number(formData.get("value"));
+  if (!learnerId || !skill || Number.isNaN(value)) throw new Error("بيانات التقييم ناقصة.");
+  const v = Math.max(0, Math.min(1, value));
+  const label = SPEAKING_LEVELS.find((l) => l.value === v)?.label ?? null;
+  const { supabase, user, tenantId } = await instructorCtx();
+  const { error } = await supabase.from("skill_assessments").upsert(
+    { tenant_id: tenantId, learner_id: learnerId, skill, value: v, label, updated_by: user.id, updated_at: new Date().toISOString() },
+    { onConflict: "learner_id,skill" },
+  );
   if (error) throw new Error(error.message);
   revalidatePath(`/studio/students/${learnerId}`);
 }

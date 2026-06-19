@@ -10,6 +10,7 @@ import {
   setLessonSchedule, generateLessonSessions,
   createManualHomework, gradeManualHomework, removeManualHomework,
   generateDiagnosticReport, updateDiagnostic, approveDiagnostic,
+  setSkillAssessment,
 } from "@/app/studio/actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import SessionScheduleForm from "@/components/studio/SessionScheduleForm";
@@ -17,7 +18,7 @@ import StudentTabs, { type StudentTab } from "@/components/studio/StudentTabs";
 import ItemCard from "@/components/studio/ItemCard";
 import VideoCall from "@/components/VideoCall";
 import { Card, Badge, Avatar, AITrustBadge, Spark } from "@/components/ward/ui";
-import { petalValues, SKILL_AR, SKILLS, unitStage } from "@/lib/skills";
+import { petalValues, SKILL_AR, SKILLS, unitStage, SPEAKING_LEVELS } from "@/lib/skills";
 import { UnitBloom, FlowerProgress } from "@/components/bloom/Bloom";
 import { FORMAT_LABELS, ITEM_FORMATS, DIFFICULTIES } from "@/lib/items";
 import { WEEKDAY_AR } from "@/lib/availability";
@@ -92,6 +93,9 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     arr.push(r);
     rowsByUnit.set(u, arr);
   }
+  const { data: skillAssess } = await supabase.from("skill_assessments").select("skill, value, label").eq("learner_id", id);
+  const speakingAssess = (skillAssess ?? []).find((a: any) => a.skill === "speaking") as { value: number; label: string | null } | undefined;
+  const skillValue = (sk: string, mastered: number, total: number) => (sk === "speaking" ? speakingAssess?.value ?? 0 : total ? mastered / total : 0);
 
   const { data: sessions } = await supabase
     .from("sessions")
@@ -620,10 +624,26 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       {/* Five-skill mastery, as honest meters (% of mastered objectives) */}
       <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <FlowerProgress size={92} skills={skillStats.map((s) => ({ label: SKILL_AR[s.skill], value: s.total ? s.mastered / s.total : 0, detail: `${s.mastered}/${s.total}` }))} />
-          <div style={{ flex: 1, minWidth: 180, display: "flex", flexDirection: "column", gap: 6 }}>
+          <FlowerProgress size={92} skills={skillStats.map((s) => ({ label: SKILL_AR[s.skill], value: skillValue(s.skill, s.mastered, s.total), detail: s.skill === "speaking" ? speakingAssess?.label ?? "—" : `${s.mastered}/${s.total}` }))} />
+          <div style={{ flex: 1, minWidth: 200, display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={secTitle}>إتقان المهارات الخمس</div>
             {skillStats.map((s) => {
+              if (s.skill === "speaking") {
+                return (
+                  <div key={s.skill} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-strong)", width: 72, flexShrink: 0 }}>{SKILL_AR.speaking}</span>
+                    <form action={setSkillAssessment} style={{ display: "flex", alignItems: "center", gap: 6, flex: 1 }}>
+                      <input type="hidden" name="learnerId" value={id} />
+                      <input type="hidden" name="skill" value="speaking" />
+                      <select name="value" defaultValue={speakingAssess?.value ?? ""} required className={sel} style={{ width: "auto", minHeight: 32, fontSize: 12, flex: 1 }}>
+                        <option value="" disabled>تقييم المعلّمة…</option>
+                        {SPEAKING_LEVELS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
+                      </select>
+                      <SubmitButton pendingText="…" className={btn("ghost")}>حفظ</SubmitButton>
+                    </form>
+                  </div>
+                );
+              }
               const pct = s.total ? Math.round((s.mastered / s.total) * 100) : 0;
               const lag = s.total > 0 && s.mastered / s.total < 0.5;
               return (
@@ -638,7 +658,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             })}
           </div>
         </div>
-        <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>البتلة تمتلئ بنسبة الأهداف المُتقَنة — لا الدرجات الخام. «الأساس اللغوي» = المفردات والقواعد.</p>
+        <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>البتلة تمتلئ بنسبة الأهداف المُتقَنة — لا الدرجات الخام. **التحدّث** تُقيّمه المعلّمة. «الأساس اللغوي» = المفردات والقواعد.</p>
       </Card>
 
       {lagging.length > 0 && (

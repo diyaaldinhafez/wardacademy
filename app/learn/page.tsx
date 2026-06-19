@@ -103,6 +103,9 @@ export default async function LearnPage() {
     const inSkill = progRows.filter((p) => p.o.skill === sk);
     return { skill: sk, total: inSkill.length, mastered: inSkill.filter(isMastered).length };
   });
+  const { data: skillAssess } = await supabase.from("skill_assessments").select("skill, value, label").eq("learner_id", user.id);
+  const speakingAssess = (skillAssess ?? []).find((a: any) => a.skill === "speaking") as { value: number; label: string | null } | undefined;
+  const skillValue = (sk: string, m: number, t: number) => (sk === "speaking" ? speakingAssess?.value ?? 0 : t ? m / t : 0);
 
   // The garden path: the plan's units, each mastered / current / upcoming.
   const planItems = (studyPlan?.items as any[]) ?? [];
@@ -201,7 +204,7 @@ export default async function LearnPage() {
         <h2 className={h2}>وردتي</h2>
         <div className={card}>
           <div className="flex items-center gap-4">
-            <FlowerProgress size={104} skills={skillStats.map((s) => ({ label: SKILL_AR[s.skill], value: s.total ? s.mastered / s.total : 0, detail: `${s.mastered}/${s.total}` }))} />
+            <FlowerProgress size={104} skills={skillStats.map((s) => ({ label: SKILL_AR[s.skill], value: skillValue(s.skill, s.mastered, s.total), detail: s.skill === "speaking" ? speakingAssess?.label ?? "—" : `${s.mastered}/${s.total}` }))} />
             <p className="flex-1 text-sm text-ink-soft" style={{ lineHeight: 1.8 }}>
               كل بتلةٍ مهارة — تنمو ببطءٍ كلّما أتقنتَ أهدافها. الأرقام صادقة: عدد الأهداف المُتقَنة من إجماليها.
             </p>
