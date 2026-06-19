@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  startPlacement, startPlan, approvePlan, materializePlanObjectives, draftReportWithAI, assignItem,
+  startPlacement, startPlan, approvePlan, draftReportWithAI, assignItem,
   addResource, removeResource, createAssessment, recordAssessment, removeAssessment,
   generateDraft, approveItem, rejectItem, updateReport, approveReport,
 } from "@/app/studio/actions";
@@ -14,7 +14,7 @@ import StudentTabs, { type StudentTab } from "@/components/studio/StudentTabs";
 import ItemCard from "@/components/studio/ItemCard";
 import { Card, Badge, Avatar, AITrustBadge, Spark } from "@/components/ward/ui";
 import { bloomStage } from "@/lib/progress";
-import { petalValues } from "@/lib/skills";
+import { petalValues, SKILL_AR } from "@/lib/skills";
 import { FORMAT_LABELS, ITEM_FORMATS, DIFFICULTIES } from "@/lib/items";
 import { fmtUTC } from "@/lib/datetime";
 
@@ -62,6 +62,14 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const { data: pl } = await supabase.from("placement_tests").select("status, suggested_level, created_at").eq("learner_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle();
   const { data: plan } = await supabase.from("study_plans").select("id, title, level, items, status").eq("learner_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle();
   const planItems: any[] = (plan?.items as any[]) ?? [];
+  // Group plan lessons into their units, keeping each lesson's global index.
+  const planGroups: { unit: string; lessons: { it: any; i: number }[] }[] = [];
+  planItems.forEach((it, i) => {
+    const unit = (it.unit as string) || "دروس";
+    let g = planGroups[planGroups.length - 1];
+    if (!g || g.unit !== unit) { g = { unit, lessons: [] }; planGroups.push(g); }
+    g.lessons.push({ it, i });
+  });
 
   const { data: prog } = await supabase.from("progress_records").select("attempts, correct, completions, objectives(description, level, skill)").eq("learner_id", id);
   const rows = (prog ?? []) as any[];
@@ -258,23 +266,34 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             <p style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text-strong)" }}>
               {plan.title} {plan.status === "draft" ? <Badge tone="warning">مسودّة</Badge> : <Badge tone="success">معتمَدة</Badge>}
             </p>
-            <ol style={{ display: "flex", flexDirection: "column", gap: 4, margin: 0, padding: 0, listStyle: "none" }}>
-              {planItems.map((it, i) => {
-                const done = taughtIdx.has(i);
-                const current = !done && [...taughtIdx].every((t) => t !== i) && i === planItems.findIndex((_, j) => !taughtIdx.has(j));
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {planGroups.map((g, gi) => {
+                const firstUntaught = planItems.findIndex((_, j) => !taughtIdx.has(j));
                 return (
-                  <li key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, padding: "4px 0" }}>
-                    <span style={{ width: 18, height: 18, borderRadius: 999, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, background: done ? "var(--leaf-500)" : current ? "var(--brand)" : "var(--ink-100)", color: done || current ? "#fff" : "var(--text-muted)" }}>{done ? "✓" : i + 1}</span>
-                    <span style={{ color: done ? "var(--text-muted)" : "var(--text-body)", textDecoration: done ? "line-through" : "none" }}>{it.level ? `${it.level} · ` : ""}{it.description}</span>
-                    {current && <Badge tone="brand">الحاليّ</Badge>}
-                  </li>
+                  <div key={gi} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <p style={{ fontSize: 12.5, fontWeight: 700, color: "var(--brand)" }}>{g.unit}</p>
+                    {g.lessons.map(({ it, i }) => {
+                      const done = taughtIdx.has(i);
+                      const current = !done && i === firstUntaught;
+                      return (
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, padding: "3px 0" }}>
+                          <span style={{ width: 18, height: 18, borderRadius: 999, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, background: done ? "var(--leaf-500)" : current ? "var(--brand)" : "var(--ink-100)", color: done || current ? "#fff" : "var(--text-muted)" }}>{done ? "✓" : i + 1}</span>
+                          <span style={{ flex: 1, color: done ? "var(--text-muted)" : "var(--text-body)", textDecoration: done ? "line-through" : "none" }}>{it.level ? `${it.level} · ` : ""}{it.description}</span>
+                          {it.skill && SKILL_AR[it.skill as keyof typeof SKILL_AR] && <Badge tone="neutral">{SKILL_AR[it.skill as keyof typeof SKILL_AR]}</Badge>}
+                          {current && <Badge tone="brand">الحاليّ</Badge>}
+                        </div>
+                      );
+                    })}
+                  </div>
                 );
               })}
-            </ol>
-            <div style={{ display: "flex", gap: 8 }}>
-              {plan.status === "draft" && <form action={approvePlan}><input type="hidden" name="planId" value={plan.id} /><SubmitButton pendingText="…" className={btn("success")}>اعتمِد الخطّة</SubmitButton></form>}
-              {plan.status === "approved" && <form action={materializePlanObjectives}><input type="hidden" name="planId" value={plan.id} /><SubmitButton pendingText="…" className={btn("secondary")}>أضِف الأهداف للمنهاج</SubmitButton></form>}
             </div>
+            {plan.status === "draft" && (
+              <form action={approvePlan}>
+                <input type="hidden" name="planId" value={plan.id} />
+                <SubmitButton pendingText="…" className={btn("success")}>اعتمِد الخطّة — تصبح أهدافاً قابلةً للتدريس</SubmitButton>
+              </form>
+            )}
           </>
         ) : (
           <form action={startPlan}><input type="hidden" name="learnerId" value={id} /><SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}><Spark size={14} /> ولّد خطّةً بالذكاء</SubmitButton></form>

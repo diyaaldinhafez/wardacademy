@@ -359,19 +359,14 @@ export async function startPlan(formData: FormData) {
   revalidatePath("/studio", "layout");
 }
 
-export async function approvePlan(formData: FormData) {
-  const planId = String(formData.get("planId") ?? "");
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("study_plans")
-    .update({ status: "approved", approved_at: new Date().toISOString() })
-    .eq("id", planId);
-  if (error) throw new Error(error.message);
-  revalidatePath("/studio", "layout");
-}
+const PLAN_SKILLS = ["listening", "speaking", "reading", "writing", "vocabulary"];
 
-/** Turn a plan's objectives into real objectives so items can be generated/assigned. */
-export async function materializePlanObjectives(formData: FormData) {
+/**
+ * Approve a plan. On the draft→approved transition, its lessons become real
+ * measurable objectives (carrying skill + unit + level) so homework can be
+ * generated/assigned and the right skill petal can be measured.
+ */
+export async function approvePlan(formData: FormData) {
   const planId = String(formData.get("planId") ?? "");
   const supabase = await createClient();
   const {
@@ -379,24 +374,32 @@ export async function materializePlanObjectives(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/studio/login");
 
-  const { data: plan } = await supabase
-    .from("study_plans")
-    .select("tenant_id, items")
-    .eq("id", planId)
-    .single();
+  const { data: plan } = await supabase.from("study_plans").select("tenant_id, items, status").eq("id", planId).single();
   if (!plan) throw new Error("Plan not found");
+  if (plan.status === "approved") {
+    revalidatePath("/studio", "layout");
+    return;
+  }
 
-  const items = (plan.items as { description: string; level: string }[]) ?? [];
-  if (items.length === 0) return;
+  const items = (plan.items as { description: string; level?: string; skill?: string; unit?: string }[]) ?? [];
+  if (items.length) {
+    const rows = items.map((it) => ({
+      tenant_id: plan.tenant_id,
+      track: "cefr",
+      level: it.level ?? null,
+      description: it.description,
+      skill: it.skill && PLAN_SKILLS.includes(it.skill) ? it.skill : null,
+      unit: it.unit ?? null,
+      created_by: user.id,
+    }));
+    const { error: oErr } = await supabase.from("objectives").insert(rows);
+    if (oErr) throw new Error(oErr.message);
+  }
 
-  const rows = items.map((it) => ({
-    tenant_id: plan.tenant_id,
-    track: "cefr",
-    level: it.level,
-    description: it.description,
-    created_by: user.id,
-  }));
-  const { error } = await supabase.from("objectives").insert(rows);
+  const { error } = await supabase
+    .from("study_plans")
+    .update({ status: "approved", approved_at: new Date().toISOString() })
+    .eq("id", planId);
   if (error) throw new Error(error.message);
   revalidatePath("/studio", "layout");
 }

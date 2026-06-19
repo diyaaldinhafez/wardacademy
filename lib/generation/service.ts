@@ -328,12 +328,12 @@ export async function generateIntroReport(input: IntroReportInput): Promise<stri
   return report;
 }
 
-export type PlanObjective = { description: string; level: string };
+export type PlanObjective = { description: string; level: string; skill: string; unit: string };
 export type GeneratedPlan = { title: string; items: PlanObjective[] };
 
 const planTool: Anthropic.Tool = {
   name: "emit_plan",
-  description: "Return a short, progressive study plan as a titled list of learning objectives.",
+  description: "Return a short, progressive study plan: units, each holding a few measurable lesson objectives.",
   input_schema: {
     type: "object",
     properties: {
@@ -343,10 +343,16 @@ const planTool: Anthropic.Tool = {
         items: {
           type: "object",
           properties: {
-            description: { type: "string", description: "A clear, original learning objective." },
+            description: { type: "string", description: "A clear, original, measurable learning objective (one lesson)." },
             level: { type: "string", description: "The CEFR sub-level it targets (e.g. A2)." },
+            skill: {
+              type: "string",
+              enum: ["listening", "speaking", "reading", "writing", "vocabulary"],
+              description: "The single primary language skill this objective builds.",
+            },
+            unit: { type: "string", description: "The unit/theme this lesson belongs to (e.g. 'Unit 1: Daily routines'). Lessons of the same unit share the exact same unit string." },
           },
-          required: ["description", "level"],
+          required: ["description", "level", "skill", "unit"],
         },
       },
     },
@@ -354,15 +360,17 @@ const planTool: Anthropic.Tool = {
   },
 };
 
-/** Generate a draft study plan (5–6 progressive objectives) for a learner's level. */
+/** Generate a draft study plan (units → measurable lesson objectives) for a learner's level. */
 export async function generatePlan(level: string, learnerName: string): Promise<GeneratedPlan> {
   const res = await client().messages.create({
     model: MODEL,
-    max_tokens: 800,
+    max_tokens: 1200,
     system:
       "You design a short English study plan for a child aged 9–13. Given a starting CEFR level, " +
-      "produce 5–6 progressive, original learning objectives (no copied material) that build on each other. " +
-      "Each objective is one clear sentence plus the CEFR sub-level it targets. Return via emit_plan.",
+      "produce 2–3 units, each with 2–4 progressive, original, measurable lesson objectives (no copied material) that build on each other. " +
+      "Each objective is one clear sentence. Tag every objective with: the CEFR sub-level it targets, exactly one primary skill " +
+      "(listening | speaking | reading | writing | vocabulary), and the unit it belongs to (lessons in the same unit must share the identical unit string). " +
+      "Order the items unit by unit. Return via emit_plan.",
     tools: [planTool],
     tool_choice: { type: "tool", name: "emit_plan" },
     messages: [{ role: "user", content: `Student: ${learnerName}. Starting level: ${level}. Create the plan.` }],
