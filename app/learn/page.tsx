@@ -6,6 +6,7 @@ import AnswerForm from "@/components/learn/AnswerForm";
 import SubmitButton from "@/components/studio/SubmitButton";
 import WorkspaceHeader from "@/components/studio/WorkspaceHeader";
 import BloomFlower from "@/components/BloomFlower";
+import VideoCall from "@/components/VideoCall";
 import UnitBloom from "@/components/UnitBloom";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fmtUTC } from "@/lib/datetime";
@@ -172,6 +173,7 @@ export default async function LearnPage() {
             return (
               <li key={s.id} className={card}>
                 <p className="text-sm font-medium text-ink">{fmtUTC(s.scheduled_at)} · {s.duration_minutes} دقيقة</p>
+                <div className="mt-2"><VideoCall sessionId={s.id} label="ادخل الجلسة" /></div>
                 {r && (
                   <div className="mt-2 rounded-xl bg-brand-50 p-3 text-sm">
                     <p className="font-bold text-brand-700">تقرير الجلسة</p>

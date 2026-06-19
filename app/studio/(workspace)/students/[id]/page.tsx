@@ -15,6 +15,7 @@ import SubmitButton from "@/components/studio/SubmitButton";
 import SessionScheduleForm from "@/components/studio/SessionScheduleForm";
 import StudentTabs, { type StudentTab } from "@/components/studio/StudentTabs";
 import ItemCard from "@/components/studio/ItemCard";
+import VideoCall from "@/components/VideoCall";
 import { Card, Badge, Avatar, AITrustBadge, Spark } from "@/components/ward/ui";
 import { bloomStage } from "@/lib/progress";
 import { petalValues, SKILL_AR } from "@/lib/skills";
@@ -264,6 +265,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           <Badge tone={s.status === "completed" ? "success" : s.status === "scheduled" ? "brand" : "neutral"}>{s.status}</Badge>
         </div>
         {s.lesson_title && <div style={{ fontSize: 13, color: "var(--text-body)" }}>📖 الدرس: <strong>{s.lesson_title}</strong></div>}
+        {s.status === "scheduled" && <VideoCall sessionId={s.id} />}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>الواجب</span>
