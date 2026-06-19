@@ -14,15 +14,20 @@ export default async function StudentsPage() {
   const { data: people } = await supabase.from("profiles").select("id, full_name, roles");
   const learners = (people ?? []).filter((p: any) => ((p.roles as string[]) ?? []).includes("learner"));
   const { data: enrollments } = await supabase.from("enrollments").select("id, learner_id, status, monthly_fee");
-  const { data: invoices } = await supabase.from("invoices").select("learner_id, period, status");
+  const { data: invoices } = await supabase.from("invoices").select("learner_id, period, status, due_date");
 
   const enrByLearner = new Map<string, any>();
   for (const e of (enrollments ?? []) as any[]) if (!enrByLearner.has(e.learner_id)) enrByLearner.set(e.learner_id, e);
 
   const d = new Date();
   const period = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const today = d.toISOString().slice(0, 10);
   const thisMonthByLearner = new Map<string, string>();
-  for (const inv of (invoices ?? []) as any[]) if (inv.period === period) thisMonthByLearner.set(inv.learner_id, inv.status);
+  const overdueByLearner = new Map<string, boolean>();
+  for (const inv of (invoices ?? []) as any[]) {
+    if (inv.period === period) thisMonthByLearner.set(inv.learner_id, inv.status);
+    if (inv.status === "pending" && inv.due_date && inv.due_date < today) overdueByLearner.set(inv.learner_id, true);
+  }
 
   return (
     <>
@@ -50,6 +55,7 @@ export default async function StudentsPage() {
               <Badge tone={inv === "paid" ? "success" : inv === "pending" ? "warning" : "neutral"}>
                 {inv === "paid" ? "دفعة الشهر ✓" : inv === "pending" ? "دفعة الشهر بانتظار" : "لا فاتورة هذا الشهر"}
               </Badge>
+              {(overdueByLearner.get(l.id) || enr?.status === "paused") && <Badge tone="danger">⚠ مُعرَّض</Badge>}
               <Link href={`/admin/students/${l.id}`} className="ward-btn ward-btn--ghost ward-btn--sm">إدارة</Link>
             </Card>
           );

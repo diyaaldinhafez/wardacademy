@@ -58,12 +58,18 @@ export default async function StudentManagePage({ params }: { params: Promise<{ 
     .select("id, period, teacher_rating, platform_rating, recommend, comment")
     .eq("learner_id", id)
     .order("period", { ascending: false });
+  const { data: sessions } = await supabase.from("sessions").select("scheduled_at, status").eq("learner_id", id);
 
   const now = new Date();
   const thisPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const thisEval = (evals ?? []).find((e: any) => e.period === thisPeriod);
   const stars = (n?: number | null) => (n ? "★★★★★".slice(0, n) + "☆☆☆☆☆".slice(0, 5 - n) : "—");
   const today = now.toISOString().slice(0, 10);
+  const nowMs = now.getTime();
+  const sessList = (sessions ?? []) as any[];
+  const sessDone = sessList.filter((s) => s.status === "completed").length;
+  const sessUpcoming = sessList.filter((s) => s.status === "scheduled" && new Date(s.scheduled_at).getTime() >= nowMs).length;
+  const sessMissed = sessList.filter((s) => s.status === "scheduled" && new Date(s.scheduled_at).getTime() < nowMs).length;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 720 }}>
@@ -193,6 +199,19 @@ export default async function StudentManagePage({ params }: { params: Promise<{ 
           })}
         </Card>
       )}
+
+      {/* Attendance */}
+      <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={secTitle}>الحضور والجلسات</div>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 13.5, color: "var(--text-body)" }}>
+          <span>مكتملة: <strong style={{ color: "var(--leaf-700)" }}>{sessDone}</strong></span>
+          <span>قادمة: <strong style={{ color: "var(--text-strong)" }}>{sessUpcoming}</strong></span>
+          <span>فائتة (دون تقرير): <strong style={{ color: sessMissed > 0 ? "var(--rose-700)" : "var(--text-strong)" }}>{sessMissed}</strong></span>
+        </div>
+        {sessMissed > 0 && (
+          <p style={{ fontSize: 12, color: "var(--text-muted)" }}>جلساتٌ ماضيةٌ لم تُعلَّم مكتملةً — قد تشير لفتورٍ يستحقّ المتابعة.</p>
+        )}
+      </Card>
 
       {/* Periodic evaluation */}
       <Card style={{ display: "flex", flexDirection: "column", gap: 12 }}>

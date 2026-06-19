@@ -15,9 +15,19 @@ export default async function AdminDashboard() {
     supabase.from("availability_slots").select("lead_id, starts_at, status"),
     supabase.from("lead_tests").select("lead_id, status"),
     supabase.from("intro_reports").select("lead_id, status"),
-    supabase.from("tenants").select("timezone").maybeSingle(),
+    supabase.from("tenants").select("timezone, currency").maybeSingle(),
   ]);
   const tz = tenant?.timezone ?? "Asia/Riyadh";
+  const currency = tenant?.currency ?? "SAR";
+
+  const [{ data: enrollments }, { data: invoices }, { data: evaluations }, { data: lreq }, { data: lsessions }, { data: people }] = await Promise.all([
+    supabase.from("enrollments").select("learner_id, status, monthly_fee"),
+    supabase.from("invoices").select("learner_id, status, due_date"),
+    supabase.from("evaluations").select("learner_id, period, teacher_rating, platform_rating"),
+    supabase.from("requests").select("learner_id, type, status"),
+    supabase.from("sessions").select("learner_id, scheduled_at, status"),
+    supabase.from("profiles").select("id, full_name"),
+  ]);
 
   const bookedByLead = new Map<string, string>();
   for (const s of (slots ?? []) as any[]) if (s.lead_id && s.status === "booked") bookedByLead.set(s.lead_id, s.starts_at);
@@ -87,6 +97,54 @@ export default async function AdminDashboard() {
     { label: "حسابات جاهزة للتجهيز", n: toProvision, href: "/admin/registrations?status=tested", tone: "success" as const },
     { label: "طلبات بلا حجزٍ منذ يومين+", n: staleNoBooking, href: "/admin/registrations?status=new", tone: "apricot" as const },
   ];
+
+  // ===== Learning-phase metrics + at-risk =====
+  const nameById = new Map<string, string>();
+  for (const p of (people ?? []) as any[]) nameById.set(p.id, p.full_name ?? p.id);
+  const enrByLearner = new Map<string, any>();
+  for (const e of (enrollments ?? []) as any[]) if (!enrByLearner.has(e.learner_id)) enrByLearner.set(e.learner_id, e);
+  const today = new Date().toISOString().slice(0, 10);
+
+  const overdueByLearner = new Map<string, boolean>();
+  let overdueInvoices = 0;
+  for (const inv of (invoices ?? []) as any[]) {
+    if (inv.status === "pending" && inv.due_date && inv.due_date < today) {
+      overdueInvoices++;
+      overdueByLearner.set(inv.learner_id, true);
+    }
+  }
+  const lowEvalByLearner = new Map<string, boolean>();
+  const latestEvalPeriod = new Map<string, string>();
+  for (const ev of (evaluations ?? []) as any[]) {
+    const prev = latestEvalPeriod.get(ev.learner_id);
+    if (!prev || ev.period > prev) {
+      latestEvalPeriod.set(ev.learner_id, ev.period);
+      lowEvalByLearner.set(ev.learner_id, (ev.teacher_rating && ev.teacher_rating <= 2) || (ev.platform_rating && ev.platform_rating <= 2));
+    }
+  }
+  const openCancelByLearner = new Map<string, boolean>();
+  for (const r of (lreq ?? []) as any[]) if (r.status !== "closed" && (r.type === "cancel" || r.type === "complaint")) openCancelByLearner.set(r.learner_id, true);
+  const missedByLearner = new Map<string, number>();
+  for (const s of (lsessions ?? []) as any[]) {
+    if (s.status === "scheduled" && new Date(s.scheduled_at).getTime() < now) missedByLearner.set(s.learner_id, (missedByLearner.get(s.learner_id) ?? 0) + 1);
+  }
+
+  const activeEnr = ((enrollments ?? []) as any[]).filter((e) => e.status === "active");
+  const activeStudents = activeEnr.length;
+  const mrr = activeEnr.reduce((sum, e) => sum + (e.monthly_fee ?? 0), 0);
+  const openCasesCount = ((lreq ?? []) as any[]).filter((r) => r.status !== "closed").length;
+
+  const atRisk: { id: string; name: string; reasons: string[] }[] = [];
+  for (const e of (enrollments ?? []) as any[]) {
+    if (e.status === "cancelled") continue;
+    const reasons: string[] = [];
+    if (overdueByLearner.get(e.learner_id)) reasons.push("دفعة متأخّرة");
+    if (missedByLearner.get(e.learner_id)) reasons.push(`${missedByLearner.get(e.learner_id)} جلسة فائتة`);
+    if (lowEvalByLearner.get(e.learner_id)) reasons.push("تقييمٌ منخفض");
+    if (openCancelByLearner.get(e.learner_id)) reasons.push("طلب إيقاف/شكوى");
+    if (e.status === "paused") reasons.push("الاشتراك مُعلَّق");
+    if (reasons.length) atRisk.push({ id: e.learner_id, name: nameById.get(e.learner_id) ?? "طالب", reasons });
+  }
 
   return (
     <>
@@ -176,6 +234,60 @@ export default async function AdminDashboard() {
                   {nameByLead.get(s.lead_id) ?? "طالب"}
                 </Link>
               </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* ===== Learning phase ===== */}
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-strong)", marginTop: 8 }}>مرحلة التعلّم</h2>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 16 }}>
+        <Link href="/admin/students" style={{ textDecoration: "none" }}>
+          <Card interactive style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={{ fontSize: 30, fontWeight: 700, color: "var(--text-strong)" }}>{activeStudents}</span>
+            <span style={{ fontSize: 13, color: "var(--text-muted)" }}>طلابٌ نشطون</span>
+          </Card>
+        </Link>
+        <Card style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ fontSize: 30, fontWeight: 700, color: "var(--leaf-700)" }}>{mrr} <span style={{ fontSize: 15, color: "var(--text-muted)" }}>{currency}</span></span>
+          <span style={{ fontSize: 13, color: "var(--text-muted)" }}>الإيراد الشهريّ المتكرّر</span>
+        </Card>
+        <Link href="/admin/students" style={{ textDecoration: "none" }}>
+          <Card interactive style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={{ fontSize: 30, fontWeight: 700, color: overdueInvoices > 0 ? "var(--rose-700)" : "var(--text-strong)" }}>{overdueInvoices}</span>
+            <span style={{ fontSize: 13, color: "var(--text-muted)" }}>فواتير متأخّرة</span>
+          </Card>
+        </Link>
+        <Link href="/admin/requests" style={{ textDecoration: "none" }}>
+          <Card interactive style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={{ fontSize: 30, fontWeight: 700, color: "var(--text-strong)" }}>{openCasesCount}</span>
+            <span style={{ fontSize: 13, color: "var(--text-muted)" }}>حالاتٌ مفتوحة</span>
+          </Card>
+        </Link>
+      </div>
+
+      <Card>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>طلابٌ مُعرَّضون للتوقّف</span>
+          {atRisk.length > 0 && <Badge tone="danger">{atRisk.length}</Badge>}
+        </div>
+        {atRisk.length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا مؤشّرات خطر — كلّ شيءٍ مستقرّ. ✓</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {atRisk.map((s) => (
+              <Link
+                key={s.id}
+                href={`/admin/students/${s.id}`}
+                style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: "8px 10px", borderRadius: 12, border: "1px solid var(--border-soft)", textDecoration: "none" }}
+              >
+                <span style={{ fontWeight: 700, color: "var(--text-strong)", minWidth: 120 }}>{s.name}</span>
+                <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {s.reasons.map((r) => (
+                    <Badge key={r} tone="danger">{r}</Badge>
+                  ))}
+                </span>
+              </Link>
             ))}
           </div>
         )}
