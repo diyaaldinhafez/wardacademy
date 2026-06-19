@@ -677,6 +677,33 @@ export async function cancelEnrollment(formData: FormData) {
   revalidatePath(`/admin/students/${learnerId}`);
 }
 
+/* ===== Learning phase: periodic guardian evaluation ===== */
+
+/** Record (or update) this month's guardian evaluation for a student. */
+export async function saveEvaluation(formData: FormData) {
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const num = (k: string) => {
+    const v = String(formData.get(k) ?? "").trim();
+    return v ? Number(v) : null;
+  };
+  const teacher_rating = num("teacherRating");
+  const platform_rating = num("platformRating");
+  const recommend = num("recommend");
+  const comment = String(formData.get("comment") ?? "").trim() || null;
+
+  const { supabase, profile } = await assertAdmin();
+  const d = new Date();
+  const period = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const { error } = await supabase
+    .from("evaluations")
+    .upsert(
+      { tenant_id: profile.tenant_id, learner_id: learnerId, period, teacher_rating, platform_rating, recommend, comment },
+      { onConflict: "learner_id,period" },
+    );
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/students/${learnerId}`);
+}
+
 /** Admin sign-out. */
 export async function adminLogout() {
   const { supabase } = await assertAdmin();

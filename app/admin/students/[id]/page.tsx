@@ -12,6 +12,7 @@ import {
   cancelEnrollment,
   createRequest,
   updateRequestStatus,
+  saveEvaluation,
 } from "@/app/admin/actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import { Card, Badge, Avatar } from "@/components/ward/ui";
@@ -52,8 +53,17 @@ export default async function StudentManagePage({ params }: { params: Promise<{ 
     .select("id, type, details, status, resolution, created_at")
     .eq("learner_id", id)
     .order("created_at", { ascending: false });
+  const { data: evals } = await supabase
+    .from("evaluations")
+    .select("id, period, teacher_rating, platform_rating, recommend, comment")
+    .eq("learner_id", id)
+    .order("period", { ascending: false });
 
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const thisPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const thisEval = (evals ?? []).find((e: any) => e.period === thisPeriod);
+  const stars = (n?: number | null) => (n ? "★★★★★".slice(0, n) + "☆☆☆☆☆".slice(0, 5 - n) : "—");
+  const today = now.toISOString().slice(0, 10);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 720 }}>
@@ -183,6 +193,50 @@ export default async function StudentManagePage({ params }: { params: Promise<{ 
           })}
         </Card>
       )}
+
+      {/* Periodic evaluation */}
+      <Card style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={secTitle}>تقييم وليّ الأمر {thisEval && <Badge tone="success">سُجّل لهذا الشهر</Badge>}</div>
+        <form action={saveEvaluation} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <input type="hidden" name="learnerId" value={id} />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+            {[
+              { name: "teacherRating", label: "المعلّمة", val: thisEval?.teacher_rating },
+              { name: "platformRating", label: "المنصّة", val: thisEval?.platform_rating },
+              { name: "recommend", label: "التوصية", val: thisEval?.recommend },
+            ].map((f) => (
+              <div key={f.name}>
+                <label style={flabel}>{f.label}</label>
+                <select name={f.name} defaultValue={f.val ?? ""} className={ctl} style={{ width: 110 }}>
+                  <option value="">—</option>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <option key={n} value={n}>{n} ★</option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </div>
+          <textarea name="comment" rows={2} defaultValue={thisEval?.comment ?? ""} placeholder="تعليق وليّ الأمر (اختياري)" className={ctl} />
+          <SubmitButton pendingText="…" className={btn("success", "md")}>احفظ تقييم هذا الشهر</SubmitButton>
+        </form>
+        {(evals ?? []).length > 0 && (
+          <div style={{ borderTop: "1px solid var(--border-soft)", paddingTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+            {(evals ?? []).map((e: any) => {
+              const low = (e.teacher_rating && e.teacher_rating <= 2) || (e.platform_rating && e.platform_rating <= 2);
+              return (
+                <div key={e.id} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 13 }}>
+                    <span style={{ fontWeight: 700, color: "var(--text-strong)", minWidth: 70 }}>{e.period}</span>
+                    <span style={{ color: "var(--text-body)" }}>المعلّمة {stars(e.teacher_rating)} · المنصّة {stars(e.platform_rating)}{e.recommend ? ` · توصية ${stars(e.recommend)}` : ""}</span>
+                    {low && <Badge tone="danger">تقييمٌ منخفض</Badge>}
+                  </div>
+                  {e.comment && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>«{e.comment}»</p>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
 
       {/* Requests & complaints */}
       <Card style={{ display: "flex", flexDirection: "column", gap: 12 }}>
