@@ -56,7 +56,7 @@ export default async function TodayPage() {
   const sessionsLabel = (todaySessions ?? []).length > 0 ? "جلسات اليوم" : "الجلسات القادمة";
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 20, alignItems: "start" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: 20, alignItems: "start" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         {/* Sessions */}
         <Card>

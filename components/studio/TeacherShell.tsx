@@ -13,48 +13,29 @@ const NAV = [
   { href: "/studio/availability", label: "تفرّغي", d: "M7 3v3m10-3v3M4 8h16M5 6h14a1 1 0 011 1v12a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1z" },
 ];
 
-function NavIcon({ d }: { d: string }) {
+function NavIcon({ d, size = 17 }: { d: string; size?: number }) {
   return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d={d} />
     </svg>
   );
 }
 
-export default function TeacherShell({
-  teacherName,
-  today,
-  children,
-}: {
-  teacherName: string;
-  today: string;
-  children: ReactNode;
-}) {
+export default function TeacherShell({ teacherName, today, children }: { teacherName: string; today: string; children: ReactNode }) {
   const pathname = usePathname();
   const isActive = (href: string) => (href === "/studio" ? pathname === "/studio" : pathname.startsWith(href));
-  const title = NAV.find((n) => isActive(n.href))?.label ?? "استوديو المعلّم";
+  const title = NAV.find((n) => isActive(n.href))?.label ?? "استوديو المعلّمة";
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)", fontFamily: "var(--font-ar)" }} dir="rtl">
-      <aside
-        style={{
-          width: 224,
-          flexShrink: 0,
-          background: "var(--surface-card)",
-          borderInlineEnd: "1px solid var(--border-soft)",
-          padding: "20px 14px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 4,
-          position: "sticky",
-          top: 0,
-          alignSelf: "flex-start",
-          height: "100vh",
-        }}
-      >
-        <Link href="/studio" style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 8px 18px", textDecoration: "none" }}>
+    <div className="app-shell" dir="rtl">
+      {/* Desktop sidebar */}
+      <aside className="app-sidebar">
+        <Link href="/studio" style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 8px 14px", textDecoration: "none" }}>
           <FlowerMark className="h-9 w-9 shrink-0" />
-          <span style={{ fontWeight: 700, fontSize: 16, color: "var(--ward-purple-800)" }}>أكاديمية وَرد</span>
+          <span style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ fontWeight: 700, fontSize: 15, color: "var(--ward-purple-800)" }}>أكاديمية وَرد</span>
+            <span style={{ fontSize: 11.5, color: "var(--text-muted)" }}>استوديو المعلّمة</span>
+          </span>
         </Link>
         {NAV.map((it) => {
           const active = isActive(it.href);
@@ -87,22 +68,41 @@ export default function TeacherShell({
           </span>
         </div>
         <form action={logout}>
-          <button
-            className="ward-btn ward-btn--ghost ward-btn--sm ward-btn--full"
-            style={{ justifyContent: "flex-start", color: "var(--text-muted)" }}
-          >
+          <button className="ward-btn ward-btn--ghost ward-btn--sm ward-btn--full" style={{ justifyContent: "flex-start", color: "var(--text-muted)" }}>
             تسجيل الخروج
           </button>
         </form>
       </aside>
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 28px", background: "var(--surface-card)", borderBlockEnd: "1px solid var(--border-soft)" }}>
-          <h1 style={{ fontSize: 20, fontWeight: 700, flex: 1, color: "var(--text-strong)" }}>{title}</h1>
-          <span style={{ fontSize: 13, color: "var(--text-muted)" }}>{today}</span>
+      <div className="app-main">
+        <div className="app-topbar">
+          <Link href="/studio" className="only-mobile" style={{ alignItems: "center" }}>
+            <FlowerMark className="h-8 w-8" />
+          </Link>
+          <h1 style={{ fontSize: 19, fontWeight: 700, flex: 1, color: "var(--text-strong)" }}>{title}</h1>
+          <span className="only-desktop" style={{ fontSize: 13, color: "var(--text-muted)" }}>{today}</span>
         </div>
-        <div style={{ padding: 28, display: "flex", flexDirection: "column", gap: 20 }}>{children}</div>
+        <div className="app-content">{children}</div>
       </div>
+
+      {/* Mobile bottom nav */}
+      <nav className="app-bottomnav" dir="rtl">
+        {NAV.map((it) => {
+          const active = isActive(it.href);
+          return (
+            <Link key={it.href} href={it.href} className="app-bottomnav-item" style={{ color: active ? "var(--text-brand)" : "var(--text-muted)" }}>
+              <NavIcon d={it.d} size={20} />
+              {it.label}
+            </Link>
+          );
+        })}
+        <form action={logout} style={{ flex: 1, display: "flex" }}>
+          <button className="app-bottomnav-item" style={{ color: "var(--text-muted)" }}>
+            <NavIcon d="M16 17l5-5-5-5M21 12H9M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" size={20} />
+            خروج
+          </button>
+        </form>
+      </nav>
     </div>
   );
 }
