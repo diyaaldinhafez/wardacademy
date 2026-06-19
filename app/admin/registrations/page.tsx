@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { bulkDeleteLeads } from "@/app/admin/actions";
 import { Card, Avatar } from "@/components/ward/ui";
 import PipelineStepper from "@/components/admin/PipelineStepper";
-import BulkBar from "@/components/admin/BulkBar";
 import { labelOf } from "@/lib/enrollOptions";
 import { PIPELINE, computePipeline } from "@/lib/leads";
 import { fmtUTC } from "@/lib/datetime";
@@ -85,10 +83,9 @@ export default async function RegistrationsPage({
 
       {leads.length === 0 && <p style={{ fontSize: 14, color: "var(--text-muted)" }}>لا طلبات مطابِقة.</p>}
 
-      {/* List (with multi-select bulk delete) */}
+      {/* List */}
       {leads.length > 0 && (
-        <form action={bulkDeleteLeads} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <BulkBar />
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {leads.map((l) => {
             const booked = bookedByLead.get(l.id);
             const { steps, currentIndex, nextAction } = computePipeline({
@@ -101,7 +98,6 @@ export default async function RegistrationsPage({
             return (
               <Card key={l.id} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                  <input type="checkbox" name="ids" value={l.id} className="h-4 w-4 accent-[#7F55D9]" style={{ flexShrink: 0 }} aria-label="تحديد" />
                   <Link
                     href={`/admin/registrations/${l.id}`}
                     title="عرض كلّ بيانات الطلب"
@@ -131,7 +127,7 @@ export default async function RegistrationsPage({
               </Card>
             );
           })}
-        </form>
+        </div>
       )}
     </>
   );
