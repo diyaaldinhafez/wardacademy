@@ -616,6 +616,67 @@ export async function setInvoiceStatus(formData: FormData) {
   revalidatePath(`/admin/students/${learnerId}`);
 }
 
+/* ===== Learning phase: requests (cases) & enrollment transitions ===== */
+
+export async function createRequest(formData: FormData) {
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const type = String(formData.get("type") ?? "");
+  const details = String(formData.get("details") ?? "").trim() || null;
+  if (!["pause", "cancel", "complaint", "other"].includes(type)) throw new Error("نوع طلبٍ غير صحيح.");
+  const { supabase, profile } = await assertAdmin();
+  const { error } = await supabase.from("requests").insert({ tenant_id: profile.tenant_id, learner_id: learnerId, type, details, created_by: profile.id });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/students/${learnerId}`);
+  revalidatePath("/admin/requests");
+}
+
+export async function updateRequestStatus(formData: FormData) {
+  const requestId = String(formData.get("requestId") ?? "");
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const status = String(formData.get("status") ?? "");
+  const resolution = String(formData.get("resolution") ?? "").trim() || null;
+  if (!["open", "in_progress", "closed"].includes(status)) throw new Error("حالةٌ غير صحيحة.");
+  const { supabase } = await assertAdmin();
+  const { error } = await supabase
+    .from("requests")
+    .update({ status, resolution, closed_at: status === "closed" ? new Date().toISOString() : null })
+    .eq("id", requestId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/students/${learnerId}`);
+  revalidatePath("/admin/requests");
+}
+
+export async function pauseEnrollment(formData: FormData) {
+  const enrollmentId = String(formData.get("enrollmentId") ?? "");
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const { supabase } = await assertAdmin();
+  const { error } = await supabase.from("enrollments").update({ status: "paused", paused_at: new Date().toISOString() }).eq("id", enrollmentId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/students/${learnerId}`);
+}
+
+export async function resumeEnrollment(formData: FormData) {
+  const enrollmentId = String(formData.get("enrollmentId") ?? "");
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const { supabase } = await assertAdmin();
+  const { error } = await supabase.from("enrollments").update({ status: "active", paused_at: null }).eq("id", enrollmentId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/students/${learnerId}`);
+}
+
+export async function cancelEnrollment(formData: FormData) {
+  const enrollmentId = String(formData.get("enrollmentId") ?? "");
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const reason = String(formData.get("reason") ?? "").trim() || null;
+  const { supabase } = await assertAdmin();
+  const { error } = await supabase
+    .from("enrollments")
+    .update({ status: "cancelled", cancelled_at: new Date().toISOString(), cancel_reason: reason })
+    .eq("id", enrollmentId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/students/${learnerId}`);
+}
+
 /** Admin sign-out. */
 export async function adminLogout() {
   const { supabase } = await assertAdmin();

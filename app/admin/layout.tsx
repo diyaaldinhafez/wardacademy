@@ -21,15 +21,15 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   const roles = (profile?.roles as string[]) ?? [];
   if (!roles.includes("admin")) redirect(homePathForRoles(roles));
 
-  const { count: leadsCount } = await supabase
-    .from("leads")
-    .select("id", { count: "exact", head: true })
-    .in("status", ["new", "booked", "testing", "tested"]);
+  const [{ count: leadsCount }, { count: requestsCount }] = await Promise.all([
+    supabase.from("leads").select("id", { count: "exact", head: true }).eq("archived", false).in("status", ["new", "booked", "testing", "tested"]),
+    supabase.from("requests").select("id", { count: "exact", head: true }).in("status", ["open", "in_progress"]),
+  ]);
 
   const today = new Intl.DateTimeFormat("ar", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
 
   return (
-    <AdminShell adminName={profile?.full_name ?? user.email ?? "الإدارة"} today={today} leadsCount={leadsCount ?? 0}>
+    <AdminShell adminName={profile?.full_name ?? user.email ?? "الإدارة"} today={today} leadsCount={leadsCount ?? 0} requestsCount={requestsCount ?? 0}>
       {children}
     </AdminShell>
   );

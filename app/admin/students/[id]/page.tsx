@@ -2,9 +2,21 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createEnrollment, updateEnrollment, generateMonthlyInvoice, setInvoiceStatus } from "@/app/admin/actions";
+import {
+  createEnrollment,
+  updateEnrollment,
+  generateMonthlyInvoice,
+  setInvoiceStatus,
+  pauseEnrollment,
+  resumeEnrollment,
+  cancelEnrollment,
+  createRequest,
+  updateRequestStatus,
+} from "@/app/admin/actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import { Card, Badge, Avatar } from "@/components/ward/ui";
+import { REQUEST_TYPES, REQUEST_TYPE_AR, REQUEST_TYPE_TONE, REQUEST_STATUS_AR, REQUEST_STATUS_TONE } from "@/lib/requests";
+import { fmtUTC } from "@/lib/datetime";
 
 const btn = (v: string, s = "sm") => `ward-btn ward-btn--${v} ward-btn--${s}`;
 const ctl = "ward-field__control";
@@ -25,7 +37,7 @@ export default async function StudentManagePage({ params }: { params: Promise<{ 
 
   const { data: enr } = await supabase
     .from("enrollments")
-    .select("id, status, monthly_fee, sessions_per_month, start_date")
+    .select("id, status, monthly_fee, sessions_per_month, start_date, cancel_reason")
     .eq("learner_id", id)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -35,6 +47,11 @@ export default async function StudentManagePage({ params }: { params: Promise<{ 
     .select("id, period, amount, status, due_date, paid_at")
     .eq("learner_id", id)
     .order("period", { ascending: false });
+  const { data: requests } = await supabase
+    .from("requests")
+    .select("id, type, details, status, resolution, created_at")
+    .eq("learner_id", id)
+    .order("created_at", { ascending: false });
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -87,6 +104,37 @@ export default async function StudentManagePage({ params }: { params: Promise<{ 
             </div>
             <SubmitButton pendingText="…" className={btn("secondary", "md")}>احفظ الخطّة</SubmitButton>
           </form>
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", borderTop: "1px solid var(--border-soft)", paddingTop: 10, alignItems: "center" }}>
+            {enr.status === "active" && (
+              <form action={pauseEnrollment}>
+                <input type="hidden" name="enrollmentId" value={enr.id} />
+                <input type="hidden" name="learnerId" value={id} />
+                <SubmitButton pendingText="…" className={btn("secondary")}>علّق الاشتراك مؤقّتاً</SubmitButton>
+              </form>
+            )}
+            {(enr.status === "paused" || enr.status === "cancelled") && (
+              <form action={resumeEnrollment}>
+                <input type="hidden" name="enrollmentId" value={enr.id} />
+                <input type="hidden" name="learnerId" value={id} />
+                <SubmitButton pendingText="…" className={btn("success")}>{enr.status === "cancelled" ? "إعادة التفعيل" : "استئناف الاشتراك"}</SubmitButton>
+              </form>
+            )}
+            {enr.status !== "cancelled" && (
+              <details>
+                <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 600, color: "var(--rose-700)" }}>إيقافٌ نهائيّ</summary>
+                <form action={cancelEnrollment} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "end", marginTop: 8 }}>
+                  <input type="hidden" name="enrollmentId" value={enr.id} />
+                  <input type="hidden" name="learnerId" value={id} />
+                  <input name="reason" placeholder="سبب الإيقاف" className={ctl} style={{ width: "auto" }} />
+                  <SubmitButton pendingText="…" className={btn("danger")}>تأكيد الإيقاف النهائيّ</SubmitButton>
+                </form>
+              </details>
+            )}
+          </div>
+          {enr.status === "cancelled" && enr.cancel_reason && (
+            <p style={{ fontSize: 13, color: "var(--text-muted)" }}>سبب الإيقاف: {enr.cancel_reason}</p>
+          )}
         </Card>
       )}
 
@@ -135,6 +183,40 @@ export default async function StudentManagePage({ params }: { params: Promise<{ 
           })}
         </Card>
       )}
+
+      {/* Requests & complaints */}
+      <Card style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={secTitle}>الطلبات والشكاوى</div>
+        {(requests ?? []).map((r: any) => (
+          <div key={r.id} style={{ display: "flex", flexDirection: "column", gap: 6, borderBottom: "1px solid var(--ink-100)", paddingBottom: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <Badge tone={REQUEST_TYPE_TONE[r.type] ?? "neutral"}>{REQUEST_TYPE_AR[r.type] ?? r.type}</Badge>
+              <Badge tone={REQUEST_STATUS_TONE[r.status] ?? "neutral"}>{REQUEST_STATUS_AR[r.status] ?? r.status}</Badge>
+              <span style={{ marginInlineStart: "auto", fontSize: 12, color: "var(--text-muted)" }}>{fmtUTC(r.created_at)}</span>
+            </div>
+            {r.details && <p style={{ fontSize: 13.5, color: "var(--text-body)" }}>{r.details}</p>}
+            {r.resolution && <p style={{ fontSize: 13, color: "var(--leaf-700)" }}>الحلّ: {r.resolution}</p>}
+            {r.status !== "closed" && (
+              <form action={updateRequestStatus} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "end" }}>
+                <input type="hidden" name="requestId" value={r.id} />
+                <input type="hidden" name="learnerId" value={id} />
+                <input name="resolution" placeholder="ملاحظة الحلّ (اختياري)" className={ctl} style={{ width: "auto", flex: 1, minWidth: 160 }} />
+                <button type="submit" name="status" value="closed" className={btn("success")}>إغلاق</button>
+              </form>
+            )}
+          </div>
+        ))}
+        <form action={createRequest} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <input type="hidden" name="learnerId" value={id} />
+          <select name="type" defaultValue="complaint" className={ctl}>
+            {REQUEST_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
+          <textarea name="details" rows={2} placeholder="تفاصيل الطلب أو الشكوى" className={ctl} />
+          <SubmitButton pendingText="…" className={btn("secondary", "md")}>سجّل الطلب</SubmitButton>
+        </form>
+      </Card>
     </div>
   );
 }
