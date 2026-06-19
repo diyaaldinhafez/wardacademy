@@ -17,8 +17,8 @@ import StudentTabs, { type StudentTab } from "@/components/studio/StudentTabs";
 import ItemCard from "@/components/studio/ItemCard";
 import VideoCall from "@/components/VideoCall";
 import { Card, Badge, Avatar, AITrustBadge, Spark } from "@/components/ward/ui";
-import { bloomStage } from "@/lib/progress";
-import { petalValues, SKILL_AR } from "@/lib/skills";
+import { petalValues, SKILL_AR, SKILLS, unitStage } from "@/lib/skills";
+import { UnitBloom, FlowerProgress } from "@/components/bloom/Bloom";
 import { FORMAT_LABELS, ITEM_FORMATS, DIFFICULTIES } from "@/lib/items";
 import { WEEKDAY_AR } from "@/lib/availability";
 import { fmtUTC } from "@/lib/datetime";
@@ -30,9 +30,6 @@ const ctl = "ward-field__control";
 const sel = "ward-select__control";
 const secTitle = { fontSize: 14.5, fontWeight: 700, color: "var(--text-strong)" } as const;
 const SCOPE_AR: Record<string, string> = { unit: "وحدة", term: "فصل", plan: "الخطّة كاملة" };
-const AR_STAGE: Record<string, string> = {
-  "Not started": "لم يبدأ", Practiced: "تدرّب", Sprouting: "بذرة", Budding: "برعم", Growing: "ينمو", Blooming: "متفتّح",
-};
 
 const fmtSize = (n?: number | null) => (n == null ? "" : n > 1048576 ? `${(n / 1048576).toFixed(1)} م.ب` : `${Math.max(1, Math.round(n / 1024))} ك.ب`);
 function fileKind(name?: string | null, mime?: string | null): string {
@@ -76,10 +73,25 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     g.lessons.push({ it, i });
   });
 
-  const { data: prog } = await supabase.from("progress_records").select("attempts, correct, completions, objectives(description, level, skill)").eq("learner_id", id);
+  const { data: prog } = await supabase.from("progress_records").select("attempts, correct, completions, objectives(description, level, skill, unit)").eq("learner_id", id);
   const rows = (prog ?? []) as any[];
   const petals = petalValues(rows.map((r) => ({ attempts: r.attempts, correct: r.correct, skill: objOf(r.objectives).skill })));
   const overall = petals.length ? Math.round(petals.reduce((a, p) => a + p.value, 0) / petals.length) : 0;
+
+  // Bloom Map: per-skill honest meters (% of mastered objectives) + objectives grouped by unit.
+  const isMastered = (r: any) => r.attempts >= 1 && r.correct / Math.max(1, r.attempts) >= 0.6;
+  const skillStats = SKILLS.map((sk) => {
+    const inSkill = rows.filter((r) => objOf(r.objectives).skill === sk);
+    return { skill: sk, total: inSkill.length, mastered: inSkill.filter(isMastered).length };
+  });
+  const lagging = skillStats.filter((s) => s.total > 0 && s.mastered / s.total < 0.5).map((s) => SKILL_AR[s.skill]);
+  const rowsByUnit = new Map<string, any[]>();
+  for (const r of rows) {
+    const u = (objOf(r.objectives).unit as string) || "دروس";
+    const arr = rowsByUnit.get(u) ?? [];
+    arr.push(r);
+    rowsByUnit.set(u, arr);
+  }
 
   const { data: sessions } = await supabase
     .from("sessions")
@@ -604,33 +616,60 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   );
 
   const Progress = (
-    <Card style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={secTitle}>المهارات والإتقان</div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-        {petals.map((p) => (
-          <span key={p.name} style={{ fontSize: 11.5, color: "var(--text-muted)", background: "var(--surface-sunken)", borderRadius: 999, padding: "3px 10px" }}>{p.ar} {Math.round(p.value)}%</span>
-        ))}
-      </div>
-      {rows.length === 0 ? (
-        <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا نشاط بعد — أضِف أهدافاً من الخطّة، ثمّ أسنِد واجبات.</p>
-      ) : (
-        <ul style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {rows.map((r, i) => {
-            const o = objOf(r.objectives);
-            const stage = bloomStage(r);
-            return (
-              <li key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 13 }}>
-                <span style={{ color: "var(--text-body)" }}>{o.level ? `${o.level} · ` : ""}{o.description ?? "هدف"}</span>
-                <span style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                  <Badge tone="success">{AR_STAGE[stage.label] ?? stage.label}</Badge>
-                  <span style={{ color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>{r.correct}/{r.attempts}</span>
-                </span>
-              </li>
-            );
-          })}
-        </ul>
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* Five-skill mastery, as honest meters (% of mastered objectives) */}
+      <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <FlowerProgress size={92} skills={skillStats.map((s) => ({ label: SKILL_AR[s.skill], value: s.total ? s.mastered / s.total : 0, detail: `${s.mastered}/${s.total}` }))} />
+          <div style={{ flex: 1, minWidth: 180, display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={secTitle}>إتقان المهارات الخمس</div>
+            {skillStats.map((s) => {
+              const pct = s.total ? Math.round((s.mastered / s.total) * 100) : 0;
+              const lag = s.total > 0 && s.mastered / s.total < 0.5;
+              return (
+                <div key={s.skill} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-strong)", width: 72, flexShrink: 0 }}>{SKILL_AR[s.skill]}</span>
+                  <div style={{ flex: 1, height: 8, borderRadius: 999, background: "var(--surface-sunken)", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${pct}%`, borderRadius: 999, background: s.total === 0 ? "transparent" : lag ? "var(--apricot-400)" : "var(--brand)" }} />
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-brand)", fontVariantNumeric: "tabular-nums", width: 40, textAlign: "end", flexShrink: 0 }}>{s.mastered}/{s.total}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>البتلة تمتلئ بنسبة الأهداف المُتقَنة — لا الدرجات الخام. «الأساس اللغوي» = المفردات والقواعد.</p>
+      </Card>
+
+      {lagging.length > 0 && (
+        <Card variant="soft" style={{ borderColor: "var(--apricot-300)", background: "var(--apricot-100, #ffeedc)" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--apricot-600, #c97a2b)", marginBottom: 4 }}>أين أتدخّل؟</div>
+          <div style={{ fontSize: 12.5, color: "var(--text-body)", lineHeight: 1.7 }}>الأضعف الآن: <strong>{lagging.join("، ")}</strong> — ركّزي الجلسة القادمة عليها.</div>
+        </Card>
       )}
-    </Card>
+
+      {/* Objectives grouped by unit, with bud→bloom + honest tally */}
+      {rows.length === 0 ? (
+        <Card><p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا نشاط بعد — أضِف أهدافاً من الخطّة، ثمّ أسنِد واجبات.</p></Card>
+      ) : (
+        [...rowsByUnit.entries()].map(([unit, urows]) => (
+          <Card key={unit} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)" }}>{unit}</div>
+            {urows.map((r: any, i: number) => {
+              const o = objOf(r.objectives);
+              return (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, borderBottom: i < urows.length - 1 ? "1px solid var(--ink-100)" : "none", paddingBottom: 6 }}>
+                  <UnitBloom stage={unitStage({ attempts: r.attempts, correct: r.correct })} size={30} />
+                  <span style={{ fontSize: 13, color: "var(--text-body)", flex: 1 }}>{o.description ?? "هدف"}</span>
+                  {o.skill && <Badge tone="neutral">{SKILL_AR[o.skill as keyof typeof SKILL_AR] ?? o.skill}</Badge>}
+                  <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-brand)", fontVariantNumeric: "tabular-nums" }}>{r.correct}/{r.attempts}</span>
+                </div>
+              );
+            })}
+          </Card>
+        ))
+      )}
+    </div>
   );
 
   const tabs: StudentTab[] = [

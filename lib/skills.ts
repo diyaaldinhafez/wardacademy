@@ -1,14 +1,27 @@
 // Five petals = five skills (Design System §9b, fixed legal order).
+// The 5th petal is the language foundation (vocabulary + grammar / "Building
+// Blocks"); the internal key stays "vocabulary" for data continuity.
 export const SKILLS = ["listening", "speaking", "reading", "writing", "vocabulary"] as const;
 export type Skill = (typeof SKILLS)[number];
 
 export const SKILL_AR: Record<Skill, string> = {
-  listening: "استماع",
-  speaking: "تحدّث",
-  reading: "قراءة",
-  writing: "كتابة",
-  vocabulary: "مفردات",
+  listening: "الاستماع",
+  speaking: "المحادثة",
+  reading: "القراءة",
+  writing: "الكتابة",
+  vocabulary: "الأساس اللغوي",
 };
+
+export const SKILL_EN: Record<Skill, string> = {
+  listening: "Listening",
+  speaking: "Speaking",
+  reading: "Reading",
+  writing: "Writing",
+  vocabulary: "Building Blocks",
+};
+
+// Speaking is filled by teacher assessment only (no auto pronunciation scoring).
+export const TEACHER_ASSESSED: Skill = "speaking";
 
 export type Petal = { name: Skill; ar: string; value: number };
 
