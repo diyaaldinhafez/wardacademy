@@ -424,6 +424,36 @@ export async function setPaymentStatus(formData: FormData) {
   revalidatePath(`/admin/registrations/${leadId}`);
 }
 
+/** Edit a lead's contact details (e.g. the guardian changed their WhatsApp/email). */
+export async function updateLeadContact(formData: FormData) {
+  const leadId = String(formData.get("leadId") ?? "");
+  const get = (k: string) => String(formData.get(k) ?? "").trim();
+  const guardian_name = get("guardianName");
+  const guardian_email = get("guardianEmail").toLowerCase();
+  const student_name = get("studentName");
+  const guardian_phone = get("guardianPhone");
+  if (!guardian_name || !guardian_email || !student_name) throw new Error("الاسم والبريد واسم الطالب مطلوبة.");
+
+  const { supabase } = await assertAdmin();
+  const { error } = await supabase
+    .from("leads")
+    .update({ guardian_name, guardian_email, student_name, guardian_phone: guardian_phone || null })
+    .eq("id", leadId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/registrations/${leadId}`);
+}
+
+/** Delete a registration entirely (frees any booked slot; cascades test/report). */
+export async function deleteLead(formData: FormData) {
+  const leadId = String(formData.get("leadId") ?? "");
+  const { supabase } = await assertAdmin();
+  // Release any slot this lead booked back to open.
+  await supabase.from("availability_slots").update({ status: "open", lead_id: null }).eq("lead_id", leadId).eq("status", "booked");
+  const { error } = await supabase.from("leads").delete().eq("id", leadId);
+  if (error) throw new Error(error.message);
+  redirect("/admin/registrations");
+}
+
 /** Admin sign-out. */
 export async function adminLogout() {
   const { supabase } = await assertAdmin();

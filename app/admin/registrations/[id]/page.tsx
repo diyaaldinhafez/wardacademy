@@ -9,10 +9,12 @@ import {
   updateIntroReport,
   sendIntroReportAction,
   setPaymentStatus,
+  updateLeadContact,
 } from "@/app/admin/actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import ProvisionPanel from "@/components/studio/ProvisionPanel";
 import PipelineStepper from "@/components/admin/PipelineStepper";
+import DeleteLeadButton from "@/components/admin/DeleteLeadButton";
 import { Card, Badge, Avatar, Spark } from "@/components/ward/ui";
 import { labelOf, SKILL_AR, ENROLL_SKILLS, LEVELS } from "@/lib/enrollOptions";
 import { ENGAGEMENT, STRENGTHS, FOCUS, DECISION } from "@/lib/introReport";
@@ -159,6 +161,18 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           </div>
         )}
         {lead.student_notes && <p style={{ fontSize: 13.5, color: "var(--text-muted)" }}>ملاحظات: {lead.student_notes}</p>}
+
+        <details style={{ borderTop: "1px solid var(--border-soft)", paddingTop: 10 }}>
+          <summary style={{ cursor: "pointer", fontSize: 13.5, fontWeight: 600, color: "var(--text-brand)" }}>تعديل بيانات التواصل</summary>
+          <form action={updateLeadContact} style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+            <input type="hidden" name="leadId" value={lead.id} />
+            <input name="studentName" defaultValue={lead.student_name ?? ""} className={ctl} placeholder="اسم الطالب" />
+            <input name="guardianName" defaultValue={lead.guardian_name ?? ""} className={ctl} placeholder="اسم وليّ الأمر" />
+            <input name="guardianEmail" type="email" defaultValue={lead.guardian_email ?? ""} className={ctl} dir="ltr" placeholder="البريد الإلكتروني" />
+            <input name="guardianPhone" type="tel" defaultValue={lead.guardian_phone ?? ""} className={ctl} dir="ltr" placeholder="رقم الواتساب" />
+            <SubmitButton pendingText="…" className={btn("secondary", "md")}>احفظ التعديلات</SubmitButton>
+          </form>
+        </details>
       </Card>
 
       {/* Booking */}
@@ -362,6 +376,15 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         ) : (
           <ProvisionPanel leadId={lead.id} guardianPhone={lead.guardian_phone} />
         )}
+      </Card>
+
+      {/* Danger zone */}
+      <Card style={{ borderColor: "var(--rose-300, #f0c8d2)", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={secTitle}>حذف الطلب</div>
+        <p style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
+          يحذف الطلب وكلّ بياناته (الاختبار والتقرير) ويُحرّر الموعد المحجوز. لا يمكن التراجع.
+        </p>
+        <DeleteLeadButton leadId={lead.id} studentName={lead.student_name ?? "الطالب"} />
       </Card>
     </div>
   );
