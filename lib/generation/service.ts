@@ -262,6 +262,71 @@ export async function generateLeadTest(input: {
   return out.questions ?? [];
 }
 
+export type DiagnosticInput = {
+  studentName: string;
+  age?: number | null;
+  goal?: string | null;
+  priorStudy?: string | null;
+  englishUse?: string | null;
+  homeLanguage?: string | null;
+  selfLevels?: Record<string, string> | null;
+  placementLevel?: string | null;
+  introOutcome?: string | null;
+  introNotes?: string | null;
+  adminNote?: string | null;
+};
+
+const diagnosticTool: Anthropic.Tool = {
+  name: "emit_diagnostic",
+  description: "Return an internal Arabic teaching diagnostic for the teacher.",
+  input_schema: {
+    type: "object",
+    properties: { report: { type: "string", description: "The diagnostic report text in Arabic." } },
+    required: ["report"],
+  },
+};
+
+/** Draft an internal Arabic diagnostic (baseline) from all of a new student's inputs. */
+export async function generateDiagnostic(input: DiagnosticInput): Promise<string> {
+  const lines = [
+    `اسم الطالب: ${input.studentName}`,
+    input.age != null ? `العمر: ${input.age}` : "",
+    input.goal ? `هدف الانضمام: ${input.goal}` : "",
+    input.priorStudy ? `دراسةٌ سابقة: ${input.priorStudy}` : "",
+    input.englishUse ? `استخدام الإنجليزية: ${input.englishUse}` : "",
+    input.homeLanguage ? `لغة المنزل: ${input.homeLanguage}` : "",
+    input.selfLevels ? `تقييمٌ ذاتيّ للمهارات: ${Object.entries(input.selfLevels).map(([k, v]) => `${k}=${v}`).join("، ")}` : "",
+    input.placementLevel ? `نتيجة اختبار التحديد: ${input.placementLevel}` : "",
+    input.introOutcome ? `حصيلة الجلسة التعريفية: ${input.introOutcome}` : "",
+    input.introNotes ? `ملاحظات الجلسة التعريفية: ${input.introNotes}` : "",
+    input.adminNote ? `ملاحظة الإدارة الداخلية: ${input.adminNote}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const res = await client().messages.create({
+    model: MODEL,
+    max_tokens: 2000,
+    system:
+      "تكتب تقرير تشخيصٍ تعليميّ موجزاً وداخلياً للمعلّمة (ليس للأهل) عن طالبٍ جديدٍ في أكاديمية وَرد (أعمار 9–13)، " +
+      "بناءً على كلّ مدخلاته المُعطاة فقط دون اختلاق. نظّمه في أقسامٍ قصيرة: (1) المستوى التقديريّ ونقطة الانطلاق، " +
+      "(2) نقاط القوّة عبر المهارات الخمس (استماع/تحدّث/قراءة/كتابة/مفردات)، (3) نقاط الضعف وأولويات التركيز، " +
+      "(4) الدافعية والسلوك، (5) توصياتٌ تربويةٌ وتنبيهات. نقاطٌ موجزةٌ عملية، بلا مبالغةٍ ولا أرقامٍ مختلقة. " +
+      "أعِد النصّ عبر أداة emit_diagnostic فقط.",
+    tools: [diagnosticTool],
+    tool_choice: { type: "tool", name: "emit_diagnostic" },
+    messages: [{ role: "user", content: `${lines}\n\nاكتب تقرير التشخيص الآن.` }],
+  });
+
+  const toolUse = res.content.find(
+    (b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === "emit_diagnostic",
+  );
+  if (!toolUse) throw new Error("Diagnostic generation returned nothing");
+  const report = ((toolUse.input as { report?: string }).report ?? "").trim();
+  if (!report) throw new Error("لم يكتمل توليد التشخيص — حاوِل مرّةً أخرى.");
+  return report;
+}
+
 export type IntroReportInput = {
   studentName: string;
   engagement?: string; // Arabic label

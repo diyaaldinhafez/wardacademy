@@ -193,7 +193,7 @@ export async function provisionAccounts(
     console.error("[provisionAccounts] invite email failed:", e);
   }
 
-  await admin.from("leads").update({ status: "converted" }).eq("id", leadId);
+  await admin.from("leads").update({ status: "converted", converted_learner_id: s.user.id }).eq("id", leadId);
   await logEvent(supabase, profile, leadId, "جُهّزت الحسابات");
   revalidatePath(`/admin/registrations/${leadId}`);
   return { guardian: { email: lead.guardian_email, link: guardianLink }, student: { email: sEmail, link: studentLink } };

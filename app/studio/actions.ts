@@ -10,6 +10,7 @@ import {
   generateSessionReportDraft,
   generatePlacementQuestions,
   generatePlan,
+  generateDiagnostic,
 } from "@/lib/generation/service";
 import { homePathForRoles } from "@/lib/roles";
 import type { ItemFormat, Difficulty } from "@/lib/items";
@@ -659,5 +660,69 @@ export async function removeManualHomework(formData: FormData) {
   if (error) throw new Error(error.message);
   const paths = (files ?? []).map((f: { file_path: string }) => f.file_path);
   if (paths.length) await admin.storage.from(HOMEWORK_BUCKET).remove(paths);
+  revalidatePath(`/studio/students/${learnerId}`);
+}
+
+// — Diagnostic report (Note 1): generated from all the student's inputs —
+
+/** Generate a draft diagnostic from the student's lead form + placement + intro + notes. */
+export async function generateDiagnosticReport(formData: FormData) {
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const { supabase, user, tenantId } = await instructorCtx();
+  const { data: learner } = await supabase.from("profiles").select("full_name").eq("id", learnerId).maybeSingle();
+
+  const admin = createAdminClient();
+  const { data: lead } = await admin
+    .from("leads")
+    .select("id, student_name, student_age, learning_goal, prior_study, english_use, home_language, skill_levels, intro_outcome, intro_notes, ops_note")
+    .eq("converted_learner_id", learnerId)
+    .maybeSingle();
+
+  let placementLevel: string | null = null;
+  if (lead) {
+    const { data: lt } = await admin.from("lead_tests").select("suggested_level").eq("lead_id", lead.id).eq("status", "completed").order("completed_at", { ascending: false }).limit(1).maybeSingle();
+    placementLevel = lt?.suggested_level ?? null;
+  }
+  if (!placementLevel) {
+    const { data: pt } = await admin.from("placement_tests").select("suggested_level").eq("learner_id", learnerId).eq("status", "completed").order("created_at", { ascending: false }).limit(1).maybeSingle();
+    placementLevel = pt?.suggested_level ?? null;
+  }
+
+  const report = await generateDiagnostic({
+    studentName: lead?.student_name ?? learner?.full_name ?? "الطالب",
+    age: lead?.student_age ?? null,
+    goal: lead?.learning_goal ?? null,
+    priorStudy: lead?.prior_study ?? null,
+    englishUse: lead?.english_use ?? null,
+    homeLanguage: lead?.home_language ?? null,
+    selfLevels: (lead?.skill_levels as Record<string, string> | null) ?? null,
+    placementLevel,
+    introOutcome: lead?.intro_outcome ?? null,
+    introNotes: lead?.intro_notes ?? null,
+    adminNote: lead?.ops_note ?? null,
+  });
+
+  const { error } = await supabase.from("diagnostics").upsert(
+    { tenant_id: tenantId, learner_id: learnerId, report, status: "draft", created_by: user.id, approved_at: null },
+    { onConflict: "learner_id" },
+  );
+  if (error) throw new Error(error.message);
+  revalidatePath(`/studio/students/${learnerId}`);
+}
+
+export async function updateDiagnostic(formData: FormData) {
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const report = String(formData.get("report") ?? "").trim();
+  const { supabase } = await instructorCtx();
+  const { error } = await supabase.from("diagnostics").update({ report }).eq("learner_id", learnerId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/studio/students/${learnerId}`);
+}
+
+export async function approveDiagnostic(formData: FormData) {
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const { supabase } = await instructorCtx();
+  const { error } = await supabase.from("diagnostics").update({ status: "approved", approved_at: new Date().toISOString() }).eq("learner_id", learnerId);
+  if (error) throw new Error(error.message);
   revalidatePath(`/studio/students/${learnerId}`);
 }

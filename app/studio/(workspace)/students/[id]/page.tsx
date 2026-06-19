@@ -9,6 +9,7 @@ import {
   generateDraft, approveItem, rejectItem, updateReport, approveReport,
   setLessonSchedule, generateLessonSessions,
   createManualHomework, gradeManualHomework, removeManualHomework,
+  generateDiagnosticReport, updateDiagnostic, approveDiagnostic,
 } from "@/app/studio/actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import SessionScheduleForm from "@/components/studio/SessionScheduleForm";
@@ -131,6 +132,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   }
   const { data: assessments } = await supabase.from("assessments").select("id, title, scope, status, score, max_score, notes, scheduled_for, completed_at").eq("learner_id", id).order("created_at", { ascending: false });
   const { data: lessonSchedule } = await supabase.from("lesson_schedules").select("weekday, time_of_day, duration_minutes").eq("learner_id", id).maybeSingle();
+  const { data: diagnostic } = await supabase.from("diagnostics").select("report, status").eq("learner_id", id).maybeSingle();
 
   // Manual homework (image-based) + signed URLs for its files, grouped by session.
   const { data: manualHw } = await supabase
@@ -307,6 +309,36 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   // ————— Tab contents —————
   const Overview = (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* Diagnostic (baseline) — generated from all the student's inputs */}
+      <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={secTitle}>تقرير التشخيص</span>
+          {diagnostic?.status === "approved" && <AITrustBadge status="approved" compact />}
+          {diagnostic?.status === "draft" && <AITrustBadge status="draft" compact />}
+          <form action={generateDiagnosticReport} style={{ marginInlineStart: "auto" }}>
+            <input type="hidden" name="learnerId" value={id} />
+            <SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}><Spark size={13} /> {diagnostic ? "أعِد التوليد" : "ولّد التشخيص"}</SubmitButton>
+          </form>
+        </div>
+        {!diagnostic && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>يُولَّد من نموذج التسجيل واختبار التحديد وتقرير الجلسة التعريفية والملاحظات الداخلية — نقطة انطلاقك.</p>}
+        {diagnostic?.status === "draft" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, background: "var(--surface-soft)", borderRadius: 10, padding: 10 }}>
+            <form action={updateDiagnostic} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <input type="hidden" name="learnerId" value={id} />
+              <textarea name="report" rows={8} defaultValue={diagnostic.report ?? ""} className={ctl} style={{ lineHeight: 1.7 }} />
+              <SubmitButton pendingText="…" className={btn("secondary")}>احفظ التعديلات</SubmitButton>
+            </form>
+            <form action={approveDiagnostic}>
+              <input type="hidden" name="learnerId" value={id} />
+              <SubmitButton pendingText="…" className={btn("success")}>اعتمِد التشخيص</SubmitButton>
+            </form>
+          </div>
+        )}
+        {diagnostic?.status === "approved" && (
+          <p style={{ fontSize: 13.5, color: "var(--text-body)", whiteSpace: "pre-line", lineHeight: 1.8 }}>{diagnostic.report}</p>
+        )}
+      </Card>
+
       <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={secTitle}>الجلسة القادمة</div>
         {nextSession ? (
