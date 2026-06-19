@@ -1,13 +1,12 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { petalValues, unitStage } from "@/lib/skills";
+import { unitStage, SKILLS, SKILL_AR, type BloomStage } from "@/lib/skills";
+import { FlowerProgress, UnitBloom as BloomUnit } from "@/components/bloom/Bloom";
 import { submitPlacement, submitManualHomework } from "./actions";
 import AnswerForm from "@/components/learn/AnswerForm";
 import SubmitButton from "@/components/studio/SubmitButton";
 import WorkspaceHeader from "@/components/studio/WorkspaceHeader";
-import BloomFlower from "@/components/BloomFlower";
 import VideoCall from "@/components/VideoCall";
-import UnitBloom from "@/components/UnitBloom";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fmtUTC } from "@/lib/datetime";
 
@@ -43,7 +42,7 @@ export default async function LearnPage() {
     .order("created_at", { ascending: false });
   const { data: prog } = await supabase
     .from("progress_records")
-    .select("attempts, correct, completions, objectives(description, level, skill)");
+    .select("attempts, correct, completions, objectives(description, level, skill, unit)");
   const { data: manualHw } = await supabase
     .from("manual_homework")
     .select("id, title, instructions, status, score, max_score, feedback, homework_files(id, kind, file_path)")
@@ -95,9 +94,30 @@ export default async function LearnPage() {
 
   // Flower (5 skills) + the daily unit hero — from real progress.
   const progRows = (prog ?? []).map((p: any) => ({ attempts: p.attempts, correct: p.correct, o: objOf(p), stage: unitStage(p) }));
-  const petals = petalValues(progRows.map((p) => ({ attempts: p.attempts, correct: p.correct, skill: p.o.skill })));
   const inProgress = progRows.filter((p) => p.stage !== "bloom").sort((a, b) => b.attempts - a.attempts);
   const currentUnit = inProgress[0] ?? progRows[0];
+
+  // Honest per-skill mastery for the flower.
+  const isMastered = (r: { attempts: number; correct: number }) => r.attempts >= 1 && r.correct / Math.max(1, r.attempts) >= 0.6;
+  const skillStats = SKILLS.map((sk) => {
+    const inSkill = progRows.filter((p) => p.o.skill === sk);
+    return { skill: sk, total: inSkill.length, mastered: inSkill.filter(isMastered).length };
+  });
+
+  // The garden path: the plan's units, each mastered / current / upcoming.
+  const planItems = (studyPlan?.items as any[]) ?? [];
+  const gardenUnits: { unit: string; status: "mastered" | "current" | "upcoming"; stage: BloomStage }[] = [];
+  const seen = new Set<string>();
+  for (const it of planItems) {
+    const u = (it.unit as string) || "الدروس";
+    if (seen.has(u)) continue;
+    seen.add(u);
+    const uRows = progRows.filter((p) => ((p.o.unit as string) || "الدروس") === u);
+    const practiced = uRows.filter((p) => p.attempts > 0);
+    const status = practiced.length === 0 ? "upcoming" : uRows.every((p) => p.stage === "bloom") ? "mastered" : "current";
+    gardenUnits.push({ unit: u, status, stage: status === "mastered" ? "bloom" : status === "current" ? "balloon" : "bud" });
+  }
+  const STATUS_AR: Record<string, string> = { mastered: "تفتّحت", current: "أنت هنا", upcoming: "قادمة" };
 
   return (
     <main className="mx-auto max-w-2xl px-5 py-10">
@@ -137,15 +157,56 @@ export default async function LearnPage() {
       {/* Daily hero: the current unit bud -> balloon -> bloom */}
       {currentUnit && (
         <section className="mb-8">
-          <h2 className={h2}>وحدة اليوم</h2>
-          <UnitBloom stage={currentUnit.stage} title={currentUnit.o.description ?? "وحدة"} sub={`${currentUnit.correct}/${currentUnit.attempts}`} />
+          <h2 className={h2}>درس اليوم</h2>
+          <div className="flex items-center gap-4 rounded-2xl p-5 text-white shadow-ward-2" style={{ background: "var(--grad-bloom, linear-gradient(135deg,#9F7DE7,#6840BD))" }}>
+            <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full" style={{ background: "rgba(41,23,78,0.26)" }}>
+              <BloomUnit stage={currentUnit.stage} size={60} pop={currentUnit.stage === "bloom"} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-extrabold leading-tight" dir="ltr">{currentUnit.o.description ?? "Lesson"}</p>
+              <p className="mt-1 text-sm" style={{ color: "var(--ward-purple-100)" }}>
+                {currentUnit.stage === "bloom" ? "تفتّح! أتقنتَ هذا الدرس 🎉" : currentUnit.stage === "balloon" ? "بالونك ينتفخ — أكمِل لتُتقنه" : "ابدأ هذا الدرس"}
+              </p>
+              <p className="mt-1 text-xs font-bold" style={{ color: "var(--ward-purple-100)", fontVariantNumeric: "tabular-nums" }}>{currentUnit.correct} / {currentUnit.attempts}</p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* The garden path: the plan's units as a journey */}
+      {gardenUnits.length > 0 && (
+        <section className="mb-8">
+          <h2 className={h2}>مسار حديقتي</h2>
+          <div className={card}>
+            <ul className="flex flex-col">
+              {gardenUnits.map((g, i) => (
+                <li key={i} className="flex items-center gap-3 py-2" style={{ borderBottom: i < gardenUnits.length - 1 ? "1px solid var(--ink-100)" : "none" }}>
+                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full" style={{ background: g.status === "mastered" ? "var(--ward-purple-50)" : g.status === "current" ? "#fff" : "var(--ink-100)", border: g.status === "current" ? "2px solid var(--brand)" : "2px solid transparent" }}>
+                    <BloomUnit stage={g.stage} size={34} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold" dir="ltr" style={{ color: g.status === "upcoming" ? "var(--text-muted)" : "var(--text-strong)" }}>{g.unit}</p>
+                    <p className="text-xs text-ink-soft">{STATUS_AR[g.status]}</p>
+                  </div>
+                  {g.status === "current" ? <span className="rounded-full px-2 py-0.5 text-xs font-bold" style={{ background: "var(--apricot-100, #ffeedc)", color: "var(--apricot-600, #c97a2b)" }}>الآن</span> : g.status === "mastered" ? <span className="text-leaf">✓</span> : null}
+                </li>
+              ))}
+            </ul>
+          </div>
         </section>
       )}
 
       {/* The skill flower (slower snapshot) */}
       <section className="mb-8">
         <h2 className={h2}>وردتي</h2>
-        <BloomFlower skills={petals} caption="كل بتلةٍ مهارة — تنمو ببطءٍ عبر الموسم كلّما أتقنتَ أهدافها." />
+        <div className={card}>
+          <div className="flex items-center gap-4">
+            <FlowerProgress size={104} skills={skillStats.map((s) => ({ label: SKILL_AR[s.skill], value: s.total ? s.mastered / s.total : 0, detail: `${s.mastered}/${s.total}` }))} />
+            <p className="flex-1 text-sm text-ink-soft" style={{ lineHeight: 1.8 }}>
+              كل بتلةٍ مهارة — تنمو ببطءٍ كلّما أتقنتَ أهدافها. الأرقام صادقة: عدد الأهداف المُتقَنة من إجماليها.
+            </p>
+          </div>
+        </div>
       </section>
 
       {/* Study plan */}
