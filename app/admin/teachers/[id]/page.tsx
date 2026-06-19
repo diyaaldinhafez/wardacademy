@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { updateTeacherProfile } from "@/app/admin/actions";
 import SubmitButton from "@/components/studio/SubmitButton";
-import AvailabilityManager from "@/components/admin/AvailabilityManager";
+import AvailabilityView from "@/components/admin/AvailabilityView";
 import { Card, Badge, Avatar } from "@/components/ward/ui";
 
 const btn = (v: string, s = "sm") => `ward-btn ward-btn--${v} ward-btn--${s}`;
@@ -125,8 +125,8 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
 
       {/* Availability (the teacher's schedule) */}
       <div>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-strong)", marginBottom: 10 }}>المواعيد المتاحة</h2>
-        <AvailabilityManager />
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-strong)", marginBottom: 10 }}>جدول المعلّمة (للعرض)</h2>
+        <AvailabilityView instructorId={id} />
       </div>
     </div>
   );

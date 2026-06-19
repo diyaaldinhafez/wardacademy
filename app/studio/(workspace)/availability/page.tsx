@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from "@/lib/supabase/server";
-import { deleteRule, addException, removeException, regenerateSlots, removeSlot, setBreakMinutes } from "@/app/admin/actions";
+import { tDeleteRule, tAddException, tRemoveException, tRegenerate, tAddRule, tAddSlot, tRemoveSlot } from "@/app/studio/availability-actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import SlotForm from "@/components/studio/SlotForm";
 import RuleForm from "@/components/admin/RuleForm";
@@ -10,14 +10,14 @@ import { WEEKDAY_AR, sessionsPerRule } from "@/lib/availability";
 const btn = (v: string, s = "sm") => `ward-btn ward-btn--${v} ward-btn--${s}`;
 const hm = (t: string) => (t ? t.slice(0, 5) : "");
 
-/** The full availability manager (a teacher's schedule). Self-fetching. */
-export default async function AvailabilityManager() {
+export default async function MyAvailabilityPage() {
   const supabase = await createClient();
   const { data: tenant } = await supabase.from("tenants").select("timezone, slot_break_minutes").maybeSingle();
   const tz = tenant?.timezone ?? "Asia/Riyadh";
   const brk = tenant?.slot_break_minutes ?? 15;
 
-  const { data: rules } = await supabase.from("availability_rules").select("id, weekday, start_time, end_time, slot_minutes, active").order("weekday");
+  // RLS scopes these to the signed-in teacher's own rows.
+  const { data: rules } = await supabase.from("availability_rules").select("id, weekday, start_time, end_time, slot_minutes").order("weekday");
   const { data: exceptions } = await supabase.from("availability_exceptions").select("id, on_date, reason").order("on_date");
   const { data: slots } = await supabase.from("availability_slots").select("id, starts_at, status, source_rule_id").order("starts_at");
   const open = (slots ?? []).filter((s: any) => s.status === "open");
@@ -34,70 +34,58 @@ export default async function AvailabilityManager() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 760 }}>
       <Card style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <p style={{ fontSize: 13.5, color: "var(--text-muted)", flex: 1, minWidth: 220 }}>
-          الأوقات بالمنطقة الزمنية <Badge tone="neutral">{tz}</Badge> · التوليد لأربعة أسابيع (يرى الزائر أسبوعين).
+          حدّدي تفرّغك الأسبوعيّ بالمنطقة الزمنية <Badge tone="neutral">{tz}</Badge>؛ يُولِّد النظام مواعيد الحجز تلقائياً.
         </p>
-        <form action={setBreakMinutes} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <label style={{ fontSize: 13, color: "var(--text-body)" }}>الاستراحة بين الجلسات:</label>
-          <select name="breakMinutes" defaultValue={String(brk)} className="ward-select__control" style={{ width: "auto", minHeight: 40 }}>
-            {[0, 5, 10, 15, 20, 30].map((m) => (
-              <option key={m} value={m}>{m} دقيقة</option>
-            ))}
-          </select>
-          <SubmitButton pendingText="…" className={btn("secondary")}>حفظ</SubmitButton>
-        </form>
-        <form action={regenerateSlots}>
-          <SubmitButton pendingText="جارٍ التوليد…" className={btn("soft", "md")}>أعِد توليد المواعيد</SubmitButton>
+        <form action={tRegenerate}>
+          <SubmitButton pendingText="جارٍ التحديث…" className={btn("soft", "md")}>حدِّث المواعيد</SubmitButton>
         </form>
       </Card>
 
-      {/* Weekly rules */}
       <Card style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>القواعد الأسبوعية المتكرّرة</h2>
-        {(rules ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا قواعد بعد — أضِف واحدةً أدناه.</p>}
+        <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>تفرّغي الأسبوعيّ المتكرّر</h2>
+        {(rules ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا أوقات بعد — أضيفي قاعدةً أدناه.</p>}
         {(rules ?? []).map((r: any) => (
           <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid var(--ink-100)", paddingBottom: 8 }}>
             <Badge tone="brand">{WEEKDAY_AR[r.weekday]}</Badge>
             <span style={{ fontSize: 14, color: "var(--text-body)", fontVariantNumeric: "tabular-nums" }}>{hm(r.start_time)} – {hm(r.end_time)}</span>
             <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>كلّ {r.slot_minutes} دقيقة</span>
             <Badge tone="success">≈ {sessionsPerRule(r.start_time, r.end_time, r.slot_minutes, brk)} جلسة/أسبوع</Badge>
-            <form action={deleteRule} style={{ marginInlineStart: "auto" }}>
+            <form action={tDeleteRule} style={{ marginInlineStart: "auto" }}>
               <input type="hidden" name="ruleId" value={r.id} />
               <SubmitButton className={btn("danger")}>حذف</SubmitButton>
             </form>
           </div>
         ))}
-        <RuleForm breakMinutes={brk} />
+        <RuleForm breakMinutes={brk} action={tAddRule} />
       </Card>
 
-      {/* Exceptions */}
       <Card style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>الاستثناءات (أيّام محجوبة)</h2>
-        {(exceptions ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا استثناءات.</p>}
+        <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>أيّامٌ محجوبة (إجازات)</h2>
+        {(exceptions ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا أيّام محجوبة.</p>}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {(exceptions ?? []).map((e: any) => (
             <span key={e.id} style={{ display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 999, background: "var(--surface-sunken)", padding: "4px 10px", fontSize: 13 }}>
               {e.on_date}{e.reason ? ` · ${e.reason}` : ""}
-              <form action={removeException}>
+              <form action={tRemoveException}>
                 <input type="hidden" name="exceptionId" value={e.id} />
                 <SubmitButton className="ward-btn ward-btn--ghost ward-btn--sm">✕</SubmitButton>
               </form>
             </span>
           ))}
         </div>
-        <form action={addException} style={{ display: "flex", flexWrap: "wrap", alignItems: "end", gap: 8 }}>
+        <form action={tAddException} style={{ display: "flex", flexWrap: "wrap", alignItems: "end", gap: 8 }}>
           <input type="date" name="onDate" required className="ward-field__control" style={{ width: "auto" }} />
           <input type="text" name="reason" placeholder="السبب (اختياري)" className="ward-field__control" style={{ width: "auto" }} />
-          <SubmitButton pendingText="…" className={btn("secondary")}>احجب اليوم</SubmitButton>
+          <SubmitButton pendingText="…" className={btn("secondary")}>احجبي اليوم</SubmitButton>
         </form>
       </Card>
 
-      {/* Manual one-off + day-grouped overview */}
       <Card style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>إضافة موعدٍ مفرد (استثنائيّ)</h2>
-        <SlotForm />
+        <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>موعدٌ مفرد (استثنائيّ)</h2>
+        <SlotForm action={tAddSlot} />
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 13, color: "var(--text-muted)" }}>
           <span>مفتوحة: <strong style={{ color: "var(--text-strong)" }}>{open.length}</strong></span>
           <span>محجوزة: <strong style={{ color: "var(--text-strong)" }}>{booked.length}</strong></span>
@@ -110,7 +98,7 @@ export default async function AvailabilityManager() {
                 <span key={s.id} style={{ display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 12, border: "1px solid var(--border-soft)", background: "var(--surface-card)", padding: "4px 10px", fontSize: 12.5, fontVariantNumeric: "tabular-nums" }}>
                   {fmtTime(s.starts_at)}
                   {!s.source_rule_id && <Badge tone="neutral">يدويّ</Badge>}
-                  <form action={removeSlot}>
+                  <form action={tRemoveSlot}>
                     <input type="hidden" name="slotId" value={s.id} />
                     <SubmitButton className="ward-btn ward-btn--ghost ward-btn--sm">✕</SubmitButton>
                   </form>

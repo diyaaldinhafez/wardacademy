@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { createRule } from "@/app/admin/actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import { WEEKDAY_AR, sessionsPerRule } from "@/lib/availability";
 
 const sel = "ward-select__control";
 const ctl = "ward-field__control";
 
-export default function RuleForm({ breakMinutes }: { breakMinutes: number }) {
+export default function RuleForm({ breakMinutes, action }: { breakMinutes: number; action: (formData: FormData) => void | Promise<void> }) {
   const [weekday, setWeekday] = useState("1");
   const [start, setStart] = useState("16:00");
   const [end, setEnd] = useState("18:00");
@@ -17,7 +16,7 @@ export default function RuleForm({ breakMinutes }: { breakMinutes: number }) {
   const count = end > start ? sessionsPerRule(start, end, Number(slot), breakMinutes) : 0;
 
   return (
-    <form action={createRule} style={{ display: "flex", flexWrap: "wrap", alignItems: "end", gap: 8 }}>
+    <form action={action} style={{ display: "flex", flexWrap: "wrap", alignItems: "end", gap: 8 }}>
       <select name="weekday" value={weekday} onChange={(e) => setWeekday(e.target.value)} className={sel} style={{ width: "auto", minHeight: 40 }}>
         {WEEKDAY_AR.map((w, i) => (
           <option key={i} value={i}>{w}</option>

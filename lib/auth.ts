@@ -22,3 +22,21 @@ export async function assertAdmin() {
   }
   return { supabase, user, profile };
 }
+
+/** Guard for instructor (teacher) server actions. */
+export async function assertInstructor() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/studio/login");
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, tenant_id, full_name, roles")
+    .eq("id", user.id)
+    .single();
+  if (!profile || !((profile.roles as string[]) ?? []).includes("instructor")) {
+    throw new Error("هذا الإجراء للمعلّم فقط.");
+  }
+  return { supabase, user, profile };
+}

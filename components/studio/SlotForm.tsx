@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { addSlot } from "@/app/admin/actions";
 import SubmitButton from "./SubmitButton";
 
-export default function SlotForm() {
+export default function SlotForm({ action }: { action: (formData: FormData) => void | Promise<void> }) {
   const [local, setLocal] = useState("");
   const utc = local ? new Date(local).toISOString() : "";
 
   return (
-    <form action={addSlot} className="flex flex-wrap items-end gap-2">
+    <form action={action} className="flex flex-wrap items-end gap-2">
       <input
         type="datetime-local"
         value={local}
