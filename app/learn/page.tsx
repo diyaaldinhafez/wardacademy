@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { petalValues, unitStage } from "@/lib/skills";
-import { submitPlacement } from "./actions";
+import { submitPlacement, submitManualHomework } from "./actions";
 import AnswerForm from "@/components/learn/AnswerForm";
 import SubmitButton from "@/components/studio/SubmitButton";
 import WorkspaceHeader from "@/components/studio/WorkspaceHeader";
@@ -43,6 +43,22 @@ export default async function LearnPage() {
   const { data: prog } = await supabase
     .from("progress_records")
     .select("attempts, correct, completions, objectives(description, level, skill)");
+  const { data: manualHw } = await supabase
+    .from("manual_homework")
+    .select("id, title, instructions, status, score, max_score, feedback, homework_files(id, kind, file_path)")
+    .eq("learner_id", user.id)
+    .order("created_at", { ascending: false });
+  const hwUrls = new Map<string, string>();
+  {
+    const all = (manualHw ?? []).flatMap((h: any) => h.homework_files ?? []);
+    if (all.length) {
+      const admin = createAdminClient();
+      await Promise.all(all.map(async (f: any) => {
+        const { data } = await admin.storage.from("homework-files").createSignedUrl(f.file_path, 3600);
+        if (data?.signedUrl) hwUrls.set(f.id, data.signedUrl);
+      }));
+    }
+  }
   const { data: sessions } = await supabase.from("sessions").select("id, scheduled_at, duration_minutes").order("scheduled_at");
   const { data: reports } = await supabase.from("session_reports").select("session_id, summary, strengths, improve");
   const reportBySession = new Map<string, any>();
@@ -202,6 +218,55 @@ export default async function LearnPage() {
           })}
         </ul>
       </section>
+
+      {/* Manual homework (from the paper textbook) */}
+      {(manualHw ?? []).length > 0 && (
+        <section className="mt-8">
+          <h2 className={h2}>واجباتي من الكتاب</h2>
+          <ul className="flex flex-col gap-3">
+            {(manualHw ?? []).map((h: any) => {
+              const tFiles = (h.homework_files ?? []).filter((f: any) => f.kind !== "submission");
+              const myFiles = (h.homework_files ?? []).filter((f: any) => f.kind === "submission");
+              return (
+                <li key={h.id} className={card}>
+                  <div className="mb-1 flex items-center gap-2 text-xs">
+                    <span className="rounded-full bg-brand-50 px-2 py-0.5 font-medium text-brand-700">من الكتاب</span>
+                    {h.status === "graded" ? (
+                      <span className="font-bold text-leaf">مُصحَّح{h.score != null ? `: ${h.score}${h.max_score != null ? `/${h.max_score}` : ""}` : ""} ✓</span>
+                    ) : h.status === "submitted" ? (
+                      <span className="text-ink-soft">أُرسل ✓ — بانتظار التصحيح</span>
+                    ) : (
+                      <span className="text-rose-600">بانتظار حلّك</span>
+                    )}
+                  </div>
+                  <p className="font-bold text-ink">{h.title}</p>
+                  {h.instructions && <p className="text-sm text-ink-soft">{h.instructions}</p>}
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {tFiles.map((f: any) => {
+                      const href = hwUrls.get(f.id);
+                      return href ? <a key={f.id} href={href} target="_blank" rel="noreferrer" className="rounded-lg border border-brand-100 px-2.5 py-1 text-xs font-medium text-brand-700">عرض الواجب ↓</a> : null;
+                    })}
+                    {myFiles.map((f: any) => {
+                      const href = hwUrls.get(f.id);
+                      return href ? <a key={f.id} href={href} target="_blank" rel="noreferrer" className="rounded-lg border border-leaf/40 px-2.5 py-1 text-xs font-medium text-leaf">حلّي ↓</a> : null;
+                    })}
+                  </div>
+                  {h.status === "graded" && h.feedback && <p className="mt-2 text-sm text-ink-soft"><span className="font-medium">ملاحظة المعلّمة:</span> {h.feedback}</p>}
+                  {h.status === "assigned" && (
+                    <form action={submitManualHomework} className="mt-3 flex flex-wrap items-center gap-2">
+                      <input type="hidden" name="manualHomeworkId" value={h.id} />
+                      <input type="file" name="file" required accept="image/*" className="text-sm" />
+                      <SubmitButton pendingText="جارٍ الرفع…" className="inline-flex h-9 items-center justify-center rounded-full bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60">
+                        ارفع صورة حلّي
+                      </SubmitButton>
+                    </form>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
     </main>
   );
 }

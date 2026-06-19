@@ -106,3 +106,36 @@ export async function submitPlacement(formData: FormData) {
 
   revalidatePath("/learn");
 }
+
+/**
+ * A learner uploads a photo of their handwritten solution to a manual homework
+ * (Note 4). The homework is first checked under the learner's own session (RLS),
+ * then the file is stored and the status flipped to "submitted" via service role
+ * (the learner has no write policy — they cannot grade or alter the score).
+ */
+export async function submitManualHomework(formData: FormData) {
+  const id = String(formData.get("manualHomeworkId") ?? "");
+  const file = formData.get("file") as File | null;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/studio/login");
+  if (!file || file.size === 0) throw new Error("ارفع صورة حلّك.");
+  if (file.size > 25 * 1024 * 1024) throw new Error("حجم الصورة أكبر من 25 ميغابايت.");
+
+  // RLS guarantees the learner only sees their own homework.
+  const { data: hw } = await supabase.from("manual_homework").select("id, tenant_id, learner_id").eq("id", id).maybeSingle();
+  if (!hw || hw.learner_id !== user.id) throw new Error("واجبٌ غير موجود.");
+
+  const admin = createAdminClient();
+  const safe = file.name.replace(/[^\w.\-]+/g, "_").slice(-80);
+  const path = `${hw.tenant_id}/${hw.learner_id}/${crypto.randomUUID()}-${safe}`;
+  const buf = Buffer.from(await file.arrayBuffer());
+  const up = await admin.storage.from("homework-files").upload(path, buf, { contentType: file.type || "application/octet-stream", upsert: false });
+  if (up.error) throw new Error(up.error.message);
+
+  await admin.from("homework_files").insert({ tenant_id: hw.tenant_id, manual_homework_id: hw.id, kind: "submission", file_path: path, file_name: file.name, mime_type: file.type || null, size_bytes: file.size, uploaded_by: user.id });
+  await admin.from("manual_homework").update({ status: "submitted", submitted_at: new Date().toISOString() }).eq("id", hw.id);
+  revalidatePath("/learn");
+}
