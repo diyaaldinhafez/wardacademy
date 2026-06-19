@@ -8,13 +8,15 @@ import {
   generateIntroReportAction,
   updateIntroReport,
   sendIntroReportAction,
+  setPaymentStatus,
 } from "@/app/admin/actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import ProvisionPanel from "@/components/studio/ProvisionPanel";
+import PipelineStepper from "@/components/admin/PipelineStepper";
 import { Card, Badge, Avatar, Spark } from "@/components/ward/ui";
 import { labelOf, SKILL_AR, ENROLL_SKILLS, LEVELS } from "@/lib/enrollOptions";
 import { ENGAGEMENT, STRENGTHS, FOCUS, DECISION } from "@/lib/introReport";
-import { LEAD_STATUS_AR, LEAD_STATUS_TONE } from "@/lib/leads";
+import { LEAD_STATUS_AR, LEAD_STATUS_TONE, computePipeline } from "@/lib/leads";
 import { fmtUTC } from "@/lib/datetime";
 
 const pillCls =
@@ -92,6 +94,14 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const bookUrl = lead.book_token ? `${SITE_URL}/book/${lead.book_token}` : "";
   const waBook = phone && bookUrl ? `https://wa.me/${phone}?text=${encodeURIComponent("احجز جلسة طفلك التعريفية المجانية: " + bookUrl)}` : "";
 
+  const pipeline = computePipeline({
+    hasBooking: !!slot,
+    testStatus: test?.status,
+    introStatus: intro?.status,
+    paymentStatus: lead.payment_status,
+    converted: lead.status === "converted",
+  });
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 760 }}>
       <Link href="/admin/registrations" className={btn("ghost")} style={{ alignSelf: "flex-start" }}>
@@ -112,6 +122,11 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         </div>
         <Badge tone={LEAD_STATUS_TONE[lead.status] ?? "neutral"}>{LEAD_STATUS_AR[lead.status] ?? lead.status}</Badge>
       </div>
+
+      {/* Pipeline */}
+      <Card style={{ paddingBlock: 18 }}>
+        <PipelineStepper steps={pipeline.steps} currentIndex={pipeline.currentIndex} size="md" />
+      </Card>
 
       {/* Details */}
       <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -298,6 +313,45 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             </form>
           </div>
         )}
+      </Card>
+
+      {/* Payment (manual until a real gateway exists) */}
+      <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={secTitle}>
+          الدفع {lead.payment_status === "paid" && <Badge tone="success">مدفوع ✓</Badge>}
+        </div>
+        <p style={{ fontSize: 13.5, color: "var(--text-body)" }}>
+          الحالة: {lead.payment_status === "paid" ? "تمّ الدفع" : lead.payment_status === "link_sent" ? "أُرسل رابط الدفع — بانتظار الدفع" : "بانتظار إرسال رابط الدفع"}
+        </p>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {lead.payment_status === "pending" && (
+            <form action={setPaymentStatus}>
+              <input type="hidden" name="leadId" value={lead.id} />
+              <input type="hidden" name="status" value="link_sent" />
+              <SubmitButton pendingText="…" className={btn("soft")}>سجّل: أُرسل رابط الدفع</SubmitButton>
+            </form>
+          )}
+          {lead.payment_status !== "paid" && (
+            <form action={setPaymentStatus}>
+              <input type="hidden" name="leadId" value={lead.id} />
+              <input type="hidden" name="status" value="paid" />
+              <SubmitButton pendingText="…" className={btn("success")}>سجّل: تمّ الدفع</SubmitButton>
+            </form>
+          )}
+          {lead.payment_status === "paid" && (
+            <form action={setPaymentStatus}>
+              <input type="hidden" name="leadId" value={lead.id} />
+              <input type="hidden" name="status" value="pending" />
+              <SubmitButton pendingText="…" className={btn("ghost")}>تراجع</SubmitButton>
+            </form>
+          )}
+          {phone && (
+            <a href={`https://wa.me/${phone}?text=${encodeURIComponent("رابط الدفع لإتمام تسجيل طفلكم في أكاديمية وَرد:")}`} target="_blank" rel="noopener noreferrer" className={btn("ghost")}>
+              أرسِل رابط الدفع عبر واتساب
+            </a>
+          )}
+        </div>
+        <p style={{ fontSize: 12, color: "var(--text-muted)" }}>حالةٌ يدويّة مؤقّتة — بوابة دفعٍ حقيقية تأتي لاحقاً.</p>
       </Card>
 
       {/* Provisioning */}

@@ -410,6 +410,20 @@ export async function sendIntroReportAction(formData: FormData) {
   revalidatePath(`/admin/registrations/${leadId}`);
 }
 
+/** Manually update the lead's payment status (until a real gateway exists). */
+export async function setPaymentStatus(formData: FormData) {
+  const leadId = String(formData.get("leadId") ?? "");
+  const status = String(formData.get("status") ?? "");
+  if (!["pending", "link_sent", "paid"].includes(status)) throw new Error("حالة دفعٍ غير صحيحة.");
+  const { supabase } = await assertAdmin();
+  const { error } = await supabase
+    .from("leads")
+    .update({ payment_status: status, paid_at: status === "paid" ? new Date().toISOString() : null })
+    .eq("id", leadId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/registrations/${leadId}`);
+}
+
 /** Admin sign-out. */
 export async function adminLogout() {
   const { supabase } = await assertAdmin();
