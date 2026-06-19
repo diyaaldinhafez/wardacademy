@@ -15,9 +15,14 @@ export default function PipelineStepper({
   const dot = size === "sm" ? 12 : 16;
   const labelSize = size === "sm" ? 10.5 : 12.5;
   const lineTop = dot / 2 - 1;
+  const caption = currentIndex < steps.length ? steps[currentIndex].label : "مكتمل";
 
   return (
-    <div role="list" aria-label="مراحل التسجيل" style={{ display: "flex", alignItems: "flex-start", width: "100%" }}>
+    <div style={{ width: "100%" }}>
+      <div className="only-mobile" style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
+        المرحلة الحالية: <b style={{ color: currentIndex < steps.length ? "var(--text-strong)" : "var(--leaf-700)" }}>{caption}</b>
+      </div>
+      <div role="list" aria-label="مراحل التسجيل" style={{ display: "flex", alignItems: "flex-start", width: "100%" }}>
       {steps.map((s, i) => {
         const state = s.done ? "done" : i === currentIndex ? "current" : "upcoming";
         const bg = state === "done" ? "var(--leaf-500)" : state === "current" ? "#fff" : "var(--ink-200)";
@@ -55,11 +60,14 @@ export default function PipelineStepper({
                   </svg>
                 )}
               </span>
-              <span style={{ fontSize: labelSize, fontWeight: labelWeight, color: labelColor, whiteSpace: "nowrap" }}>{s.label}</span>
+              <span className="step-label" style={{ fontSize: labelSize, fontWeight: labelWeight, color: labelColor, whiteSpace: "nowrap" }}>
+                {s.label}
+              </span>
             </div>
           </Fragment>
         );
       })}
+      </div>
     </div>
   );
 }
