@@ -536,6 +536,86 @@ export async function updateOpsNote(formData: FormData) {
   revalidatePath(`/admin/registrations/${leadId}`);
 }
 
+/* ===== Learning phase: enrollments & monthly invoices ===== */
+
+/** Start a monthly subscription for an active student. */
+export async function createEnrollment(formData: FormData) {
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const monthly_fee = Math.max(0, Number(formData.get("monthlyFee") ?? 0));
+  const spmRaw = String(formData.get("sessionsPerMonth") ?? "").trim();
+  const sessions_per_month = spmRaw ? Number(spmRaw) : null;
+  const { supabase, profile } = await assertAdmin();
+
+  const { data: learner } = await supabase.from("profiles").select("assigned_instructor_id").eq("id", learnerId).maybeSingle();
+  let instructorId: string | null = learner?.assigned_instructor_id ?? null;
+  if (!instructorId) {
+    try {
+      instructorId = await defaultInstructorId(profile.tenant_id);
+    } catch {
+      instructorId = null;
+    }
+  }
+
+  const { error } = await supabase.from("enrollments").insert({
+    tenant_id: profile.tenant_id,
+    learner_id: learnerId,
+    instructor_id: instructorId,
+    monthly_fee,
+    sessions_per_month,
+    status: "active",
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/students/${learnerId}`);
+}
+
+/** Update the plan (fee / sessions) of an enrollment. */
+export async function updateEnrollment(formData: FormData) {
+  const enrollmentId = String(formData.get("enrollmentId") ?? "");
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const monthly_fee = Math.max(0, Number(formData.get("monthlyFee") ?? 0));
+  const spmRaw = String(formData.get("sessionsPerMonth") ?? "").trim();
+  const sessions_per_month = spmRaw ? Number(spmRaw) : null;
+  const { supabase } = await assertAdmin();
+  const { error } = await supabase.from("enrollments").update({ monthly_fee, sessions_per_month }).eq("id", enrollmentId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/students/${learnerId}`);
+}
+
+/** Generate this month's invoice for an enrollment (idempotent per month). */
+export async function generateMonthlyInvoice(formData: FormData) {
+  const enrollmentId = String(formData.get("enrollmentId") ?? "");
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const { supabase, profile } = await assertAdmin();
+  const { data: enr } = await supabase.from("enrollments").select("id, monthly_fee, learner_id").eq("id", enrollmentId).single();
+  if (!enr) throw new Error("الاشتراك غير موجود.");
+
+  const d = new Date();
+  const period = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const due = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10);
+
+  const { error } = await supabase.from("invoices").upsert(
+    { tenant_id: profile.tenant_id, enrollment_id: enr.id, learner_id: enr.learner_id, period, amount: enr.monthly_fee, status: "pending", due_date: due },
+    { onConflict: "enrollment_id,period", ignoreDuplicates: true },
+  );
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/students/${learnerId}`);
+}
+
+/** Mark an invoice paid / pending / void. */
+export async function setInvoiceStatus(formData: FormData) {
+  const invoiceId = String(formData.get("invoiceId") ?? "");
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const status = String(formData.get("status") ?? "");
+  if (!["pending", "paid", "void"].includes(status)) throw new Error("حالة فاتورةٍ غير صحيحة.");
+  const { supabase } = await assertAdmin();
+  const { error } = await supabase
+    .from("invoices")
+    .update({ status, paid_at: status === "paid" ? new Date().toISOString() : null })
+    .eq("id", invoiceId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/students/${learnerId}`);
+}
+
 /** Admin sign-out. */
 export async function adminLogout() {
   const { supabase } = await assertAdmin();
