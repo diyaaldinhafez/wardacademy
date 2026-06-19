@@ -134,15 +134,17 @@ export async function assignItem(formData: FormData) {
   if (!item) throw new Error("Item not found");
   if (item.status !== "approved") throw new Error("Only approved items can be assigned");
 
+  const sessionId = String(formData.get("sessionId") ?? "").trim() || null;
   const { error } = await supabase.from("assignments").insert({
     tenant_id: item.tenant_id,
     item_id: itemId,
     learner_id: learnerId,
     assigned_by: user.id,
+    session_id: sessionId,
   });
   // ignore "already assigned" (unique violation)
   if (error && error.code !== "23505") throw new Error(error.message);
-  revalidatePath("/studio");
+  revalidatePath("/studio", "layout");
 }
 
 /** Schedule a 1:1 session. scheduledAt is a UTC ISO string from the client. */
@@ -150,6 +152,9 @@ export async function scheduleSession(formData: FormData) {
   const learnerId = String(formData.get("learnerId") ?? "");
   const scheduledAt = String(formData.get("scheduledAt") ?? "");
   const duration = Number(formData.get("duration") ?? 30);
+  const lessonTitle = String(formData.get("lessonTitle") ?? "").trim() || null;
+  const rawIndex = String(formData.get("planItemIndex") ?? "").trim();
+  const planItemIndex = rawIndex === "" ? null : Number(rawIndex);
 
   const supabase = await createClient();
   const {
@@ -167,11 +172,13 @@ export async function scheduleSession(formData: FormData) {
     learner_id: learnerId,
     scheduled_at: scheduledAt,
     duration_minutes: duration,
+    lesson_title: lessonTitle,
+    plan_item_index: planItemIndex,
   });
   if (error) {
     throw new Error(error.code === "23P01" ? "That time overlaps an existing session." : error.message);
   }
-  revalidatePath("/studio");
+  revalidatePath("/studio", "layout");
 }
 
 /** Write a draft report for a session (reaches the family only once approved). */
@@ -406,4 +413,88 @@ export async function updateReport(formData: FormData) {
     .eq("id", reportId);
   if (error) throw new Error(error.message);
   revalidatePath("/studio");
+}
+
+// — Curriculum resources & assessments (the student detail page) —
+
+/** Tenant + instructor guard for the actions below. */
+async function instructorCtx() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/studio/login");
+  const { data: profile } = await supabase.from("profiles").select("tenant_id, roles").eq("id", user.id).single();
+  if (!profile || !((profile.roles as string[]) ?? []).includes("instructor")) throw new Error("Only an instructor.");
+  return { supabase, user, tenantId: profile.tenant_id as string };
+}
+
+export async function addResource(formData: FormData) {
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  const url = String(formData.get("url") ?? "").trim() || null;
+  const note = String(formData.get("note") ?? "").trim() || null;
+  if (!learnerId || !title) throw new Error("أدخِل عنوان المصدر.");
+  const { supabase, user, tenantId } = await instructorCtx();
+  const { error } = await supabase.from("learning_resources").insert({ tenant_id: tenantId, learner_id: learnerId, title, url, note, created_by: user.id });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/studio/students/${learnerId}`);
+}
+
+export async function removeResource(formData: FormData) {
+  const id = String(formData.get("resourceId") ?? "");
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const { supabase } = await instructorCtx();
+  const { error } = await supabase.from("learning_resources").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/studio/students/${learnerId}`);
+}
+
+export async function createAssessment(formData: FormData) {
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  const scope = String(formData.get("scope") ?? "unit");
+  const scheduledFor = String(formData.get("scheduledFor") ?? "").trim() || null;
+  if (!learnerId || !title) throw new Error("أدخِل عنوان الاختبار.");
+  const { supabase, user, tenantId } = await instructorCtx();
+  const { error } = await supabase.from("assessments").insert({
+    tenant_id: tenantId,
+    learner_id: learnerId,
+    title,
+    scope: ["unit", "term", "plan"].includes(scope) ? scope : "unit",
+    scheduled_for: scheduledFor,
+    created_by: user.id,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/studio/students/${learnerId}`);
+}
+
+export async function recordAssessment(formData: FormData) {
+  const id = String(formData.get("assessmentId") ?? "");
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const rawScore = String(formData.get("score") ?? "").trim();
+  const rawMax = String(formData.get("maxScore") ?? "").trim();
+  const notes = String(formData.get("notes") ?? "").trim() || null;
+  const { supabase } = await instructorCtx();
+  const { error } = await supabase
+    .from("assessments")
+    .update({
+      status: "completed",
+      score: rawScore === "" ? null : Number(rawScore),
+      max_score: rawMax === "" ? null : Number(rawMax),
+      notes,
+      completed_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/studio/students/${learnerId}`);
+}
+
+export async function removeAssessment(formData: FormData) {
+  const id = String(formData.get("assessmentId") ?? "");
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const { supabase } = await instructorCtx();
+  const { error } = await supabase.from("assessments").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/studio/students/${learnerId}`);
 }
