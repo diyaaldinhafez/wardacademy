@@ -130,7 +130,7 @@ try {
            login_email = excluded.login_email`;
   await pg.query(upsertProfile, [guardian.id, tenantId, "Parent (dev)", "{guardian}", false, GUARDIAN_EMAIL]);
   await pg.query(upsertProfile, [learner.id, tenantId, "Yousef (dev)", "{learner}", true, LEARNER_EMAIL]);
-  await pg.query(upsertProfile, [adminUser.id, tenantId, "Operations (dev)", "{admin}", false, ADMIN_EMAIL]);
+  await pg.query(upsertProfile, [adminUser.id, tenantId, "الإدارة", "{admin}", false, ADMIN_EMAIL]);
   await pg.query(
     `insert into public.guardianships(tenant_id, guardian_id, learner_id, relationship, consent_granted, consent_at)
        values ($1, $2, $3, 'parent', true, now())
