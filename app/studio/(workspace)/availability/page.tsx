@@ -34,7 +34,7 @@ export default async function MyAvailabilityPage() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 760 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <Card style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <p style={{ fontSize: 13.5, color: "var(--text-muted)", flex: 1, minWidth: 220 }}>
           حدّدي تفرّغك الأسبوعيّ بالمنطقة الزمنية <Badge tone="neutral">{tz}</Badge>؛ يُولِّد النظام مواعيد الحجز تلقائياً.

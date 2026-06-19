@@ -642,7 +642,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 820 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <Link href="/studio/students" className={btn("ghost")} style={{ alignSelf: "flex-start" }}>→ كلّ الطلاب</Link>
 
       {/* Header with live signals */}
