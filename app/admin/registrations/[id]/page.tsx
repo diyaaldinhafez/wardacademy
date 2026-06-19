@@ -269,7 +269,19 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           </SubmitButton>
         </form>
 
-        {intro?.ai_report && (
+        {intro?.ai_report && intro.status === "sent" && (
+          <div style={{ borderTop: "1px solid var(--border-soft)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+            <p style={{ fontSize: 13, color: "var(--leaf-700)", fontWeight: 600 }}>
+              أُرسل التقرير لوليّ الأمر ✓ {intro.sent_at ? `· ${fmtUTC(intro.sent_at)}` : ""}
+            </p>
+            <div style={{ whiteSpace: "pre-line", lineHeight: 1.9, fontSize: 14, color: "var(--text-body)", background: "var(--surface-soft)", borderRadius: 12, padding: 14 }}>
+              {intro.ai_report}
+            </div>
+            <p style={{ fontSize: 12, color: "var(--text-muted)" }}>التقرير مُرسَلٌ ومُقفَل. لتعديله، أعِد توليده أعلاه ثمّ أرسِله من جديد.</p>
+          </div>
+        )}
+
+        {intro?.ai_report && intro.status !== "sent" && (
           <div style={{ borderTop: "1px solid var(--border-soft)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Spark size={16} />
@@ -280,14 +292,10 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               <textarea name="aiReport" rows={9} defaultValue={intro.ai_report} className={ctl} dir="rtl" />
               <SubmitButton pendingText="…" className={btn("secondary")}>احفظ التعديلات</SubmitButton>
             </form>
-            {intro.status === "sent" ? (
-              <p style={{ fontSize: 13, color: "var(--leaf-700)", fontWeight: 600 }}>أُرسل التقرير لوليّ الأمر ✓</p>
-            ) : (
-              <form action={sendIntroReportAction}>
-                <input type="hidden" name="leadId" value={lead.id} />
-                <SubmitButton pendingText="جارٍ الإرسال…" className={btn("success", "md")}>اعتمِد وأرسِل لوليّ الأمر</SubmitButton>
-              </form>
-            )}
+            <form action={sendIntroReportAction}>
+              <input type="hidden" name="leadId" value={lead.id} />
+              <SubmitButton pendingText="جارٍ الإرسال…" className={btn("success", "md")}>اعتمِد وأرسِل لوليّ الأمر</SubmitButton>
+            </form>
           </div>
         )}
       </Card>
