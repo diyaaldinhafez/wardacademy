@@ -5,8 +5,8 @@ import { SKILL_AR, type Skill } from "@/lib/skills";
 
 export type Opt = { value: string; label: string };
 
-// Selectable ages for the student (7–15).
-export const AGES: number[] = Array.from({ length: 9 }, (_, i) => i + 7);
+// Selectable ages for the student (9–13 — the approved target band).
+export const AGES: number[] = Array.from({ length: 5 }, (_, i) => i + 9);
 
 // Comprehensive country list (Arabic) for residence + nationality autocomplete.
 export const COUNTRIES_ALL: string[] = [

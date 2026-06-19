@@ -65,11 +65,14 @@ Aim for a **playful, warm, joyful** aesthetic in the garden/blooming spirit: sof
 
 # Product-Grounding Additions (make the system fit the real platform)
 
-## 4. Three Audiences — One Identity, Three Tones
+## 4. Four Audiences — One Identity, Four Tones
 The flower/spark identity and palette **unify** the whole product, but tone and density **differ** per surface:
-- **Teacher workspace (the most-used surface):** efficient, fast, professional, information-dense. **It is a productivity tool, not a garden** — minimal clicks, clear forms, quick review/approve. The identity shows lightly (palette, spark), not heavy gamification.
+- **Admin / Operations (`/admin`):** the operator's console — efficient, neutral, data-dense. Owns the pre-learning **funnel** (registration → booking → placement → intro session → account creation) and ongoing operations (monthly invoices, cases, periodic evaluations, watching teacher schedules). Pipeline/stepper patterns, tables, status badges; identity shows only lightly. Use **semantic colours** (green = done/success, apricot = next-step, rose = gentle errors/delete — never harsh red), not purple-only.
+- **Teacher workspace (the most-used teaching surface):** efficient, fast, professional, information-dense. **It is a productivity tool, not a garden** — minimal clicks, clear forms, quick review/approve, plus the teacher sets her **own availability**. The identity shows lightly (palette, spark), not heavy gamification.
 - **Guardian:** clarity, warmth, trust. Read-only. "Bloom Reports" candid and easy to understand.
 - **Child (ages 9–13):** playful, achievement-driven, and capable — the flower/garden/petals and earnable rewards; digitally fluent, so interactions can be real (not babyish).
+
+> **Direction:** Admin, Teacher, and Guardian surfaces are **Arabic / RTL**; the Child surface is **English / LTR**. All four are **mobile-first** (verified on a phone, with a bottom nav on the responsive shells).
 
 ## 5. Make the AI Trust Model Visible — "Draft" vs "Teacher-Approved"
 Core product rule: **every AI output is a DRAFT the teacher reviews and approves before it reaches the child or parent.**
@@ -79,7 +82,8 @@ This embodies the promise — **AI assists, the human guarantees** — and is ce
 
 ## 6. Surface Inventory (design the system to cover these real screens)
 - **Public:** bilingual landing page; registration + parental consent; free-trial booking; placement test.
-- **Teacher:** roster/dashboard; create homework (AI-generated path + manual path); review & approve AI output; grade; session-report form; per-student progress.
+- **Admin / Operations:** dashboard (funnel metrics + at-risk list); registrations list + detail with a pipeline stepper; placement-test generate/approve; AI intro-session report (draft → review → send); account provisioning + teacher assignment; monthly invoices; cases/complaints; periodic evaluations; teachers list + per-teacher page with a **read-only month calendar** of the teacher's schedule (allocated / booked / remaining as colour areas).
+- **Teacher:** roster/dashboard; create homework (AI-generated path + manual path); review & approve AI output; grade; session-report form; per-student progress; **own availability editor** (weekly rules + exceptions).
 - **Child:** do homework (multiple-choice/fill/match/true-false, short & open writing, voice recording); see assignments; personal flower/progress.
 - **Guardian:** read-only dashboard (supports **multiple children** under one account); Bloom Reports.
 
