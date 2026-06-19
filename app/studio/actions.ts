@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   generateItem,
   generateSessionReportDraft,
@@ -431,24 +432,47 @@ async function instructorCtx() {
   return { supabase, user, tenantId: profile.tenant_id as string };
 }
 
+const RESOURCE_BUCKET = "learning-resources";
+const RESOURCE_MAX_BYTES = 25 * 1024 * 1024;
+
+/** Upload a learning-resource file (PDF/Word/PowerPoint/Excel…) to private storage. */
 export async function addResource(formData: FormData) {
   const learnerId = String(formData.get("learnerId") ?? "");
-  const title = String(formData.get("title") ?? "").trim();
-  const url = String(formData.get("url") ?? "").trim() || null;
   const note = String(formData.get("note") ?? "").trim() || null;
-  if (!learnerId || !title) throw new Error("أدخِل عنوان المصدر.");
-  const { supabase, user, tenantId } = await instructorCtx();
-  const { error } = await supabase.from("learning_resources").insert({ tenant_id: tenantId, learner_id: learnerId, title, url, note, created_by: user.id });
-  if (error) throw new Error(error.message);
+  const file = formData.get("file") as File | null;
+  if (!learnerId) throw new Error("طالبٌ غير محدّد.");
+  if (!file || file.size === 0) throw new Error("اختر ملفاً للرفع.");
+  if (file.size > RESOURCE_MAX_BYTES) throw new Error("حجم الملفّ أكبر من 25 ميغابايت.");
+
+  const { user, tenantId } = await instructorCtx();
+  const admin = createAdminClient();
+  const safe = file.name.replace(/[^\w.\-]+/g, "_").slice(-80);
+  const path = `${tenantId}/${learnerId}/${crypto.randomUUID()}-${safe}`;
+  const buf = Buffer.from(await file.arrayBuffer());
+  const up = await admin.storage.from(RESOURCE_BUCKET).upload(path, buf, { contentType: file.type || "application/octet-stream", upsert: false });
+  if (up.error) throw new Error(up.error.message);
+
+  const title = String(formData.get("title") ?? "").trim() || file.name;
+  const { error } = await admin.from("learning_resources").insert({
+    tenant_id: tenantId, learner_id: learnerId, title, note,
+    file_path: path, file_name: file.name, mime_type: file.type || null, size_bytes: file.size, created_by: user.id,
+  });
+  if (error) {
+    await admin.storage.from(RESOURCE_BUCKET).remove([path]);
+    throw new Error(error.message);
+  }
   revalidatePath(`/studio/students/${learnerId}`);
 }
 
 export async function removeResource(formData: FormData) {
   const id = String(formData.get("resourceId") ?? "");
   const learnerId = String(formData.get("learnerId") ?? "");
-  const { supabase } = await instructorCtx();
-  const { error } = await supabase.from("learning_resources").delete().eq("id", id);
+  await instructorCtx();
+  const admin = createAdminClient();
+  const { data: row } = await admin.from("learning_resources").select("file_path").eq("id", id).maybeSingle();
+  const { error } = await admin.from("learning_resources").delete().eq("id", id);
   if (error) throw new Error(error.message);
+  if (row?.file_path) await admin.storage.from(RESOURCE_BUCKET).remove([row.file_path]);
   revalidatePath(`/studio/students/${learnerId}`);
 }
 

@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   startPlacement, startPlan, approvePlan, materializePlanObjectives, draftReportWithAI, assignItem,
   addResource, removeResource, createAssessment, recordAssessment, removeAssessment,
@@ -27,6 +28,17 @@ const SCOPE_AR: Record<string, string> = { unit: "وحدة", term: "فصل", pla
 const AR_STAGE: Record<string, string> = {
   "Not started": "لم يبدأ", Practiced: "تدرّب", Sprouting: "بذرة", Budding: "برعم", Growing: "ينمو", Blooming: "متفتّح",
 };
+
+const fmtSize = (n?: number | null) => (n == null ? "" : n > 1048576 ? `${(n / 1048576).toFixed(1)} م.ب` : `${Math.max(1, Math.round(n / 1024))} ك.ب`);
+function fileKind(name?: string | null, mime?: string | null): string {
+  const ext = (name ?? "").split(".").pop()?.toLowerCase() ?? "";
+  if (ext === "pdf" || mime?.includes("pdf")) return "PDF";
+  if (["doc", "docx"].includes(ext) || mime?.includes("word")) return "Word";
+  if (["ppt", "pptx"].includes(ext) || mime?.includes("presentation") || mime?.includes("powerpoint")) return "PowerPoint";
+  if (["xls", "xlsx"].includes(ext) || mime?.includes("sheet") || mime?.includes("excel")) return "Excel";
+  if (ext === "txt") return "نصّ";
+  return "ملفّ";
+}
 
 function subStatus(sub: any) {
   if (!sub) return { tone: "neutral" as const, label: "لم يُسلَّم" };
@@ -95,7 +107,17 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     .order("created_at", { ascending: false });
   // The tenant's objectives — the bank the teacher generates homework from.
   const { data: objectives } = await supabase.from("objectives").select("id, description, level").order("created_at", { ascending: false });
-  const { data: resources } = await supabase.from("learning_resources").select("id, title, url, note, created_at").eq("learner_id", id).order("created_at", { ascending: false });
+  const { data: resources } = await supabase.from("learning_resources").select("id, title, note, file_path, file_name, mime_type, size_bytes, created_at").eq("learner_id", id).order("created_at", { ascending: false });
+  // Short-lived signed download URLs for the private resource files.
+  const resourceUrls = new Map<string, string>();
+  const withFiles = (resources ?? []).filter((r: any) => r.file_path);
+  if (withFiles.length) {
+    const admin = createAdminClient();
+    await Promise.all(withFiles.map(async (r: any) => {
+      const { data } = await admin.storage.from("learning-resources").createSignedUrl(r.file_path, 3600);
+      if (data?.signedUrl) resourceUrls.set(r.id, data.signedUrl);
+    }));
+  }
   const { data: assessments } = await supabase.from("assessments").select("id, title, scope, status, score, max_score, notes, scheduled_for, completed_at").eq("learner_id", id).order("created_at", { ascending: false });
 
   // Alerts
@@ -311,23 +333,33 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
       <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={secTitle}>مصادر التعلّم</div>
-        {(resources ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا مصادر بعد.</p>}
-        {(resources ?? []).map((r: any) => (
-          <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, borderBottom: "1px solid var(--ink-100)", paddingBottom: 6 }}>
-            <span style={{ flex: 1, color: "var(--text-body)" }}>
-              {r.url ? <a href={r.url} target="_blank" rel="noreferrer" style={{ color: "var(--brand)", textDecoration: "none" }}>{r.title} ↗</a> : r.title}
-              {r.note && <span style={{ color: "var(--text-muted)" }}> — {r.note}</span>}
-            </span>
-            <form action={removeResource}><input type="hidden" name="resourceId" value={r.id} /><input type="hidden" name="learnerId" value={id} /><SubmitButton className={btn("ghost")}>✕</SubmitButton></form>
-          </div>
-        ))}
-        <form action={addResource} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
+        {(resources ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا مصادر بعد — ارفع ملفّاً (PDF / Word / PowerPoint / Excel).</p>}
+        {(resources ?? []).map((r: any) => {
+          const href = resourceUrls.get(r.id);
+          return (
+            <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, borderBottom: "1px solid var(--ink-100)", paddingBottom: 6 }}>
+              <Badge tone="neutral">{fileKind(r.file_name, r.mime_type)}</Badge>
+              <span style={{ flex: 1, minWidth: 0 }}>
+                {href ? (
+                  <a href={href} target="_blank" rel="noreferrer" style={{ color: "var(--brand)", textDecoration: "none", fontWeight: 600 }}>{r.title ?? r.file_name} ↓</a>
+                ) : (
+                  <span style={{ color: "var(--text-body)" }}>{r.title ?? r.file_name}</span>
+                )}
+                {r.size_bytes != null && <span style={{ color: "var(--text-muted)" }}> · {fmtSize(r.size_bytes)}</span>}
+                {r.note && <span style={{ color: "var(--text-muted)" }}> — {r.note}</span>}
+              </span>
+              <form action={removeResource}><input type="hidden" name="resourceId" value={r.id} /><input type="hidden" name="learnerId" value={id} /><SubmitButton className={btn("ghost")}>✕</SubmitButton></form>
+            </div>
+          );
+        })}
+        <form action={addResource} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end", borderTop: "1px solid var(--ink-100)", paddingTop: 10 }}>
           <input type="hidden" name="learnerId" value={id} />
-          <input name="title" required placeholder="عنوان المصدر" className={ctl} style={{ width: "auto", flex: 1, minWidth: 140 }} />
-          <input name="url" placeholder="رابط (اختياري)" dir="ltr" className={ctl} style={{ width: "auto" }} />
+          <input name="file" type="file" required accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt" className={ctl} style={{ width: "auto", flex: 1, minWidth: 200 }} />
+          <input name="title" placeholder="عنوان (اختياري)" className={ctl} style={{ width: "auto" }} />
           <input name="note" placeholder="ملاحظة (اختياري)" className={ctl} style={{ width: "auto" }} />
-          <SubmitButton pendingText="…" className={btn("secondary")}>أضِف مصدراً</SubmitButton>
+          <SubmitButton pendingText="جارٍ الرفع…" className={btn("secondary")}>ارفع ملفاً</SubmitButton>
         </form>
+        <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>PDF · Word · PowerPoint · Excel · نصّ — حتى 25 ميغابايت. خاصّةٌ ومعزولة.</p>
       </Card>
     </div>
   );
