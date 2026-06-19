@@ -90,7 +90,6 @@ export default async function RegistrationsPage({
             paymentStatus: l.payment_status,
             converted: l.status === "converted",
           });
-          const phone = (l.guardian_phone ?? "").replace(/[^0-9]/g, "");
           return (
             <Card key={l.id} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
@@ -112,14 +111,9 @@ export default async function RegistrationsPage({
                     </div>
                   </div>
                 </Link>
-                {phone && (
-                  <a href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer" className="ward-btn ward-btn--ghost ward-btn--sm">
-                    واتساب
-                  </a>
-                )}
                 <Link
                   href={`/admin/registrations/${l.id}`}
-                  className={`ward-btn ward-btn--${nextAction ? (nextAction.tone === "neutral" ? "secondary" : "soft") : "ghost"} ward-btn--sm`}
+                  className={`ward-btn ${nextAction ? "ward-btn--warm" : "ward-btn--ghost"} ward-btn--sm`}
                 >
                   {nextAction ? `${nextAction.label} ←` : "عرض"}
                 </Link>

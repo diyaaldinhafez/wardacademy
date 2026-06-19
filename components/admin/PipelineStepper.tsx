@@ -20,8 +20,8 @@ export default function PipelineStepper({
     <div role="list" aria-label="مراحل التسجيل" style={{ display: "flex", alignItems: "flex-start", width: "100%" }}>
       {steps.map((s, i) => {
         const state = s.done ? "done" : i === currentIndex ? "current" : "upcoming";
-        const bg = state === "done" ? "var(--brand)" : state === "current" ? "#fff" : "var(--ink-200)";
-        const border = state === "current" ? "2px solid var(--brand)" : "none";
+        const bg = state === "done" ? "var(--leaf-500)" : state === "current" ? "#fff" : "var(--ink-200)";
+        const border = state === "current" ? "2px solid var(--leaf-500)" : "none";
         const labelColor = state === "upcoming" ? "var(--text-muted)" : "var(--text-strong)";
         const labelWeight = state === "current" ? 700 : 500;
         return (
@@ -29,7 +29,7 @@ export default function PipelineStepper({
             {i > 0 && (
               <span
                 aria-hidden="true"
-                style={{ flex: 1, height: 2, marginTop: lineTop, minWidth: 14, background: steps[i - 1].done ? "var(--brand)" : "var(--ink-200)" }}
+                style={{ flex: 1, height: 2, marginTop: lineTop, minWidth: 14, background: steps[i - 1].done ? "var(--leaf-500)" : "var(--ink-200)" }}
               />
             )}
             <div
@@ -44,7 +44,7 @@ export default function PipelineStepper({
                   borderRadius: "50%",
                   background: bg,
                   border,
-                  boxShadow: state === "current" ? "0 0 0 3px rgba(127,85,217,.18)" : "none",
+                  boxShadow: state === "current" ? "0 0 0 3px rgba(46,158,107,.18)" : "none",
                   display: "grid",
                   placeItems: "center",
                 }}
