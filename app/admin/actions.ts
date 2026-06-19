@@ -14,6 +14,17 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://ward.academy";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+/** Append an entry to a lead's activity log (who did what, when). */
+async function logEvent(supabase: any, profile: any, leadId: string, kind: string) {
+  await supabase.from("lead_events").insert({
+    tenant_id: profile.tenant_id,
+    lead_id: leadId,
+    actor_id: profile.id,
+    actor_name: profile.full_name ?? null,
+    kind,
+  });
+}
+
 /**
  * The intro session is delivered by a teacher; resolve the tenant's instructor.
  * Uses the service role (a trusted lookup) because the admin's RLS does not
@@ -58,7 +69,7 @@ export async function removeSlot(formData: FormData) {
 /** Generate a tailored placement test for a lead (draft → admin reviews → approves). */
 export async function generateLeadTestAction(formData: FormData) {
   const leadId = String(formData.get("leadId") ?? "");
-  const { supabase, user } = await assertAdmin();
+  const { supabase, user, profile } = await assertAdmin();
 
   const { data: lead } = await supabase
     .from("leads")
@@ -95,6 +106,7 @@ export async function generateLeadTestAction(formData: FormData) {
   if (qErr) throw new Error(qErr.message);
 
   await supabase.from("leads").update({ status: "testing" }).eq("id", leadId);
+  await logEvent(supabase, profile, leadId, "ولّد اختبار التحديد");
   revalidatePath(`/admin/registrations/${leadId}`);
   revalidatePath("/admin/tests");
 }
@@ -124,7 +136,7 @@ export async function provisionAccounts(
   formData: FormData,
 ) {
   const leadId = String(formData.get("leadId") ?? "");
-  const { supabase } = await assertAdmin();
+  const { supabase, profile } = await assertAdmin();
 
   const { data: lead } = await supabase
     .from("leads")
@@ -182,6 +194,7 @@ export async function provisionAccounts(
   }
 
   await admin.from("leads").update({ status: "converted" }).eq("id", leadId);
+  await logEvent(supabase, profile, leadId, "جُهّزت الحسابات");
   revalidatePath(`/admin/registrations/${leadId}`);
   return { guardian: { email: lead.guardian_email, link: guardianLink }, student: { email: sEmail, link: studentLink } };
 }
@@ -391,7 +404,7 @@ export async function updateIntroReport(formData: FormData) {
 /** Approve and send the intro report to the guardian. */
 export async function sendIntroReportAction(formData: FormData) {
   const leadId = String(formData.get("leadId") ?? "");
-  const { supabase } = await assertAdmin();
+  const { supabase, profile } = await assertAdmin();
 
   const { data: report } = await supabase.from("intro_reports").select("ai_report, status").eq("lead_id", leadId).maybeSingle();
   if (!report?.ai_report) throw new Error("ولّد التقرير أولاً.");
@@ -407,6 +420,7 @@ export async function sendIntroReportAction(formData: FormData) {
   if (!res.ok && !res.skipped) throw new Error(res.error ?? "تعذّر الإرسال.");
 
   await supabase.from("intro_reports").update({ status: "sent", sent_at: new Date().toISOString() }).eq("lead_id", leadId);
+  await logEvent(supabase, profile, leadId, "أُرسل تقرير الجلسة");
   revalidatePath(`/admin/registrations/${leadId}`);
 }
 
@@ -415,12 +429,13 @@ export async function setPaymentStatus(formData: FormData) {
   const leadId = String(formData.get("leadId") ?? "");
   const status = String(formData.get("status") ?? "");
   if (!["pending", "link_sent", "paid"].includes(status)) throw new Error("حالة دفعٍ غير صحيحة.");
-  const { supabase } = await assertAdmin();
+  const { supabase, profile } = await assertAdmin();
   const { error } = await supabase
     .from("leads")
     .update({ payment_status: status, paid_at: status === "paid" ? new Date().toISOString() : null })
     .eq("id", leadId);
   if (error) throw new Error(error.message);
+  await logEvent(supabase, profile, leadId, status === "paid" ? "تمّ الدفع" : status === "link_sent" ? "أُرسل رابط الدفع" : "أُعيد الدفع للانتظار");
   revalidatePath(`/admin/registrations/${leadId}`);
 }
 
@@ -434,12 +449,13 @@ export async function updateLeadContact(formData: FormData) {
   const guardian_phone = get("guardianPhone");
   if (!guardian_name || !guardian_email || !student_name) throw new Error("الاسم والبريد واسم الطالب مطلوبة.");
 
-  const { supabase } = await assertAdmin();
+  const { supabase, profile } = await assertAdmin();
   const { error } = await supabase
     .from("leads")
     .update({ guardian_name, guardian_email, student_name, guardian_phone: guardian_phone || null })
     .eq("id", leadId);
   if (error) throw new Error(error.message);
+  await logEvent(supabase, profile, leadId, "عُدِّلت بيانات التواصل");
   revalidatePath(`/admin/registrations/${leadId}`);
 }
 
@@ -447,11 +463,77 @@ export async function updateLeadContact(formData: FormData) {
 export async function deleteLead(formData: FormData) {
   const leadId = String(formData.get("leadId") ?? "");
   const { supabase } = await assertAdmin();
-  // Release any slot this lead booked back to open.
   await supabase.from("availability_slots").update({ status: "open", lead_id: null }).eq("lead_id", leadId).eq("status", "booked");
   const { error } = await supabase.from("leads").delete().eq("id", leadId);
   if (error) throw new Error(error.message);
   redirect("/admin/registrations");
+}
+
+/** Bulk-delete registrations (test-data cleanup). Frees their booked slots. */
+export async function bulkDeleteLeads(formData: FormData) {
+  const ids = formData.getAll("ids").map(String).filter(Boolean);
+  const { supabase } = await assertAdmin();
+  if (ids.length) {
+    await supabase.from("availability_slots").update({ status: "open", lead_id: null }).in("lead_id", ids).eq("status", "booked");
+    const { error } = await supabase.from("leads").delete().in("id", ids);
+    if (error) throw new Error(error.message);
+  }
+  revalidatePath("/admin/registrations");
+}
+
+/** Archive (soft-hide) a real lead; un-archive restores it. */
+export async function archiveLead(formData: FormData) {
+  const leadId = String(formData.get("leadId") ?? "");
+  const { supabase, profile } = await assertAdmin();
+  await supabase.from("leads").update({ archived: true }).eq("id", leadId);
+  await logEvent(supabase, profile, leadId, "أُرشِف الطلب");
+  redirect("/admin/registrations");
+}
+export async function unarchiveLead(formData: FormData) {
+  const leadId = String(formData.get("leadId") ?? "");
+  const { supabase, profile } = await assertAdmin();
+  await supabase.from("leads").update({ archived: false }).eq("id", leadId);
+  await logEvent(supabase, profile, leadId, "أُلغيت الأرشفة");
+  revalidatePath(`/admin/registrations/${leadId}`);
+}
+
+/** Cancel a lead's booked intro slot (frees it back to open). */
+export async function cancelBooking(formData: FormData) {
+  const leadId = String(formData.get("leadId") ?? "");
+  const { supabase, profile } = await assertAdmin();
+  await supabase.from("availability_slots").update({ status: "open", lead_id: null }).eq("lead_id", leadId).eq("status", "booked");
+  await supabase.from("leads").update({ status: "new" }).eq("id", leadId).eq("status", "booked");
+  await logEvent(supabase, profile, leadId, "أُلغي الحجز");
+  revalidatePath(`/admin/registrations/${leadId}`);
+}
+
+/** Reschedule: free the current slot and book a new open one. */
+export async function rebookByAdmin(formData: FormData) {
+  const leadId = String(formData.get("leadId") ?? "");
+  const slotId = String(formData.get("slotId") ?? "");
+  if (!slotId) throw new Error("اختر موعداً.");
+  const { supabase, profile } = await assertAdmin();
+  await supabase.from("availability_slots").update({ status: "open", lead_id: null }).eq("lead_id", leadId).eq("status", "booked");
+  const { data: claimed, error } = await supabase
+    .from("availability_slots")
+    .update({ status: "booked", lead_id: leadId })
+    .eq("id", slotId)
+    .eq("status", "open")
+    .select("id");
+  if (error || !claimed?.length) throw new Error("هذا الموعد لم يعد متاحاً.");
+  await supabase.from("leads").update({ status: "booked" }).eq("id", leadId).eq("status", "new");
+  await logEvent(supabase, profile, leadId, "أُعيدت جدولة الموعد");
+  revalidatePath(`/admin/registrations/${leadId}`);
+}
+
+/** Save an internal ops note on a lead (not shown to the guardian). */
+export async function updateOpsNote(formData: FormData) {
+  const leadId = String(formData.get("leadId") ?? "");
+  const note = String(formData.get("opsNote") ?? "").trim() || null;
+  const { supabase } = await assertAdmin();
+  const { error } = await supabase.from("leads").update({ ops_note: note }).eq("id", leadId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/registrations/${leadId}`);
 }
 
 /** Admin sign-out. */

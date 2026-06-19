@@ -10,6 +10,11 @@ import {
   sendIntroReportAction,
   setPaymentStatus,
   updateLeadContact,
+  cancelBooking,
+  rebookByAdmin,
+  updateOpsNote,
+  archiveLead,
+  unarchiveLead,
 } from "@/app/admin/actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import ProvisionPanel from "@/components/studio/ProvisionPanel";
@@ -50,6 +55,7 @@ function Pills({
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/purity -- server component: per-request date math is intentional */
 const SITE_URL = "https://ward.academy";
 const btn = (v: string, s = "sm") => `ward-btn ward-btn--${v} ward-btn--${s}`;
 const secTitle = { fontSize: 15, fontWeight: 700, color: "var(--text-strong)", marginBottom: 12 } as const;
@@ -89,6 +95,16 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   }
 
   const { data: intro } = await supabase.from("intro_reports").select("*").eq("lead_id", id).maybeSingle();
+  const { data: events } = await supabase.from("lead_events").select("kind, actor_name, at").eq("lead_id", id).order("at", { ascending: false }).limit(20);
+  const twoWeeks = new Date(Date.now() + 14 * 24 * 3600 * 1000).toISOString();
+  const { data: openSlots } = await supabase
+    .from("availability_slots")
+    .select("id, starts_at, duration_minutes")
+    .eq("status", "open")
+    .gte("starts_at", new Date().toISOString())
+    .lt("starts_at", twoWeeks)
+    .order("starts_at")
+    .limit(40);
 
   const phone = (lead.guardian_phone ?? "").replace(/[^0-9]/g, "");
   const shareLink = test?.share_token ? `${SITE_URL}/t/${test.share_token}` : "";
@@ -198,6 +214,26 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                 أرسِل رابط الحجز عبر واتساب
               </a>
             )}
+          </div>
+        )}
+        {slot && (
+          <div style={{ borderTop: "1px solid var(--border-soft)", paddingTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+            {(openSlots ?? []).length > 0 && (
+              <form action={rebookByAdmin} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "end" }}>
+                <input type="hidden" name="leadId" value={lead.id} />
+                <select name="slotId" required defaultValue="" className={ctl} style={{ width: "auto" }}>
+                  <option value="" disabled>اختر موعداً جديداً…</option>
+                  {(openSlots ?? []).map((s: any) => (
+                    <option key={s.id} value={s.id}>{fmtUTC(s.starts_at)}</option>
+                  ))}
+                </select>
+                <SubmitButton pendingText="…" className={btn("secondary")}>إعادة الجدولة</SubmitButton>
+              </form>
+            )}
+            <form action={cancelBooking}>
+              <input type="hidden" name="leadId" value={lead.id} />
+              <SubmitButton pendingText="…" className={btn("danger")}>إلغاء الحجز</SubmitButton>
+            </form>
           </div>
         )}
       </Card>
@@ -378,13 +414,51 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         )}
       </Card>
 
-      {/* Danger zone */}
-      <Card style={{ borderColor: "var(--rose-300, #f0c8d2)", display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={secTitle}>حذف الطلب</div>
-        <p style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
-          يحذف الطلب وكلّ بياناته (الاختبار والتقرير) ويُحرّر الموعد المحجوز. لا يمكن التراجع.
-        </p>
-        <DeleteLeadButton leadId={lead.id} studentName={lead.student_name ?? "الطالب"} />
+      {/* Internal ops note */}
+      <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={secTitle}>ملاحظة تشغيلية داخلية</div>
+        <form action={updateOpsNote} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <input type="hidden" name="leadId" value={lead.id} />
+          <textarea name="opsNote" rows={2} defaultValue={lead.ops_note ?? ""} placeholder="ملاحظةٌ للفريق (لا تظهر لوليّ الأمر)" className={ctl} />
+          <SubmitButton pendingText="…" className={btn("secondary")}>احفظ الملاحظة</SubmitButton>
+        </form>
+      </Card>
+
+      {/* Activity log */}
+      <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={secTitle}>سجلّ النشاط</div>
+        {(events ?? []).length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا نشاط بعد.</p>
+        ) : (
+          <ul style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {(events ?? []).map((e: any, i: number) => (
+              <li key={i} style={{ display: "flex", gap: 8, justifyContent: "space-between", fontSize: 12.5, color: "var(--text-muted)", flexWrap: "wrap" }}>
+                <span style={{ color: "var(--text-body)", fontWeight: 600 }}>{e.kind}</span>
+                <span>{e.actor_name ?? "—"} · {fmtUTC(e.at)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+
+      {/* Manage: archive / delete */}
+      <Card style={{ borderColor: "var(--rose-300, #f0c8d2)", display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={secTitle}>إدارة الطلب</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {lead.archived ? (
+            <form action={unarchiveLead}>
+              <input type="hidden" name="leadId" value={lead.id} />
+              <SubmitButton pendingText="…" className={btn("secondary")}>إلغاء الأرشفة</SubmitButton>
+            </form>
+          ) : (
+            <form action={archiveLead}>
+              <input type="hidden" name="leadId" value={lead.id} />
+              <SubmitButton pendingText="…" className={btn("ghost")}>أرشِف الطلب</SubmitButton>
+            </form>
+          )}
+          <DeleteLeadButton leadId={lead.id} studentName={lead.student_name ?? "الطالب"} />
+        </div>
+        <p style={{ fontSize: 12, color: "var(--text-muted)" }}>الأرشفة تُخفي الطلب دون حذفه. الحذف نهائيّ ويُحرّر الموعد المحجوز.</p>
       </Card>
     </div>
   );
