@@ -9,7 +9,7 @@ import FlowerMark from "@/components/FlowerMark";
 
 const NAV = [
   { href: "/admin", label: "اللوحة", d: "M3 11l9-8 9 8M5 9v11h14V9" },
-  { href: "/admin/registrations", label: "الطلبات", d: "M4 4h16v16H4zM4 9h16M9 4v5", badge: "leads" as const },
+  { href: "/admin/registrations", label: "التسجيل", d: "M4 4h16v16H4zM4 9h16M9 4v5", badge: "leads" as const },
   { href: "/admin/students", label: "الطلاب", d: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21v-1a6 6 0 0112 0v1" },
   { href: "/admin/teachers", label: "المعلّمون", d: "M22 10L12 5 2 10l10 5 10-5zM6 12v5c0 1 3 2 6 2s6-1 6-2v-5" },
   { href: "/admin/requests", label: "الحالات", d: "M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z", badge: "requests" as const },

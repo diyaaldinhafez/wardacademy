@@ -123,7 +123,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 760 }}>
       <Link href="/admin/registrations" className={btn("ghost")} style={{ alignSelf: "flex-start" }}>
-        → كلّ الطلبات
+        → كلّ التسجيلات
       </Link>
 
       {/* Header */}
