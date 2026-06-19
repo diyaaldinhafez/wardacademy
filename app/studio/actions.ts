@@ -336,6 +336,10 @@ export async function startPlan(formData: FormData) {
     throw new Error("Only an instructor can generate a plan.");
   }
 
+  const track = String(formData.get("track") ?? "cefr") === "school" ? "school" : "cefr";
+  const grade = String(formData.get("grade") ?? "").trim();
+  const term = String(formData.get("term") ?? "").trim();
+
   const { data: learner } = await supabase.from("profiles").select("full_name").eq("id", learnerId).single();
   const { data: placement } = await supabase
     .from("placement_tests")
@@ -345,9 +349,12 @@ export async function startPlan(formData: FormData) {
     .order("completed_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  const level = placement?.suggested_level ?? "A1";
+  const level = track === "school" ? grade || "المدرسة" : placement?.suggested_level ?? "A1";
 
-  const plan = await generatePlan(level, learner?.full_name ?? "the student");
+  const plan = await generatePlan({ track, level, learnerName: learner?.full_name ?? "the student", grade, term });
+
+  const scopeLabel = track === "school" ? [grade, term, "كتاب المدرسة"].filter(Boolean).join(" · ") : `المستوى ${level}`;
+  const milestoneLabel = track === "school" ? `اختبار الفصل${term ? ` · ${term}` : ""}` : `تقييم المستوى عند إتمام ${level}`;
 
   const { error } = await supabase.from("study_plans").insert({
     tenant_id: profile.tenant_id,
@@ -356,6 +363,9 @@ export async function startPlan(formData: FormData) {
     level,
     items: plan.items,
     status: "draft",
+    track,
+    scope_label: scopeLabel,
+    milestone_label: milestoneLabel,
     created_by: user.id,
   });
   if (error) throw new Error(error.message);
@@ -377,7 +387,7 @@ export async function approvePlan(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/studio/login");
 
-  const { data: plan } = await supabase.from("study_plans").select("tenant_id, items, status").eq("id", planId).single();
+  const { data: plan } = await supabase.from("study_plans").select("tenant_id, items, status, track").eq("id", planId).single();
   if (!plan) throw new Error("Plan not found");
   if (plan.status === "approved") {
     revalidatePath("/studio", "layout");
@@ -388,7 +398,7 @@ export async function approvePlan(formData: FormData) {
   if (items.length) {
     const rows = items.map((it) => ({
       tenant_id: plan.tenant_id,
-      track: "cefr",
+      track: plan.track === "school" ? "school" : "cefr",
       level: it.level ?? null,
       description: it.description,
       skill: it.skill && PLAN_SKILLS.includes(it.skill) ? it.skill : null,

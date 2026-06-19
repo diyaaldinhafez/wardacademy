@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { unitStage, SKILLS, SKILL_AR, type BloomStage } from "@/lib/skills";
-import { FlowerProgress, UnitBloom as BloomUnit } from "@/components/bloom/Bloom";
+import { FlowerProgress, UnitBloom as BloomUnit, ScopeChip } from "@/components/bloom/Bloom";
 import { submitPlacement, submitManualHomework } from "./actions";
 import AnswerForm from "@/components/learn/AnswerForm";
 import SubmitButton from "@/components/studio/SubmitButton";
@@ -80,7 +80,7 @@ export default async function LearnPage() {
 
   const { data: studyPlan } = await supabase
     .from("study_plans")
-    .select("title, level, items")
+    .select("title, level, items, track, scope_label, milestone_label")
     .eq("learner_id", user.id)
     .eq("status", "approved")
     .order("created_at", { ascending: false })
@@ -201,7 +201,10 @@ export default async function LearnPage() {
 
       {/* The skill flower (slower snapshot) */}
       <section className="mb-8">
-        <h2 className={h2}>وردتي</h2>
+        <div className="mb-3 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-ink">وردتي</h2>
+          {studyPlan?.scope_label && <ScopeChip track={(studyPlan as any).track === "school" ? "school" : "cefr"}>{studyPlan.scope_label}</ScopeChip>}
+        </div>
         <div className={card}>
           <div className="flex items-center gap-4">
             <FlowerProgress size={104} skills={skillStats.map((s) => ({ label: SKILL_AR[s.skill], value: skillValue(s.skill, s.mastered, s.total), detail: s.skill === "speaking" ? speakingAssess?.label ?? "—" : `${s.mastered}/${s.total}` }))} />

@@ -19,7 +19,7 @@ import ItemCard from "@/components/studio/ItemCard";
 import VideoCall from "@/components/VideoCall";
 import { Card, Badge, Avatar, AITrustBadge, Spark } from "@/components/ward/ui";
 import { petalValues, SKILL_AR, SKILLS, unitStage, SPEAKING_LEVELS } from "@/lib/skills";
-import { UnitBloom, FlowerProgress } from "@/components/bloom/Bloom";
+import { UnitBloom, FlowerProgress, ScopeChip } from "@/components/bloom/Bloom";
 import { FORMAT_LABELS, ITEM_FORMATS, DIFFICULTIES } from "@/lib/items";
 import { WEEKDAY_AR } from "@/lib/availability";
 import { fmtUTC } from "@/lib/datetime";
@@ -63,7 +63,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const name = (learner.full_name as string) ?? id;
 
   const { data: pl } = await supabase.from("placement_tests").select("status, suggested_level, created_at").eq("learner_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle();
-  const { data: plan } = await supabase.from("study_plans").select("id, title, level, items, status").eq("learner_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+  const { data: plan } = await supabase.from("study_plans").select("id, title, level, items, status, track, scope_label, milestone_label").eq("learner_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle();
   const planItems: any[] = (plan?.items as any[]) ?? [];
   // Group plan lessons into their units, keeping each lesson's global index.
   const planGroups: { unit: string; lessons: { it: any; i: number }[] }[] = [];
@@ -402,9 +402,12 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         {pl?.status === "completed" && <Badge tone="success">نتيجة التحديد: المستوى {pl.suggested_level}</Badge>}
         {plan ? (
           <>
-            <p style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text-strong)" }}>
-              {plan.title} {plan.status === "draft" ? <Badge tone="warning">مسودّة</Badge> : <Badge tone="success">معتمَدة</Badge>}
-            </p>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text-strong)" }}>{plan.title}</span>
+              {plan.status === "draft" ? <Badge tone="warning">مسودّة</Badge> : <Badge tone="success">معتمَدة</Badge>}
+              {plan.scope_label && <ScopeChip track={plan.track === "school" ? "school" : "cefr"}>{plan.scope_label}</ScopeChip>}
+            </div>
+            {plan.milestone_label && <p style={{ fontSize: 12, color: "var(--text-muted)" }}>🎯 {plan.milestone_label}</p>}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {planGroups.map((g, gi) => {
                 const firstUntaught = planItems.findIndex((_, j) => !taughtIdx.has(j));
@@ -435,7 +438,19 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             )}
           </>
         ) : (
-          <form action={startPlan}><input type="hidden" name="learnerId" value={id} /><SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}><Spark size={14} /> ولّد خطّةً بالذكاء</SubmitButton></form>
+          <form action={startPlan} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
+            <input type="hidden" name="learnerId" value={id} />
+            <div>
+              <label style={{ fontSize: 11.5, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>المسار</label>
+              <select name="track" defaultValue="cefr" className={sel} style={{ width: "auto", minHeight: 40 }}>
+                <option value="cefr">CEFR (خطّة وَرد)</option>
+                <option value="school">منهج المدرسة (تقوية)</option>
+              </select>
+            </div>
+            <input name="grade" placeholder="الصفّ (للمدرسيّ)" className={ctl} style={{ width: "auto", maxWidth: 130 }} />
+            <input name="term" placeholder="الفصل (للمدرسيّ)" className={ctl} style={{ width: "auto", maxWidth: 130 }} />
+            <SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}><Spark size={14} /> ولّد خطّةً بالذكاء</SubmitButton>
+          </form>
         )}
       </Card>
 
@@ -621,6 +636,12 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
   const Progress = (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {(plan?.scope_label || plan?.milestone_label) && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          {plan?.scope_label && <ScopeChip track={plan.track === "school" ? "school" : "cefr"}>{plan.scope_label}</ScopeChip>}
+          {plan?.milestone_label && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>🎯 {plan.milestone_label}</span>}
+        </div>
+      )}
       {/* Five-skill mastery, as honest meters (% of mastered objectives) */}
       <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>

@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { addChild, grantConsent } from "./actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import WorkspaceHeader from "@/components/studio/WorkspaceHeader";
-import { FlowerProgress } from "@/components/bloom/Bloom";
+import { FlowerProgress, ScopeChip } from "@/components/bloom/Bloom";
 import { SKILLS, SKILL_AR } from "@/lib/skills";
 import { fmtUTC } from "@/lib/datetime";
 
@@ -56,7 +56,7 @@ export default async function GuardianPage() {
   for (const pl of (placements ?? []) as any[]) if (!placementByLearner.has(pl.learner_id)) placementByLearner.set(pl.learner_id, pl);
   const { data: studyPlans } = await supabase
     .from("study_plans")
-    .select("learner_id, title, items")
+    .select("learner_id, title, items, track, scope_label, milestone_label")
     .eq("status", "approved")
     .order("created_at", { ascending: false });
   const planByLearner = new Map<string, any>();
@@ -150,9 +150,13 @@ export default async function GuardianPage() {
                   <div className="rounded-2xl border border-brand-100 bg-white p-3">
                     <div className="flex items-center gap-4">
                       <FlowerProgress size={96} skills={stats.map((s) => ({ label: SKILL_AR[s.skill], value: valOf(s), detail: s.skill === "speaking" ? sp?.label ?? "—" : `${s.mastered}/${s.total}` }))} />
-                      <p className="flex-1 text-sm text-ink" style={{ lineHeight: 1.8 }}>
-                        وردة {name} هذا الأسبوع — أتقن <b>{totalM} من {totalT}</b> هدفاً. أرقامٌ حقيقيةٌ بلا تجميل.
-                      </p>
+                      <div className="flex-1">
+                        {plan?.scope_label && <div className="mb-1"><ScopeChip track={plan.track === "school" ? "school" : "cefr"}>{plan.scope_label}</ScopeChip></div>}
+                        <p className="text-sm text-ink" style={{ lineHeight: 1.8 }}>
+                          وردة {name} هذا الأسبوع — أتقن <b>{totalM} من {totalT}</b> هدفاً. أرقامٌ حقيقيةٌ بلا تجميل.
+                          {plan?.milestone_label ? <span className="text-ink-soft"> 🎯 {plan.milestone_label}.</span> : null}
+                        </p>
+                      </div>
                     </div>
                     <ul className="mt-2 flex flex-col">
                       {stats.map((s) => (
