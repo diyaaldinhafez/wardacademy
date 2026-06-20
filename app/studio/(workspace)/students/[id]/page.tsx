@@ -541,64 +541,28 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     </div>
   );
 
+  const restUpcoming = upcoming.slice(1);
   const Sessions = (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      {/* Recurring weekly lesson slots — constrained to the teacher's availability windows */}
-      <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <div style={secTitle}>مواعيد الجلسات الأسبوعية المتكرّرة</div>
-        {(availRules ?? []).length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>حدّدي تفرّغك أولاً من صفحة «تفرّغي»، ثمّ اختاري المواعيد من ضمنه.</p>
-        ) : (
-          <>
-            <p style={{ fontSize: 12, color: "var(--text-muted)" }}>اختاري المواعيد من ضمن تفرّغك (المُختار باللون البنفسجيّ — اضغطيه للحذف):</p>
-            {WEEKDAY_AR.map((label, wd) => {
-              const options = availByWeekday.get(wd) ?? [];
-              if (options.length === 0) return null;
-              return (
-                <div key={wd} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-strong)", width: 56, flexShrink: 0 }}>{label}</span>
-                  {options.map((o) => {
-                    const existing = slotByKey.get(`${wd}|${o.time}`);
-                    return existing ? (
-                      <form key={o.time} action={removeLessonSlot}>
-                        <input type="hidden" name="slotId" value={existing.id} />
-                        <input type="hidden" name="learnerId" value={id} />
-                        <SubmitButton className="ward-btn ward-btn--primary ward-btn--sm" pendingText="…">{o.time} ✕</SubmitButton>
-                      </form>
-                    ) : (
-                      <form key={o.time} action={addLessonSlot}>
-                        <input type="hidden" name="learnerId" value={id} />
-                        <input type="hidden" name="weekday" value={wd} />
-                        <input type="hidden" name="time" value={o.time} />
-                        <input type="hidden" name="duration" value={o.duration} />
-                        <SubmitButton className="ward-btn ward-btn--ghost ward-btn--sm" pendingText="…">{o.time}</SubmitButton>
-                      </form>
-                    );
-                  })}
-                </div>
-              );
-            })}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", borderTop: "1px solid var(--ink-100)", paddingTop: 8 }}>
-              <form action={generateLessonSessions}>
-                <input type="hidden" name="learnerId" value={id} />
-                <SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}>ولّد جلسات الخطّة</SubmitButton>
-              </form>
-              <span style={{ fontSize: 12, color: "var(--text-muted)" }}>يجدول دروس الخطّة على المواعيد المختارة بالتسلسل، ويربط كلّ جلسةٍ بدرسها.</span>
-            </div>
-          </>
-        )}
-      </Card>
+      {/* HERO: the next session, front and centre — one-click join */}
+      {nextSession ? (
+        <Card style={{ display: "flex", flexDirection: "column", gap: 10, background: "linear-gradient(135deg, var(--brand-50, #f1ecff), var(--surface-card))", border: "1.5px solid var(--brand-200, #d8ccff)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--brand)" }}>🎥 جلستك القادمة</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-strong)", fontVariantNumeric: "tabular-nums" }}>{fmtUTC(nextSession.scheduled_at)}</span>
+            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>· {nextSession.duration_minutes}د</span>
+            {nextSession.lesson_title && <Badge tone="neutral">📖 {nextSession.lesson_title}</Badge>}
+          </div>
+          <VideoCall sessionId={nextSession.id} />
+        </Card>
+      ) : (
+        <Card><p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا جلسة قادمة — جدوِلي المواعيد من «إدارة المواعيد والجدولة» أدناه.</p></Card>
+      )}
 
-      {/* One-off extra session */}
-      <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={secTitle}>جلسةٌ إضافية (مفردة)</div>
-        <SessionScheduleForm learnerId={id} planItems={planItems.map((it: any, i: number) => ({ index: i, label: it.description }))} />
-        <p style={{ fontSize: 12, color: "var(--text-muted)" }}>يُدخَل بتوقيتك المحلّي ويُعرَض بـ UTC.</p>
-      </Card>
-      {upcoming.length > 0 && (
+      {restUpcoming.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: "var(--leaf-700)" }}>القادمة ({upcoming.length})</p>
-          {upcoming.map((s: any) => <SessionCard key={s.id} s={s} />)}
+          <p style={{ fontSize: 13, fontWeight: 700, color: "var(--leaf-700)" }}>قادمةٌ أخرى ({restUpcoming.length})</p>
+          {restUpcoming.map((s: any) => <SessionCard key={s.id} s={s} />)}
         </div>
       )}
       {past.length > 0 && (
@@ -607,7 +571,66 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           {past.map((s: any) => <SessionCard key={s.id} s={s} />)}
         </div>
       )}
-      {(sessions ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا جلسات بعد.</p>}
+      {(sessions ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا جلسات بعد — جدوِلي من «إدارة المواعيد والجدولة» أدناه.</p>}
+
+      {/* Scheduling tools — used occasionally, so tucked away at the bottom */}
+      <details style={{ borderRadius: 14, border: "1px solid var(--border-soft)", background: "var(--surface-card)", padding: "10px 14px" }}>
+        <summary style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-strong)", cursor: "pointer" }}>إدارة المواعيد والجدولة</summary>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
+          {/* Recurring weekly lesson slots — constrained to the teacher's availability windows */}
+          <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={secTitle}>مواعيد الجلسات الأسبوعية المتكرّرة</div>
+            {(availRules ?? []).length === 0 ? (
+              <p style={{ fontSize: 13, color: "var(--text-muted)" }}>حدّدي تفرّغك أولاً من صفحة «تفرّغي»، ثمّ اختاري المواعيد من ضمنه.</p>
+            ) : (
+              <>
+                <p style={{ fontSize: 12, color: "var(--text-muted)" }}>اختاري المواعيد من ضمن تفرّغك (المُختار باللون البنفسجيّ — اضغطيه للحذف):</p>
+                {WEEKDAY_AR.map((label, wd) => {
+                  const options = availByWeekday.get(wd) ?? [];
+                  if (options.length === 0) return null;
+                  return (
+                    <div key={wd} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-strong)", width: 56, flexShrink: 0 }}>{label}</span>
+                      {options.map((o) => {
+                        const existing = slotByKey.get(`${wd}|${o.time}`);
+                        return existing ? (
+                          <form key={o.time} action={removeLessonSlot}>
+                            <input type="hidden" name="slotId" value={existing.id} />
+                            <input type="hidden" name="learnerId" value={id} />
+                            <SubmitButton className="ward-btn ward-btn--primary ward-btn--sm" pendingText="…">{o.time} ✕</SubmitButton>
+                          </form>
+                        ) : (
+                          <form key={o.time} action={addLessonSlot}>
+                            <input type="hidden" name="learnerId" value={id} />
+                            <input type="hidden" name="weekday" value={wd} />
+                            <input type="hidden" name="time" value={o.time} />
+                            <input type="hidden" name="duration" value={o.duration} />
+                            <SubmitButton className="ward-btn ward-btn--ghost ward-btn--sm" pendingText="…">{o.time}</SubmitButton>
+                          </form>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", borderTop: "1px solid var(--ink-100)", paddingTop: 8 }}>
+                  <form action={generateLessonSessions}>
+                    <input type="hidden" name="learnerId" value={id} />
+                    <SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}>ولّد جلسات الخطّة</SubmitButton>
+                  </form>
+                  <span style={{ fontSize: 12, color: "var(--text-muted)" }}>يجدول دروس الخطّة على المواعيد المختارة بالتسلسل، ويربط كلّ جلسةٍ بدرسها.</span>
+                </div>
+              </>
+            )}
+          </Card>
+
+          {/* One-off extra session */}
+          <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={secTitle}>جلسةٌ إضافية (مفردة)</div>
+            <SessionScheduleForm learnerId={id} planItems={planItems.map((it: any, i: number) => ({ index: i, label: it.description }))} />
+            <p style={{ fontSize: 12, color: "var(--text-muted)" }}>يُدخَل بتوقيتك المحلّي ويُعرَض بـ UTC.</p>
+          </Card>
+        </div>
+      </details>
     </div>
   );
 
