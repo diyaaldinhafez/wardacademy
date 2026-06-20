@@ -277,8 +277,6 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
   const SessionCard = ({ s }: { s: any }) => {
     const report = one(s.session_reports);
-    const hw = assignsBySession.get(s.id) ?? [];
-    const mhw = manualBySession.get(s.id) ?? [];
     return (
       <div style={{ borderRadius: 12, border: "1px solid var(--border-soft)", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -288,15 +286,6 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         </div>
         {s.lesson_title && <div style={{ fontSize: 13, color: "var(--text-body)" }}>📖 الدرس: <strong>{s.lesson_title}</strong></div>}
         {s.status === "scheduled" && <VideoCall sessionId={s.id} />}
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>الواجب</span>
-          {hw.length === 0 && mhw.length === 0 && <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>لا واجب لهذه الجلسة.</span>}
-          {hw.map((a: any) => <HomeworkRow key={a.id} a={a} />)}
-          {mhw.map((h: any) => <ManualHwItem key={h.id} h={h} />)}
-          <AssignToSession sessionId={s.id} />
-          <ManualHwCreate sessionId={s.id} />
-        </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--ink-100)", paddingTop: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -326,6 +315,26 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             </div>
           )}
         </div>
+      </div>
+    );
+  };
+
+  // A session's homework block (lives in the Homework tab, not the Sessions tab).
+  const HwSessionCard = ({ s }: { s: any }) => {
+    const hw = assignsBySession.get(s.id) ?? [];
+    const mhw = manualBySession.get(s.id) ?? [];
+    return (
+      <div style={{ borderRadius: 12, border: "1px solid var(--border-soft)", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-strong)", fontVariantNumeric: "tabular-nums" }}>{fmtUTC(s.scheduled_at)}</span>
+          {s.lesson_title && <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>📖 {s.lesson_title}</span>}
+          <Badge tone={s.status === "completed" ? "success" : s.status === "scheduled" ? "brand" : "neutral"}>{s.status}</Badge>
+        </div>
+        {hw.length === 0 && mhw.length === 0 && <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>لا واجب لهذه الجلسة.</span>}
+        {hw.map((a: any) => <HomeworkRow key={a.id} a={a} />)}
+        {mhw.map((h: any) => <ManualHwItem key={h.id} h={h} />)}
+        <AssignToSession sessionId={s.id} />
+        <ManualHwCreate sessionId={s.id} />
       </div>
     );
   };
@@ -393,7 +402,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     </div>
   );
 
-  const Curriculum = (
+  const Plan = (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -494,7 +503,11 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           </div>
         )}
       </Card>
+    </div>
+  );
 
+  const Curriculum = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={secTitle}>مصادر التعلّم</div>
         {(resources ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا مصادر بعد — ارفع ملفّاً (PDF / Word / PowerPoint / Excel).</p>}
@@ -595,22 +608,19 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         </div>
       )}
       {(sessions ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا جلسات بعد.</p>}
-      {(looseAssigns.length > 0 || looseManual.length > 0) && (
-        <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={secTitle}>واجباتٌ غير مرتبطةٍ بجلسة</div>
-          {looseAssigns.map((a: any) => <HomeworkRow key={a.id} a={a} />)}
-          {looseManual.map((h: any) => <ManualHwItem key={h.id} h={h} />)}
-        </Card>
-      )}
+    </div>
+  );
 
-      {/* Create a digital homework with AI → approve → assign to a session above */}
+  const Homework = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* Create a digital homework with AI → approve → assign to a session below */}
       <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={secTitle}>إنشاء واجبٍ رقميٍّ بالذكاء</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}><Spark size={13} /> مسودّةٌ تُراجِعها قبل الإرسال</span>
         </div>
         {(objectives ?? []).length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>اعتمِد خطّةً دراسيةً أولاً (من تبويب «المنهج») لتصبح أهدافاً تُولَّد منها الواجبات.</p>
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>اعتمِد خطّةً دراسيةً أولاً (من تبويب «الخطّة») لتصبح أهدافاً تُولَّد منها الواجبات.</p>
         ) : (
           <form action={generateDraft} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
             <input type="hidden" name="learnerId" value={id} />
@@ -648,7 +658,27 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
               }
             />
           ))}
-          <p style={{ fontSize: 12, color: "var(--text-muted)" }}>بعد الاعتماد أسنِدها لجلسةٍ من بطاقات الجلسات أعلاه («أسنِد واجباً رقمياً»).</p>
+          <p style={{ fontSize: 12, color: "var(--text-muted)" }}>بعد الاعتماد أسنِدها لجلسةٍ من بطاقات «واجبات الجلسات» أدناه.</p>
+        </Card>
+      )}
+
+      <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={secTitle}>واجبات الجلسات</div>
+        {(sessions ?? []).length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا جلسات بعد — أضِف مواعيد من تبويب «الجلسات».</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {upcoming.map((s: any) => <HwSessionCard key={s.id} s={s} />)}
+            {past.map((s: any) => <HwSessionCard key={s.id} s={s} />)}
+          </div>
+        )}
+      </Card>
+
+      {(looseAssigns.length > 0 || looseManual.length > 0) && (
+        <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={secTitle}>واجباتٌ غير مرتبطةٍ بجلسة</div>
+          {looseAssigns.map((a: any) => <HomeworkRow key={a.id} a={a} />)}
+          {looseManual.map((h: any) => <ManualHwItem key={h.id} h={h} />)}
         </Card>
       )}
     </div>
@@ -775,9 +805,11 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   );
 
   const tabs: StudentTab[] = [
-    { key: "overview", label: "نظرة عامة", content: Overview },
+    { key: "overview", label: "عام", content: Overview },
     { key: "curriculum", label: "المنهج", content: Curriculum },
+    { key: "plan", label: "الخطّة", content: Plan },
     { key: "sessions", label: "الجلسات", badge: upcoming.length || undefined, content: Sessions },
+    { key: "homework", label: "الواجبات", content: Homework },
     { key: "assessments", label: "الاختبارات", content: Assessments },
     { key: "progress", label: "التقدّم", content: Progress },
   ];
