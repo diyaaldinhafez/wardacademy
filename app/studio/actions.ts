@@ -12,6 +12,7 @@ import {
   generatePlan,
   generatePlanFromIndex,
   generateDiagnostic,
+  generateAssessment,
   type PlanIndexSource,
 } from "@/lib/generation/service";
 import { homePathForRoles } from "@/lib/roles";
@@ -586,6 +587,60 @@ export async function removeAssessment(formData: FormData) {
   const learnerId = String(formData.get("learnerId") ?? "");
   const { supabase } = await instructorCtx();
   const { error } = await supabase.from("assessments").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/studio/students/${learnerId}`);
+}
+
+/** Generate an AI unit assessment from the unit's objectives → a DRAFT the teacher reviews. */
+export async function generateAssessmentTest(formData: FormData) {
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const unit = String(formData.get("unit") ?? "").trim();
+  const count = Math.min(Math.max(Number(formData.get("count") ?? 8) || 8, 4), 15);
+  if (!learnerId || !unit) throw new Error("اختاري الوحدة.");
+  const { supabase, user, tenantId } = await instructorCtx();
+
+  // The learner's objectives for this unit (objectives carry plan_id + unit + skill).
+  const { data: plan } = await supabase.from("study_plans").select("id").eq("learner_id", learnerId).eq("status", "approved").order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (!plan) throw new Error("اعتمِدي خطّةً للطالب أولاً (تبويب «الخطّة»).");
+  const { data: objectives } = await supabase.from("objectives").select("description, skill, level").eq("plan_id", plan.id).eq("unit", unit);
+  if (!objectives?.length) throw new Error("لا أهداف في هذه الوحدة.");
+
+  const { data: learner } = await supabase.from("profiles").select("full_name").eq("id", learnerId).single();
+  const questions = await generateAssessment({
+    learnerName: learner?.full_name ?? "الطالب",
+    unit,
+    objectives: objectives as Array<{ description: string; skill?: string | null; level?: string | null }>,
+    count,
+  });
+
+  const { data: assessment, error } = await supabase
+    .from("assessments")
+    .insert({ tenant_id: tenantId, learner_id: learnerId, title: `اختبار وحدة: ${unit}`, scope: "unit", unit, status: "draft", created_by: user.id })
+    .select("id")
+    .single();
+  if (error || !assessment) throw new Error(error?.message ?? "تعذّر إنشاء الاختبار.");
+
+  const rows = questions.map((q, i) => ({
+    assessment_id: assessment.id,
+    tenant_id: tenantId,
+    skill: ["listening", "speaking", "reading", "writing", "vocabulary"].includes(q.skill) ? q.skill : "vocabulary",
+    format: "multiple_choice",
+    prompt: q.prompt,
+    content: { options: q.options },
+    answer: q.answer,
+    position: i,
+  }));
+  const { error: qErr } = await supabase.from("assessment_questions").insert(rows);
+  if (qErr) throw new Error(qErr.message);
+  revalidatePath(`/studio/students/${learnerId}`);
+}
+
+/** Approve a draft assessment → the child can take it from /learn. */
+export async function approveAssessment(formData: FormData) {
+  const id = String(formData.get("assessmentId") ?? "");
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const { supabase } = await instructorCtx();
+  const { error } = await supabase.from("assessments").update({ status: "ready" }).eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath(`/studio/students/${learnerId}`);
 }

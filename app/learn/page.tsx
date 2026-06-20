@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { unitStage, SKILLS, SKILL_AR, type BloomStage } from "@/lib/skills";
 import { FlowerProgress, UnitBloom as BloomUnit, ScopeChip } from "@/components/bloom/Bloom";
-import { submitPlacement, submitManualHomework } from "./actions";
+import { submitPlacement, submitManualHomework, submitAssessment } from "./actions";
 import AnswerForm from "@/components/learn/AnswerForm";
 import SubmitButton from "@/components/studio/SubmitButton";
 import WorkspaceHeader from "@/components/studio/WorkspaceHeader";
@@ -78,6 +78,22 @@ export default async function LearnPage() {
     placementQuestions = data ?? [];
   }
 
+  // A ready unit assessment takes priority (like placement) until the child takes it.
+  const { data: readyAssessment } = await supabase
+    .from("assessments")
+    .select("id, title, unit")
+    .eq("learner_id", user.id)
+    .eq("status", "ready")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  let assessmentQuestions: any[] = [];
+  if (readyAssessment) {
+    const admin = createAdminClient();
+    const { data } = await admin.from("assessment_questions").select("id, prompt, content, position").eq("assessment_id", readyAssessment.id).order("position");
+    assessmentQuestions = data ?? [];
+  }
+
   const { data: studyPlan } = await supabase
     .from("study_plans")
     .select("title, level, items, track, scope_label, milestone_label")
@@ -125,6 +141,32 @@ export default async function LearnPage() {
   return (
     <main className="mx-auto max-w-2xl px-5 py-10">
       <WorkspaceHeader title="حديقتي" subtitle={profile?.full_name ?? user.email ?? ""} />
+
+      {/* A ready unit assessment (takes over until taken) */}
+      {readyAssessment && (
+        <section className={`mb-10 ${card}`}>
+          <h2 className="mb-1 text-lg font-bold text-ink">🎯 اختبار: {readyAssessment.unit}</h2>
+          <p className="mb-4 text-sm text-ink-soft">أجِب عن الأسئلة لتُظهر ما تعلّمته — أنت تستطيع! 🌟</p>
+          <form action={submitAssessment} className="flex flex-col gap-4">
+            <input type="hidden" name="assessmentId" value={readyAssessment.id} />
+            {assessmentQuestions.map((q: any, idx: number) => (
+              <div key={q.id}>
+                <p className="font-medium text-ink" dir="ltr">{idx + 1}. {q.prompt}</p>
+                <div className="mt-1 flex flex-col gap-1.5" dir="ltr">
+                  {((q.content?.options ?? []) as string[]).map((o, i) => (
+                    <label key={i} className="flex cursor-pointer items-center gap-2 rounded-xl border border-brand-100 bg-cream/50 px-3 py-2 text-sm has-[:checked]:border-brand-400 has-[:checked]:bg-brand-50">
+                      <input type="radio" name={`q_${q.id}`} value={o} required className="h-4 w-4 accent-[#7F55D9]" /> {o}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <SubmitButton pendingText="جارٍ التسليم…" className="inline-flex h-11 items-center justify-center self-start rounded-full bg-brand px-6 text-sm font-semibold text-white shadow-ward-1 hover:bg-brand-600 disabled:opacity-60">
+              سلّم الاختبار
+            </SubmitButton>
+          </form>
+        </section>
+      )}
 
       {/* Placement (takes over when active) */}
       {placement?.status === "in_progress" && (

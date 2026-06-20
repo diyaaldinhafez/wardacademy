@@ -107,6 +107,47 @@ export async function submitPlacement(formData: FormData) {
   revalidatePath("/learn");
 }
 
+/** A learner takes a unit assessment: graded server-side (hidden answers) into a per-skill result. */
+export async function submitAssessment(formData: FormData) {
+  const assessmentId = String(formData.get("assessmentId") ?? "");
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/studio/login");
+
+  // Ownership: a learner can only see their own assessment (RLS).
+  const { data: a } = await supabase.from("assessments").select("id, status, learner_id").eq("id", assessmentId).single();
+  if (!a || a.learner_id !== user.id || a.status !== "ready") throw new Error("الاختبار غير متاح.");
+
+  const admin = createAdminClient();
+  const { data: questions } = await admin.from("assessment_questions").select("id, skill, answer").eq("assessment_id", assessmentId).order("position");
+
+  const bySkill = new Map<string, { correct: number; total: number }>();
+  let correctTotal = 0;
+  for (const q of questions ?? []) {
+    const raw = String(formData.get(`q_${q.id}`) ?? "");
+    const correct = typeof q.answer === "string" && norm(raw) === norm(q.answer as string);
+    await admin.from("assessment_questions").update({ response: { answer: raw }, is_correct: correct }).eq("id", q.id);
+    const s = bySkill.get(q.skill) ?? { correct: 0, total: 0 };
+    s.total += 1;
+    if (correct) {
+      s.correct += 1;
+      correctTotal += 1;
+    }
+    bySkill.set(q.skill, s);
+  }
+
+  const total = (questions ?? []).length;
+  const result = Object.fromEntries([...bySkill.entries()]);
+  await admin
+    .from("assessments")
+    .update({ status: "completed", score: correctTotal, max_score: total, result, completed_at: new Date().toISOString() })
+    .eq("id", assessmentId);
+
+  revalidatePath("/learn");
+}
+
 /**
  * A learner uploads a photo of their handwritten solution to a manual homework
  * (Note 4). The homework is first checked under the learner's own session (RLS),

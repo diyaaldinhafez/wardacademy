@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   startPlacement, startPlan, startPlanFromIndex, createManualPlan, approvePlan, draftReportWithAI, assignItem,
-  addResource, removeResource, createAssessment, recordAssessment, removeAssessment,
+  addResource, removeResource, generateAssessmentTest, approveAssessment, removeAssessment,
   generateDraft, approveItem, rejectItem, updateReport, approveReport,
   addLessonSlot, removeLessonSlot, generateLessonSessions,
   createManualHomework, gradeManualHomework, removeManualHomework,
@@ -31,7 +31,6 @@ const btn = (v: string, s = "sm") => `ward-btn ward-btn--${v} ward-btn--${s}`;
 const ctl = "ward-field__control";
 const sel = "ward-select__control";
 const secTitle = { fontSize: 14.5, fontWeight: 700, color: "var(--text-strong)" } as const;
-const SCOPE_AR: Record<string, string> = { unit: "وحدة", term: "فصل", plan: "الخطّة كاملة" };
 
 const fmtSize = (n?: number | null) => (n == null ? "" : n > 1048576 ? `${(n / 1048576).toFixed(1)} م.ب` : `${Math.max(1, Math.round(n / 1024))} ك.ب`);
 function fileKind(name?: string | null, mime?: string | null): string {
@@ -147,7 +146,19 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     guardianPhone = (leadRow?.guardian_phone ?? "").replace(/\D/g, "") || null;
   }
 
-  const { data: assessments } = await supabase.from("assessments").select("id, title, scope, status, score, max_score, notes, scheduled_for, completed_at").eq("learner_id", id).order("created_at", { ascending: false });
+  const { data: assessments } = await supabase.from("assessments").select("id, title, scope, status, score, max_score, notes, scheduled_for, completed_at, unit, result").eq("learner_id", id).order("created_at", { ascending: false });
+  // Questions for DRAFT assessments, so the teacher can review before approving.
+  const aqByAssessment = new Map<string, any[]>();
+  const draftAssessmentIds = (assessments ?? []).filter((a: any) => a.status === "draft").map((a: any) => a.id);
+  if (draftAssessmentIds.length) {
+    const { data: aq } = await supabase.from("assessment_questions").select("id, assessment_id, position, skill, prompt, content, answer").in("assessment_id", draftAssessmentIds).order("position");
+    for (const q of (aq ?? []) as any[]) {
+      const arr = aqByAssessment.get(q.assessment_id) ?? [];
+      arr.push(q);
+      aqByAssessment.set(q.assessment_id, arr);
+    }
+  }
+  const planUnits: string[] = [...new Set(planItems.map((it: any) => (it.unit as string) || "").filter(Boolean))];
   const { data: lessonSlots } = await supabase.from("lesson_schedules").select("id, weekday, time_of_day, duration_minutes").eq("learner_id", id).order("weekday");
   const { data: availRules } = await supabase.from("availability_rules").select("weekday, start_time, end_time, slot_minutes").eq("active", true);
   const { data: tenantRow } = await supabase.from("tenants").select("slot_break_minutes").maybeSingle();
@@ -762,44 +773,109 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     </div>
   );
 
+  const assessmentWaLink = (a: any, result: Record<string, { correct: number; total: number }>) => {
+    if (!guardianPhone) return null;
+    const pct = a.max_score ? Math.round((a.score / a.max_score) * 100) : 0;
+    const skillLines = Object.entries(result).map(([sk, v]) => `• ${SKILL_AR[sk as keyof typeof SKILL_AR] ?? sk}: ${v.correct}/${v.total}`).join("\n");
+    const text = `*نتيجة ${a.title}*\n${name}\n\nالنتيجة: ${a.score}/${a.max_score} (${pct}%)\n${skillLines}\n\nأكاديمية وَرد`;
+    return `https://wa.me/${guardianPhone}?text=${encodeURIComponent(text)}`;
+  };
+
   const Assessments = (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={secTitle}>أضِف اختباراً</div>
-        <form action={createAssessment} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
-          <input type="hidden" name="learnerId" value={id} />
-          <input name="title" required placeholder="عنوان الاختبار" className={ctl} style={{ width: "auto", flex: 1, minWidth: 140 }} />
-          <select name="scope" defaultValue="unit" className={sel} style={{ width: "auto", minHeight: 40 }}>
-            <option value="unit">وحدة</option>
-            <option value="term">فصل</option>
-            <option value="plan">الخطّة كاملة</option>
-          </select>
-          <input name="scheduledFor" type="date" dir="ltr" className={ctl} style={{ width: "auto" }} />
-          <SubmitButton pendingText="…" className={btn("secondary")}>أضِف</SubmitButton>
-        </form>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={secTitle}>ولّد اختبار وحدة بالذكاء</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}><Spark size={13} /> من أهداف الوحدة</span>
+        </div>
+        {!plan ? (
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>اعتمِدي خطّةً دراسيةً أولاً (تبويب «الخطّة»).</p>
+        ) : planUnits.length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا وحداتٍ في الخطّة بعد.</p>
+        ) : (
+          <form action={generateAssessmentTest} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
+            <input type="hidden" name="learnerId" value={id} />
+            <select name="unit" required defaultValue="" className={sel} style={{ width: "auto", flex: 1, minWidth: 160, minHeight: 40 }}>
+              <option value="" disabled>اختاري الوحدة…</option>
+              {planUnits.map((u) => <option key={u} value={u}>{u}</option>)}
+            </select>
+            <select name="count" defaultValue="8" className={sel} style={{ width: "auto", minHeight: 40 }}>
+              {[6, 8, 10, 12].map((n) => <option key={n} value={n}>{n} أسئلة</option>)}
+            </select>
+            <SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}><Spark size={14} /> ولّد الاختبار</SubmitButton>
+          </form>
+        )}
+        <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>يُولِّد أسئلةً من أهداف الوحدة → تراجعينها وتعتمدينها → يؤدّيها الطالب من حسابه ويُصحَّح آلياً بنتيجةٍ لكلّ مهارة.</p>
       </Card>
+
       {(assessments ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا اختبارات بعد.</p>}
-      {(assessments ?? []).map((a: any) => (
-        <Card key={a.id} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={{ fontWeight: 700, color: "var(--text-strong)", flex: 1 }}>{a.title}</span>
-            <Badge tone="neutral">{SCOPE_AR[a.scope] ?? a.scope}</Badge>
-            {a.status === "completed" ? <Badge tone="success">مكتمل{a.score != null ? `: ${a.score}${a.max_score != null ? `/${a.max_score}` : ""}` : ""}</Badge> : <Badge tone="warning">مُخطَّط{a.scheduled_for ? ` · ${a.scheduled_for}` : ""}</Badge>}
-            <form action={removeAssessment}><input type="hidden" name="assessmentId" value={a.id} /><input type="hidden" name="learnerId" value={id} /><SubmitButton className={btn("ghost")}>✕</SubmitButton></form>
-          </div>
-          {a.notes && <p style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{a.notes}</p>}
-          {a.status !== "completed" && (
-            <form action={recordAssessment} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
-              <input type="hidden" name="assessmentId" value={a.id} />
-              <input type="hidden" name="learnerId" value={id} />
-              <input name="score" type="number" placeholder="الدرجة" className={ctl} style={{ width: 90 }} />
-              <input name="maxScore" type="number" placeholder="من" className={ctl} style={{ width: 80 }} />
-              <input name="notes" placeholder="ملاحظة" className={ctl} style={{ width: "auto", flex: 1, minWidth: 120 }} />
-              <SubmitButton pendingText="…" className={btn("success")}>سجّل النتيجة</SubmitButton>
-            </form>
-          )}
-        </Card>
-      ))}
+      {(assessments ?? []).map((a: any) => {
+        const qs = aqByAssessment.get(a.id) ?? [];
+        const result = (a.result ?? null) as Record<string, { correct: number; total: number }> | null;
+        const pct = a.max_score ? Math.round((a.score / a.max_score) * 100) : 0;
+        const waLink = a.status === "completed" && result ? assessmentWaLink(a, result) : null;
+        return (
+          <Card key={a.id} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ fontWeight: 700, color: "var(--text-strong)", flex: 1 }}>{a.title}</span>
+              {a.status === "draft" && <Badge tone="warning">مسودّة — راجعي</Badge>}
+              {a.status === "ready" && <Badge tone="brand">متاحٌ للطالب</Badge>}
+              {a.status === "completed" && <Badge tone="success">مكتمل: {a.score}/{a.max_score} ({pct}%)</Badge>}
+              {a.status === "planned" && <Badge tone="neutral">مُخطَّط</Badge>}
+              <form action={removeAssessment}><input type="hidden" name="assessmentId" value={a.id} /><input type="hidden" name="learnerId" value={id} /><SubmitButton className={btn("ghost")}>✕</SubmitButton></form>
+            </div>
+
+            {a.status === "draft" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <p style={{ fontSize: 12, color: "var(--text-muted)" }}>راجعي الأسئلة ({qs.length}) — الإجابة الصحيحة مُعلّمة بـ ✓:</p>
+                {qs.map((q: any, i: number) => (
+                  <div key={q.id} style={{ borderRadius: 10, background: "var(--surface-soft)", padding: 10 }}>
+                    <p style={{ fontSize: 12.5, color: "var(--text-strong)", display: "flex", gap: 6, flexWrap: "wrap" }}><span style={{ fontWeight: 700 }}>{i + 1}.</span><span dir="ltr" style={{ flex: 1 }}>{q.prompt}</span><Badge tone="neutral">{SKILL_AR[q.skill as keyof typeof SKILL_AR] ?? q.skill}</Badge></p>
+                    <ul dir="ltr" style={{ listStyle: "none", margin: "4px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+                      {((q.content?.options ?? []) as string[]).map((o, oi) => {
+                        const correct = o === q.answer;
+                        return <li key={oi} style={{ fontSize: 12, color: correct ? "var(--leaf-700)" : "var(--text-muted)", fontWeight: correct ? 700 : 400 }}>{correct ? "✓ " : "• "}{o}</li>;
+                      })}
+                    </ul>
+                  </div>
+                ))}
+                <form action={approveAssessment}>
+                  <input type="hidden" name="assessmentId" value={a.id} />
+                  <input type="hidden" name="learnerId" value={id} />
+                  <SubmitButton pendingText="…" className={btn("success")}>اعتمِدي — يصبح متاحاً للطالب</SubmitButton>
+                </form>
+              </div>
+            )}
+
+            {a.status === "ready" && <p style={{ fontSize: 12.5, color: "var(--text-muted)" }}>بانتظار أداء الطالب من حسابه؛ ستظهر النتيجة هنا تلقائياً.</p>}
+
+            {a.status === "completed" && result && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {Object.entries(result).map(([sk, v]) => {
+                    const p = v.total ? Math.round((v.correct / v.total) * 100) : 0;
+                    const lag = v.total > 0 && v.correct / v.total < 0.5;
+                    return (
+                      <div key={sk} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-strong)", width: 80, flexShrink: 0 }}>{SKILL_AR[sk as keyof typeof SKILL_AR] ?? sk}</span>
+                        <div style={{ flex: 1, height: 7, borderRadius: 999, background: "var(--surface-sunken)", overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${p}%`, borderRadius: 999, background: lag ? "var(--apricot-400)" : "var(--brand)" }} />
+                        </div>
+                        <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-brand)", fontVariantNumeric: "tabular-nums", width: 36, textAlign: "end", flexShrink: 0 }}>{v.correct}/{v.total}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {waLink ? (
+                  <a href={waLink} target="_blank" rel="noreferrer" className={btn("success")} style={{ alignSelf: "flex-start", textDecoration: "none" }}>📲 شارك النتيجة عبر واتساب</a>
+                ) : (
+                  <span style={{ fontSize: 11.5, color: "var(--text-muted)" }}>لا رقم واتساب لوليّ الأمر للمشاركة.</span>
+                )}
+              </div>
+            )}
+          </Card>
+        );
+      })}
     </div>
   );
 

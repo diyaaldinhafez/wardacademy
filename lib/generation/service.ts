@@ -269,6 +269,71 @@ export async function generateLeadTest(input: {
   return out.questions ?? [];
 }
 
+export type AssessmentQuestion = { skill: string; prompt: string; options: string[]; answer: string };
+
+const assessmentTool: Anthropic.Tool = {
+  name: "emit_assessment",
+  description: "Return original multiple-choice questions that check the given unit's lesson objectives.",
+  input_schema: {
+    type: "object",
+    properties: {
+      questions: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            skill: {
+              type: "string",
+              enum: ["listening", "speaking", "reading", "writing", "vocabulary"],
+              description: "The single primary skill this question tests.",
+            },
+            prompt: { type: "string" },
+            options: { type: "array", items: { type: "string" }, description: "Exactly 4 options." },
+            answer: { type: "string", description: "The exact text of the correct option." },
+          },
+          required: ["skill", "prompt", "options", "answer"],
+        },
+      },
+    },
+    required: ["questions"],
+  },
+};
+
+/** Generate a unit assessment: original MCQs that check the unit's lesson objectives, skill-tagged. */
+export async function generateAssessment(opts: {
+  learnerName: string;
+  unit: string;
+  objectives: { description: string; skill?: string | null; level?: string | null }[];
+  count?: number;
+}): Promise<AssessmentQuestion[]> {
+  const count = opts.count ?? 8;
+  const objLines = opts.objectives
+    .map((o, i) => `${i + 1}. ${o.description}${o.skill ? ` [${o.skill}]` : ""}${o.level ? ` (${o.level})` : ""}`)
+    .join("\n");
+
+  const res = await client().messages.create({
+    model: MODEL,
+    max_tokens: 2800,
+    system:
+      "You write a short unit assessment for a child aged 9–13 learning English at Ward Academy. " +
+      `Produce ${count} ORIGINAL multiple-choice questions that CHECK MASTERY of the unit's lesson objectives listed below — ` +
+      "test nothing outside them. Spread the questions across the objectives and the skills they build. " +
+      "Each question has exactly 4 options, the correct option's exact text as the answer, and the single primary skill it tests " +
+      "(listening | speaking | reading | writing | vocabulary — 'vocabulary' = vocabulary + grammar). " +
+      "Since the test is auto-graded text, prefer reading/writing/vocabulary/listening-via-text and avoid pure speaking tasks. " +
+      "Invent fresh, age-appropriate content — never copy published material. Return everything via emit_assessment.",
+    tools: [assessmentTool],
+    tool_choice: { type: "tool", name: "emit_assessment" },
+    messages: [{ role: "user", content: `Unit: ${opts.unit}\nStudent: ${opts.learnerName}\nObjectives:\n${objLines || "(none listed)"}\n\nWrite ${count} questions.` }],
+  });
+
+  const toolUse = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === "emit_assessment");
+  if (!toolUse) throw new Error("لم يُرجِع الذكاء أسئلة الاختبار");
+  const out = toolUse.input as { questions: AssessmentQuestion[] };
+  if (!out.questions?.length) throw new Error("تعذّر توليد أسئلة الاختبار — حاوِل مجدّداً.");
+  return out.questions;
+}
+
 export type DiagnosticInput = {
   studentName: string;
   age?: number | null;
