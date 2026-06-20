@@ -141,6 +141,24 @@ export default async function TodayPage() {
             <Card><p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا جلسات قادمة. جدوِليها من صفحة الطالب.</p></Card>
           )}
 
+          {/* Roster */}
+          <Card>
+            <div style={secTitle}>طلابك <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({learners.length})</span></div>
+            {learners.length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا طلاب بعد.</p>}
+            {learners
+              .slice()
+              .sort((a: any, b: any) => Number(attention.has(b.id)) - Number(attention.has(a.id)))
+              .map((l: any, i: number) => (
+                <div key={l.id} style={{ ...row, ...(i === learners.length - 1 ? { borderBottom: "none" } : {}) }}>
+                  <Avatar name={l.full_name ?? l.id} size={32} />
+                  <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: "var(--text-strong)" }}>{l.full_name ?? l.id}</span>
+                  {attention.has(l.id) && <Badge tone="warning">يحتاج انتباهك</Badge>}
+                  {levelOf.get(l.id) ? <Badge tone="neutral">{levelOf.get(l.id)}</Badge> : <Badge tone="neutral">بلا تحديد</Badge>}
+                  <Link href={`/studio/students/${l.id}`} className={btnSm}>التفاصيل</Link>
+                </div>
+              ))}
+          </Card>
+
           {/* Today timeline */}
           <Card>
             <div style={secTitle}>جلسات اليوم</div>
@@ -164,7 +182,7 @@ export default async function TodayPage() {
           </Card>
         </div>
 
-        {/* Right: tasks inbox + roster */}
+        {/* Right: tasks inbox */}
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <Card variant="soft" style={{ borderColor: "var(--ward-purple-200)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
@@ -187,23 +205,6 @@ export default async function TodayPage() {
                 {tasks.length > 12 && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>+ {tasks.length - 12} مهمّة أخرى</span>}
               </div>
             )}
-          </Card>
-
-          <Card>
-            <div style={secTitle}>طلابك <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({learners.length})</span></div>
-            {learners.length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا طلاب بعد.</p>}
-            {learners
-              .slice()
-              .sort((a: any, b: any) => Number(attention.has(b.id)) - Number(attention.has(a.id)))
-              .map((l: any, i: number) => (
-                <div key={l.id} style={{ ...row, ...(i === learners.length - 1 ? { borderBottom: "none" } : {}) }}>
-                  <Avatar name={l.full_name ?? l.id} size={32} />
-                  <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: "var(--text-strong)" }}>{l.full_name ?? l.id}</span>
-                  {attention.has(l.id) && <Badge tone="warning">يحتاج انتباهك</Badge>}
-                  {levelOf.get(l.id) ? <Badge tone="neutral">{levelOf.get(l.id)}</Badge> : <Badge tone="neutral">بلا تحديد</Badge>}
-                  <Link href={`/studio/students/${l.id}`} className={btnSm}>التفاصيل</Link>
-                </div>
-              ))}
           </Card>
         </div>
       </div>
