@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  startPlacement, startPlan, approvePlan, draftReportWithAI, assignItem,
+  startPlacement, startPlan, startPlanFromIndex, approvePlan, draftReportWithAI, assignItem,
   addResource, removeResource, createAssessment, recordAssessment, removeAssessment,
   generateDraft, approveItem, rejectItem, updateReport, approveReport,
   setLessonSchedule, generateLessonSessions,
@@ -438,19 +438,38 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             )}
           </>
         ) : (
-          <form action={startPlan} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
-            <input type="hidden" name="learnerId" value={id} />
-            <div>
-              <label style={{ fontSize: 11.5, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>المسار</label>
-              <select name="track" defaultValue="cefr" className={sel} style={{ width: "auto", minHeight: 40 }}>
-                <option value="cefr">CEFR (خطّة وَرد)</option>
-                <option value="school">منهج المدرسة (تقوية)</option>
-              </select>
-            </div>
-            <input name="grade" placeholder="الصفّ (للمدرسيّ)" className={ctl} style={{ width: "auto", maxWidth: 130 }} />
-            <input name="term" placeholder="الفصل (للمدرسيّ)" className={ctl} style={{ width: "auto", maxWidth: 130 }} />
-            <SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}><Spark size={14} /> ولّد خطّةً بالذكاء</SubmitButton>
-          </form>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <p style={{ fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.7 }}>
+              ارفع <strong>فهرس المنهاج</strong> (صورة / PDF / نصّ) — يقرؤه الذكاء ويستخرج منه وحدات المنهج ودروسه <strong>بدقّةٍ بلا تأليف</strong>.
+            </p>
+            <form action={startPlanFromIndex} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
+              <input type="hidden" name="learnerId" value={id} />
+              <div>
+                <label style={{ fontSize: 11.5, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>المسار</label>
+                <select name="track" defaultValue="cefr" className={sel} style={{ width: "auto", minHeight: 40 }}>
+                  <option value="cefr">CEFR (منهاج وَرد)</option>
+                  <option value="school">منهج المدرسة (تقوية)</option>
+                </select>
+              </div>
+              <input name="grade" placeholder="الصفّ/المستوى" className={ctl} style={{ width: "auto", maxWidth: 120 }} />
+              <input name="term" placeholder="الفصل" className={ctl} style={{ width: "auto", maxWidth: 110 }} />
+              <input name="index" type="file" required accept="image/*,.pdf,.txt,.md,.csv" className={ctl} style={{ width: "auto", flex: 1, minWidth: 180 }} />
+              <SubmitButton pendingText="جارٍ القراءة والتوليد…" className={btn("soft")}><Spark size={14} /> ولّد من الفهرس</SubmitButton>
+            </form>
+            <details>
+              <summary style={{ fontSize: 12, color: "var(--text-muted)", cursor: "pointer" }}>أو ولّد من المستوى فقط (بلا فهرس)</summary>
+              <form action={startPlan} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end", marginTop: 8 }}>
+                <input type="hidden" name="learnerId" value={id} />
+                <select name="track" defaultValue="cefr" className={sel} style={{ width: "auto", minHeight: 40 }}>
+                  <option value="cefr">CEFR</option>
+                  <option value="school">مدرسيّ</option>
+                </select>
+                <input name="grade" placeholder="الصفّ (للمدرسيّ)" className={ctl} style={{ width: "auto", maxWidth: 130 }} />
+                <input name="term" placeholder="الفصل" className={ctl} style={{ width: "auto", maxWidth: 110 }} />
+                <SubmitButton pendingText="…" className={btn("ghost")}>ولّد بالذكاء</SubmitButton>
+              </form>
+            </details>
+          </div>
         )}
       </Card>
 

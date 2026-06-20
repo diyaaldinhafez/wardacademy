@@ -461,3 +461,47 @@ export async function generatePlan(opts: { track: "cefr" | "school"; level: stri
   const out = toolUse.input as GeneratedPlan;
   return { title: out.title, items: out.items ?? [] };
 }
+
+export type PlanIndexSource =
+  | { kind: "image"; mediaType: "image/jpeg" | "image/png" | "image/webp" | "image/gif"; base64: string }
+  | { kind: "pdf"; base64: string }
+  | { kind: "text"; text: string };
+
+/**
+ * Build a study plan by reading an uploaded curriculum INDEX (image / PDF / text)
+ * and extracting its real units and lessons exactly — no invention/authoring.
+ */
+export async function generatePlanFromIndex(opts: { track: "cefr" | "school"; context?: string; source: PlanIndexSource }): Promise<GeneratedPlan> {
+  const { track, context, source } = opts;
+  const instruction =
+    "You are given the table of contents / index of an English coursebook. " +
+    "Extract its REAL units and lessons EXACTLY as listed — do NOT invent, add, or author anything not present in the index. " +
+    "Preserve the index's order and its actual unit and lesson names. For each lesson, produce one objective whose description is that lesson's topic/title from the index, " +
+    "tagged with: the single primary skill it builds (listening | speaking | reading | writing | vocabulary — 'vocabulary' = the language foundation: vocabulary + grammar), " +
+    "the unit it belongs to (the book's unit; lessons of the same unit share the identical unit string), and a level ref " +
+    (track === "school" ? "(use the grade/term as the level ref). " : "(use the CEFR sub-level if the index shows one, else a short ref). ") +
+    (context ? `Context: ${context}. ` : "") +
+    "Include every lesson in order. The plan title should be the book/course name if visible. Return via emit_plan.";
+
+  const content: Anthropic.MessageParam["content"] =
+    source.kind === "text"
+      ? [{ type: "text", text: `${instruction}\n\n--- INDEX ---\n${source.text.slice(0, 30000)}` }]
+      : source.kind === "pdf"
+        ? [{ type: "document", source: { type: "base64", media_type: "application/pdf", data: source.base64 } }, { type: "text", text: instruction }]
+        : [{ type: "image", source: { type: "base64", media_type: source.mediaType, data: source.base64 } }, { type: "text", text: instruction }];
+
+  const res = await client().messages.create({
+    model: MODEL,
+    max_tokens: 3000,
+    system: "You faithfully convert a coursebook index into a structured study plan. You never invent content that is not present in the index.",
+    tools: [planTool],
+    tool_choice: { type: "tool", name: "emit_plan" },
+    messages: [{ role: "user", content }],
+  });
+
+  const toolUse = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === "emit_plan");
+  if (!toolUse) throw new Error("لم يُرجِع الذكاء خطّةً من الفهرس");
+  const out = toolUse.input as GeneratedPlan;
+  if (!out.items?.length) throw new Error("لم أستطع استخراج الخطّة من الفهرس — جرّب صورةً أوضح أو ملفّاً نصّياً.");
+  return { title: out.title, items: out.items };
+}

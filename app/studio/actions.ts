@@ -10,7 +10,9 @@ import {
   generateSessionReportDraft,
   generatePlacementQuestions,
   generatePlan,
+  generatePlanFromIndex,
   generateDiagnostic,
+  type PlanIndexSource,
 } from "@/lib/generation/service";
 import { homePathForRoles } from "@/lib/roles";
 import { SPEAKING_LEVELS } from "@/lib/skills";
@@ -752,6 +754,60 @@ export async function setSkillAssessment(formData: FormData) {
     { tenant_id: tenantId, learner_id: learnerId, skill, value: v, label, updated_by: user.id, updated_at: new Date().toISOString() },
     { onConflict: "learner_id,skill" },
   );
+  if (error) throw new Error(error.message);
+  revalidatePath(`/studio/students/${learnerId}`);
+}
+
+// — Generate the study plan by reading an uploaded curriculum index (no authoring) —
+
+export async function startPlanFromIndex(formData: FormData) {
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const track = String(formData.get("track") ?? "cefr") === "school" ? "school" : "cefr";
+  const grade = String(formData.get("grade") ?? "").trim();
+  const term = String(formData.get("term") ?? "").trim();
+  const file = formData.get("index") as File | null;
+  if (!learnerId) throw new Error("طالبٌ غير محدّد.");
+  if (!file || file.size === 0) throw new Error("ارفع صورة الفهرس أو ملفّه.");
+  if (file.size > 15 * 1024 * 1024) throw new Error("حجم الملفّ أكبر من 15 ميغابايت.");
+
+  const { supabase, user, tenantId } = await instructorCtx();
+
+  const mime = file.type || "";
+  let source: PlanIndexSource;
+  if (mime.startsWith("image/")) {
+    const mt = (["image/jpeg", "image/png", "image/webp", "image/gif"].includes(mime) ? mime : "image/jpeg") as "image/jpeg" | "image/png" | "image/webp" | "image/gif";
+    source = { kind: "image", mediaType: mt, base64: Buffer.from(await file.arrayBuffer()).toString("base64") };
+  } else if (mime === "application/pdf") {
+    source = { kind: "pdf", base64: Buffer.from(await file.arrayBuffer()).toString("base64") };
+  } else if (mime.startsWith("text/") || /\.(txt|md|csv)$/i.test(file.name)) {
+    source = { kind: "text", text: await file.text() };
+  } else {
+    throw new Error("صيغةٌ غير مدعومة — استخدم صورة (JPG/PNG) أو PDF أو ملفّاً نصّياً.");
+  }
+
+  const context = [grade, term].filter(Boolean).join(" · ");
+  const plan = await generatePlanFromIndex({ track, context, source });
+
+  let level = grade || "المنهاج";
+  if (track === "cefr") {
+    const { data: placement } = await supabase.from("placement_tests").select("suggested_level").eq("learner_id", learnerId).eq("status", "completed").order("completed_at", { ascending: false }).limit(1).maybeSingle();
+    level = placement?.suggested_level ?? "A1";
+  }
+  const scopeLabel = track === "school" ? [grade, term, "كتاب المدرسة"].filter(Boolean).join(" · ") : `المنهاج · ${level}`;
+  const milestoneLabel = track === "school" ? `اختبار الفصل${term ? ` · ${term}` : ""}` : "تقييمٌ عند إتمام المنهاج";
+
+  const { error } = await supabase.from("study_plans").insert({
+    tenant_id: tenantId,
+    learner_id: learnerId,
+    title: plan.title,
+    level,
+    items: plan.items,
+    status: "draft",
+    track,
+    scope_label: scopeLabel,
+    milestone_label: milestoneLabel,
+    created_by: user.id,
+  });
   if (error) throw new Error(error.message);
   revalidatePath(`/studio/students/${learnerId}`);
 }
