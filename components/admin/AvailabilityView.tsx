@@ -2,6 +2,7 @@
 import { DateTime } from "luxon";
 import { createClient } from "@/lib/supabase/server";
 import { Card, Badge } from "@/components/ward/ui";
+import AvailabilityMatrix from "@/components/availability/AvailabilityMatrix";
 import { WEEKDAY_AR, sessionsPerRule } from "@/lib/availability";
 
 const hm = (t: string) => (t ? t.slice(0, 5) : "");
@@ -55,9 +56,15 @@ export default async function AvailabilityView({ instructorId }: { instructorId:
         للعرض فقط — المعلّمة تحدّد تفرّغها من حسابها. المنطقة الزمنية <Badge tone="neutral">{tz}</Badge>.
       </p>
 
+      {/* Visual weekly availability matrix */}
+      <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--text-strong)" }}>تقويم التفرّغ الأسبوعيّ</h3>
+        <AvailabilityMatrix rules={(rules ?? []) as any} />
+      </Card>
+
       {/* Weekly pattern */}
       <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--text-strong)" }}>التفرّغ الأسبوعيّ</h3>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--text-strong)" }}>التفرّغ الأسبوعيّ (تفصيليّ)</h3>
         {(rules ?? []).length === 0 ? (
           <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لم تحدّد المعلّمة تفرّغاً بعد.</p>
         ) : (

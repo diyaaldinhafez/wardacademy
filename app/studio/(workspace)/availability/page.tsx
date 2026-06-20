@@ -4,6 +4,7 @@ import { tDeleteRule, tAddException, tRemoveException, tRegenerate, tAddRule, tA
 import SubmitButton from "@/components/studio/SubmitButton";
 import SlotForm from "@/components/studio/SlotForm";
 import RuleForm from "@/components/admin/RuleForm";
+import AvailabilityMatrix from "@/components/availability/AvailabilityMatrix";
 import { Card, Badge } from "@/components/ward/ui";
 import { WEEKDAY_AR, sessionsPerRule } from "@/lib/availability";
 
@@ -60,6 +61,11 @@ export default async function MyAvailabilityPage() {
           </div>
         ))}
         <RuleForm breakMinutes={brk} action={tAddRule} />
+      </Card>
+
+      <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>نظرةٌ مرئيّة لتفرّغك</h2>
+        <AvailabilityMatrix rules={(rules ?? []) as any} />
       </Card>
 
       <Card style={{ display: "flex", flexDirection: "column", gap: 12 }}>
