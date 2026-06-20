@@ -495,56 +495,6 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         )}
       </Card>
 
-      {/* Create homework with AI (targets this student) */}
-      <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={secTitle}>إنشاء واجبٍ بالذكاء</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}><Spark size={13} /> مسودّةٌ تُراجِعها قبل الإرسال</span>
-        </div>
-        {(objectives ?? []).length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>أضِف أهداف الخطّة أولاً («أضِف الأهداف للمنهاج»).</p>
-        ) : (
-          <form action={generateDraft} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
-            <input type="hidden" name="learnerId" value={id} />
-            <select name="objectiveId" required defaultValue="" className={sel} style={{ width: "auto", minHeight: 40, flex: 1, minWidth: 160, maxWidth: 280 }}>
-              <option value="" disabled>الهدف…</option>
-              {(objectives ?? []).map((o: any) => <option key={o.id} value={o.id}>{o.level ? `${o.level} · ` : ""}{o.description}</option>)}
-            </select>
-            <select name="format" defaultValue="multiple_choice" className={sel} style={{ width: "auto", minHeight: 40 }}>
-              {ITEM_FORMATS.map((f) => <option key={f} value={f}>{FORMAT_LABELS[f]}</option>)}
-            </select>
-            <select name="difficulty" defaultValue="easy" className={sel} style={{ width: "auto", minHeight: 40 }}>
-              {DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}
-            </select>
-            <SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}>ولّد مسودّة</SubmitButton>
-          </form>
-        )}
-      </Card>
-
-      {/* Drafts awaiting approval */}
-      {(draftItems ?? []).length > 0 && (
-        <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={secTitle}>مسودّاتٌ بانتظار اعتمادك</span>
-            <AITrustBadge status="draft" compact />
-            <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{(draftItems ?? []).length}</span>
-          </div>
-          {(draftItems ?? []).map((it: any) => (
-            <ItemCard
-              key={it.id}
-              it={it}
-              right={
-                <div style={{ display: "flex", gap: 8 }}>
-                  <form action={approveItem}><input type="hidden" name="itemId" value={it.id} /><SubmitButton pendingText="…" className={btn("success")}>اعتمِد</SubmitButton></form>
-                  <form action={rejectItem}><input type="hidden" name="itemId" value={it.id} /><SubmitButton pendingText="…" className={btn("ghost")}>ارفض</SubmitButton></form>
-                </div>
-              }
-            />
-          ))}
-          <p style={{ fontSize: 12, color: "var(--text-muted)" }}>بعد الاعتماد تُسنِدها لجلسةٍ من تبويب «الجلسات».</p>
-        </Card>
-      )}
-
       <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={secTitle}>مصادر التعلّم</div>
         {(resources ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا مصادر بعد — ارفع ملفّاً (PDF / Word / PowerPoint / Excel).</p>}
@@ -650,6 +600,55 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           <div style={secTitle}>واجباتٌ غير مرتبطةٍ بجلسة</div>
           {looseAssigns.map((a: any) => <HomeworkRow key={a.id} a={a} />)}
           {looseManual.map((h: any) => <ManualHwItem key={h.id} h={h} />)}
+        </Card>
+      )}
+
+      {/* Create a digital homework with AI → approve → assign to a session above */}
+      <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={secTitle}>إنشاء واجبٍ رقميٍّ بالذكاء</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}><Spark size={13} /> مسودّةٌ تُراجِعها قبل الإرسال</span>
+        </div>
+        {(objectives ?? []).length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>اعتمِد خطّةً دراسيةً أولاً (من تبويب «المنهج») لتصبح أهدافاً تُولَّد منها الواجبات.</p>
+        ) : (
+          <form action={generateDraft} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
+            <input type="hidden" name="learnerId" value={id} />
+            <select name="objectiveId" required defaultValue="" className={sel} style={{ width: "auto", minHeight: 40, flex: 1, minWidth: 160, maxWidth: 280 }}>
+              <option value="" disabled>الهدف…</option>
+              {(objectives ?? []).map((o: any) => <option key={o.id} value={o.id}>{o.level ? `${o.level} · ` : ""}{o.description}</option>)}
+            </select>
+            <select name="format" defaultValue="multiple_choice" className={sel} style={{ width: "auto", minHeight: 40 }}>
+              {ITEM_FORMATS.map((f) => <option key={f} value={f}>{FORMAT_LABELS[f]}</option>)}
+            </select>
+            <select name="difficulty" defaultValue="easy" className={sel} style={{ width: "auto", minHeight: 40 }}>
+              {DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+            <SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}>ولّد مسودّة</SubmitButton>
+          </form>
+        )}
+      </Card>
+
+      {(draftItems ?? []).length > 0 && (
+        <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={secTitle}>مسودّاتٌ بانتظار اعتمادك</span>
+            <AITrustBadge status="draft" compact />
+            <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{(draftItems ?? []).length}</span>
+          </div>
+          {(draftItems ?? []).map((it: any) => (
+            <ItemCard
+              key={it.id}
+              it={it}
+              right={
+                <div style={{ display: "flex", gap: 8 }}>
+                  <form action={approveItem}><input type="hidden" name="itemId" value={it.id} /><SubmitButton pendingText="…" className={btn("success")}>اعتمِد</SubmitButton></form>
+                  <form action={rejectItem}><input type="hidden" name="itemId" value={it.id} /><SubmitButton pendingText="…" className={btn("ghost")}>ارفض</SubmitButton></form>
+                </div>
+              }
+            />
+          ))}
+          <p style={{ fontSize: 12, color: "var(--text-muted)" }}>بعد الاعتماد أسنِدها لجلسةٍ من بطاقات الجلسات أعلاه («أسنِد واجباً رقمياً»).</p>
         </Card>
       )}
     </div>
