@@ -27,6 +27,11 @@ export default async function MyAvailabilityPage() {
         </p>
       </Card>
 
+      <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>نظرةٌ مرئيّة لتفرّغك</h2>
+        <AvailabilityMatrix rules={(rules ?? []) as any} />
+      </Card>
+
       <Card style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>تفرّغي الأسبوعيّ المتكرّر</h2>
         {(rules ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا أوقات بعد — أضيفي قاعدةً أدناه.</p>}
@@ -43,11 +48,6 @@ export default async function MyAvailabilityPage() {
           </div>
         ))}
         <RuleForm breakMinutes={brk} action={tAddRule} />
-      </Card>
-
-      <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>نظرةٌ مرئيّة لتفرّغك</h2>
-        <AvailabilityMatrix rules={(rules ?? []) as any} />
       </Card>
     </div>
   );

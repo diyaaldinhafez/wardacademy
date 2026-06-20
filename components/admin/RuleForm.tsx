@@ -11,9 +11,9 @@ export default function RuleForm({ breakMinutes, action }: { breakMinutes: numbe
   const [weekday, setWeekday] = useState("1");
   const [start, setStart] = useState("16:00");
   const [end, setEnd] = useState("18:00");
-  const [slot, setSlot] = useState("30");
+  const [slot, setSlot] = useState("");
 
-  const count = end > start ? sessionsPerRule(start, end, Number(slot), breakMinutes) : 0;
+  const count = end > start && slot ? sessionsPerRule(start, end, Number(slot), breakMinutes) : 0;
 
   return (
     <form action={action} style={{ display: "flex", flexWrap: "wrap", alignItems: "end", gap: 8 }}>
@@ -24,10 +24,10 @@ export default function RuleForm({ breakMinutes, action }: { breakMinutes: numbe
       </select>
       <input type="time" name="startTime" value={start} onChange={(e) => setStart(e.target.value)} required className={ctl} style={{ width: "auto" }} />
       <input type="time" name="endTime" value={end} onChange={(e) => setEnd(e.target.value)} required className={ctl} style={{ width: "auto" }} />
-      <select name="slotMinutes" value={slot} onChange={(e) => setSlot(e.target.value)} className={sel} style={{ width: "auto", minHeight: 40 }}>
+      <select name="slotMinutes" value={slot} onChange={(e) => setSlot(e.target.value)} required className={sel} style={{ width: "auto", minHeight: 40 }}>
+        <option value="" disabled>مدّة الجلسة…</option>
         <option value="30">30 دقيقة</option>
         <option value="45">45 دقيقة</option>
-        <option value="60">60 دقيقة</option>
       </select>
       <span
         style={{
