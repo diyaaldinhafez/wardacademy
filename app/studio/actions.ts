@@ -15,7 +15,7 @@ import {
   type PlanIndexSource,
 } from "@/lib/generation/service";
 import { homePathForRoles } from "@/lib/roles";
-import { SPEAKING_LEVELS, SKILLS } from "@/lib/skills";
+import { SPEAKING_LEVELS } from "@/lib/skills";
 import type { ItemFormat, Difficulty } from "@/lib/items";
 
 export async function login(_prev: { error?: string } | undefined, formData: FormData) {
@@ -363,7 +363,7 @@ export async function startPlan(formData: FormData) {
     learner_id: learnerId,
     title: plan.title,
     level,
-    items: plan.items,
+    items: plan.items.map((it) => ({ ...it, id: crypto.randomUUID() })),
     status: "draft",
     track,
     scope_label: scopeLabel,
@@ -377,46 +377,84 @@ export async function startPlan(formData: FormData) {
 const PLAN_SKILLS = ["listening", "speaking", "reading", "writing", "vocabulary"];
 
 /**
- * Approve a plan. On the draft→approved transition, its lessons become real
- * measurable objectives (carrying skill + unit + level) so homework can be
- * generated/assigned and the right skill petal can be measured.
+ * Approve & sync a plan into measurable objectives, idempotently:
+ *  - new lessons (by stable lesson id) → new objectives
+ *  - removed lessons → drop their objective, but ONLY if it has no progress
+ *  - existing lessons keep their objective (preserving measurement)
+ * Runs on first approval and on every later re-sync (after editing the plan).
  */
 export async function approvePlan(formData: FormData) {
   const planId = String(formData.get("planId") ?? "");
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/studio/login");
+  const { supabase, user } = await instructorCtx();
 
   const { data: plan } = await supabase.from("study_plans").select("tenant_id, items, status, track").eq("id", planId).single();
-  if (!plan) throw new Error("Plan not found");
-  if (plan.status === "approved") {
-    revalidatePath("/studio", "layout");
-    return;
-  }
+  if (!plan) throw new Error("الخطّة غير موجودة.");
 
-  const items = (plan.items as { description: string; level?: string; skill?: string; unit?: string }[]) ?? [];
-  if (items.length) {
-    const rows = items.map((it) => ({
+  type PlanItem = { id?: string; description?: string; level?: string | null; skill?: string | null; unit?: string | null };
+  const items = ((plan.items as PlanItem[]) ?? []).filter((it) => it && it.id && String(it.description ?? "").trim());
+  const currentIds = new Set(items.map((it) => it.id as string));
+
+  const { data: existingObjs } = await supabase.from("objectives").select("id, plan_lesson_id").eq("plan_id", planId);
+  const materialized = new Set((existingObjs ?? []).map((o: { plan_lesson_id: string | null }) => o.plan_lesson_id));
+
+  // Create objectives for lessons that don't have one yet.
+  const toCreate = items.filter((it) => !materialized.has(it.id as string));
+  if (toCreate.length) {
+    const rows = toCreate.map((it) => ({
       tenant_id: plan.tenant_id,
       track: plan.track === "school" ? "school" : "cefr",
       level: it.level ?? null,
-      description: it.description,
+      description: String(it.description).trim(),
       skill: it.skill && PLAN_SKILLS.includes(it.skill) ? it.skill : null,
       unit: it.unit ?? null,
+      plan_id: planId,
+      plan_lesson_id: it.id,
       created_by: user.id,
     }));
     const { error: oErr } = await supabase.from("objectives").insert(rows);
     if (oErr) throw new Error(oErr.message);
   }
 
-  const { error } = await supabase
-    .from("study_plans")
-    .update({ status: "approved", approved_at: new Date().toISOString() })
-    .eq("id", planId);
-  if (error) throw new Error(error.message);
+  // Drop objectives whose lesson was removed — only if they carry no progress yet.
+  const orphans = (existingObjs ?? []).filter((o: { plan_lesson_id: string | null }) => o.plan_lesson_id && !currentIds.has(o.plan_lesson_id));
+  for (const o of orphans as { id: string }[]) {
+    const { count } = await supabase.from("progress_records").select("id", { count: "exact", head: true }).eq("objective_id", o.id);
+    if (!count) await supabase.from("objectives").delete().eq("id", o.id);
+  }
+
+  if (plan.status !== "approved") {
+    const { error } = await supabase.from("study_plans").update({ status: "approved", approved_at: new Date().toISOString() }).eq("id", planId);
+    if (error) throw new Error(error.message);
+  }
   revalidatePath("/studio", "layout");
+}
+
+/** Persist the whole plan structure from the visual builder (title + units/lessons). */
+export async function savePlan(formData: FormData) {
+  const planId = String(formData.get("planId") ?? "");
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  let parsed: unknown;
+  try { parsed = JSON.parse(String(formData.get("items") ?? "[]")); } catch { throw new Error("بيانات الخطّة غير صالحة."); }
+  const arr = Array.isArray(parsed) ? (parsed as Array<Record<string, unknown>>) : [];
+  const items = arr
+    .map((it) => {
+      const skill = typeof it.skill === "string" ? it.skill : "";
+      return {
+        id: typeof it.id === "string" && it.id ? it.id : crypto.randomUUID(),
+        description: String(it.description ?? "").trim(),
+        level: it.level ? String(it.level).trim() : null,
+        skill: PLAN_SKILLS.includes(skill) ? skill : null,
+        unit: String(it.unit ?? "").trim() || "وحدة",
+      };
+    })
+    .filter((it) => it.description);
+  const { supabase } = await instructorCtx();
+  const update: Record<string, unknown> = { items };
+  if (title) update.title = title;
+  const { error } = await supabase.from("study_plans").update(update).eq("id", planId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/studio/students/${learnerId}`);
 }
 
 /** Edit a draft report's text before approving. */
@@ -830,7 +868,7 @@ export async function startPlanFromIndex(formData: FormData) {
     learner_id: learnerId,
     title: plan.title,
     level,
-    items: plan.items,
+    items: plan.items.map((it) => ({ ...it, id: crypto.randomUUID() })),
     status: "draft",
     track,
     scope_label: scopeLabel,
@@ -858,39 +896,6 @@ export async function createManualPlan(formData: FormData) {
     tenant_id: tenantId, learner_id: learnerId, title, level, items: [], status: "draft",
     track, scope_label: scopeLabel, milestone_label: milestoneLabel, created_by: user.id,
   });
-  if (error) throw new Error(error.message);
-  revalidatePath(`/studio/students/${learnerId}`);
-}
-
-/** Append a lesson to a DRAFT plan (manual editing — works on AI or manual plans). */
-export async function addPlanLesson(formData: FormData) {
-  const planId = String(formData.get("planId") ?? "");
-  const learnerId = String(formData.get("learnerId") ?? "");
-  const description = String(formData.get("description") ?? "").trim();
-  const unit = String(formData.get("unit") ?? "").trim() || "الوحدة 1";
-  const skill = String(formData.get("skill") ?? "").trim();
-  const level = String(formData.get("level") ?? "").trim() || null;
-  if (!planId || !description) throw new Error("أدخِل عنوان/وصف الدرس.");
-  const { supabase } = await instructorCtx();
-  const { data: plan } = await supabase.from("study_plans").select("items, status").eq("id", planId).single();
-  if (!plan) throw new Error("الخطّة غير موجودة.");
-  if (plan.status !== "draft") throw new Error("لا يمكن تعديل خطّةٍ معتمَدة.");
-  const items = [...((plan.items as Array<Record<string, unknown>>) ?? []), { description, level, skill: (SKILLS as readonly string[]).includes(skill) ? skill : null, unit }];
-  const { error } = await supabase.from("study_plans").update({ items }).eq("id", planId);
-  if (error) throw new Error(error.message);
-  revalidatePath(`/studio/students/${learnerId}`);
-}
-
-export async function removePlanLesson(formData: FormData) {
-  const planId = String(formData.get("planId") ?? "");
-  const learnerId = String(formData.get("learnerId") ?? "");
-  const index = Number(formData.get("index"));
-  const { supabase } = await instructorCtx();
-  const { data: plan } = await supabase.from("study_plans").select("items, status").eq("id", planId).single();
-  if (!plan) throw new Error("الخطّة غير موجودة.");
-  if (plan.status !== "draft") throw new Error("لا يمكن تعديل خطّةٍ معتمَدة.");
-  const items = ((plan.items as Array<Record<string, unknown>>) ?? []).filter((_, i) => i !== index);
-  const { error } = await supabase.from("study_plans").update({ items }).eq("id", planId);
   if (error) throw new Error(error.message);
   revalidatePath(`/studio/students/${learnerId}`);
 }

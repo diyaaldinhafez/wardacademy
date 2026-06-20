@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  startPlacement, startPlan, startPlanFromIndex, createManualPlan, addPlanLesson, removePlanLesson, approvePlan, draftReportWithAI, assignItem,
+  startPlacement, startPlan, startPlanFromIndex, createManualPlan, approvePlan, draftReportWithAI, assignItem,
   addResource, removeResource, createAssessment, recordAssessment, removeAssessment,
   generateDraft, approveItem, rejectItem, updateReport, approveReport,
   addLessonSlot, removeLessonSlot, generateLessonSessions,
@@ -15,6 +15,7 @@ import {
 import SubmitButton from "@/components/studio/SubmitButton";
 import SessionScheduleForm from "@/components/studio/SessionScheduleForm";
 import StudentTabs, { type StudentTab } from "@/components/studio/StudentTabs";
+import PlanBuilder from "@/components/studio/PlanBuilder";
 import ItemCard from "@/components/studio/ItemCard";
 import VideoCall from "@/components/VideoCall";
 import { Card, Badge, Avatar, AITrustBadge, Spark } from "@/components/ward/ui";
@@ -65,14 +66,6 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const { data: pl } = await supabase.from("placement_tests").select("status, suggested_level, created_at").eq("learner_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle();
   const { data: plan } = await supabase.from("study_plans").select("id, title, level, items, status, track, scope_label, milestone_label").eq("learner_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle();
   const planItems: any[] = (plan?.items as any[]) ?? [];
-  // Group plan lessons into their units, keeping each lesson's global index.
-  const planGroups: { unit: string; lessons: { it: any; i: number }[] }[] = [];
-  planItems.forEach((it, i) => {
-    const unit = (it.unit as string) || "دروس";
-    let g = planGroups[planGroups.length - 1];
-    if (!g || g.unit !== unit) { g = { unit, lessons: [] }; planGroups.push(g); }
-    g.lessons.push({ it, i });
-  });
 
   const { data: prog } = await supabase.from("progress_records").select("attempts, correct, completions, objectives(description, level, skill, unit)").eq("learner_id", id);
   const rows = (prog ?? []) as any[];
@@ -106,7 +99,6 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const upcoming = (sessions ?? []).filter((s: any) => s.status === "scheduled" && s.scheduled_at >= nowIso);
   const past = (sessions ?? []).filter((s: any) => !(s.status === "scheduled" && s.scheduled_at >= nowIso));
   const nextSession = upcoming[0];
-  const taughtIdx = new Set<number>((sessions ?? []).map((s: any) => s.plan_item_index).filter((n: any) => n != null));
 
   const { data: assignments } = await supabase
     .from("assignments")
@@ -417,61 +409,23 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         {plan ? (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text-strong)" }}>{plan.title}</span>
               {plan.status === "draft" ? <Badge tone="warning">مسودّة</Badge> : <Badge tone="success">معتمَدة</Badge>}
               {plan.scope_label && <ScopeChip track={plan.track === "school" ? "school" : "cefr"}>{plan.scope_label}</ScopeChip>}
+              {plan.milestone_label && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>🎯 {plan.milestone_label}</span>}
             </div>
-            {plan.milestone_label && <p style={{ fontSize: 12, color: "var(--text-muted)" }}>🎯 {plan.milestone_label}</p>}
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {planGroups.map((g, gi) => {
-                const firstUntaught = planItems.findIndex((_, j) => !taughtIdx.has(j));
-                return (
-                  <div key={gi} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <p style={{ fontSize: 12.5, fontWeight: 700, color: "var(--brand)" }}>{g.unit}</p>
-                    {g.lessons.map(({ it, i }) => {
-                      const done = taughtIdx.has(i);
-                      const current = !done && i === firstUntaught;
-                      return (
-                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, padding: "3px 0" }}>
-                          <span style={{ width: 18, height: 18, borderRadius: 999, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, background: done ? "var(--leaf-500)" : current ? "var(--brand)" : "var(--ink-100)", color: done || current ? "#fff" : "var(--text-muted)" }}>{done ? "✓" : i + 1}</span>
-                          <span style={{ flex: 1, color: done ? "var(--text-muted)" : "var(--text-body)", textDecoration: done ? "line-through" : "none" }}>{it.level ? `${it.level} · ` : ""}{it.description}</span>
-                          {it.skill && SKILL_AR[it.skill as keyof typeof SKILL_AR] && <Badge tone="neutral">{SKILL_AR[it.skill as keyof typeof SKILL_AR]}</Badge>}
-                          {current && <Badge tone="brand">الحاليّ</Badge>}
-                          {plan.status === "draft" && (
-                            <form action={removePlanLesson}>
-                              <input type="hidden" name="planId" value={plan.id} />
-                              <input type="hidden" name="learnerId" value={id} />
-                              <input type="hidden" name="index" value={i} />
-                              <SubmitButton className={btn("ghost")}>✕</SubmitButton>
-                            </form>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-            {plan.status === "draft" && (
-              <form action={addPlanLesson} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end", borderTop: "1px solid var(--ink-100)", paddingTop: 10 }}>
-                <input type="hidden" name="planId" value={plan.id} />
-                <input type="hidden" name="learnerId" value={id} />
-                <input name="unit" placeholder="الوحدة" className={ctl} style={{ width: "auto", maxWidth: 140 }} />
-                <input name="description" required placeholder="عنوان/وصف الدرس" className={ctl} style={{ width: "auto", flex: 1, minWidth: 160 }} />
-                <select name="skill" defaultValue="" className={sel} style={{ width: "auto", minHeight: 40 }}>
-                  <option value="">المهارة…</option>
-                  {SKILLS.map((s) => <option key={s} value={s}>{SKILL_AR[s]}</option>)}
-                </select>
-                <input name="level" placeholder="المستوى" className={ctl} style={{ width: "auto", maxWidth: 90 }} />
-                <SubmitButton pendingText="…" className={btn("secondary")}>أضِف درساً</SubmitButton>
-              </form>
-            )}
-            {plan.status === "draft" && (
-              <form action={approvePlan}>
-                <input type="hidden" name="planId" value={plan.id} />
-                <SubmitButton pendingText="…" className={btn("success")}>اعتمِد الخطّة — تصبح أهدافاً قابلةً للتدريس</SubmitButton>
-              </form>
-            )}
+            <PlanBuilder
+              planId={plan.id}
+              learnerId={id}
+              title={plan.title}
+              items={planItems}
+              skills={SKILLS.map((s) => ({ value: s, label: SKILL_AR[s] }))}
+            />
+            <form action={approvePlan}>
+              <input type="hidden" name="planId" value={plan.id} />
+              <SubmitButton pendingText="…" className={btn("success")}>
+                {plan.status === "draft" ? "اعتمِد الخطّة — تصبح أهدافاً قابلةً للتدريس" : "مزامنة المنهاج — أضِف الدروس الجديدة كأهداف"}
+              </SubmitButton>
+            </form>
           </>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
