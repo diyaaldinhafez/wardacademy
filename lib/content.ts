@@ -184,8 +184,8 @@ export const landing = {
     stats: [
       { value: "9 in 10", label: "parents see more confidence within 6 weeks" },
       { value: "4.9/5", label: "average parent rating" },
-      { value: "12,000+", label: "live 1:1 sessions taught" },
-      { value: "25+", label: "cities across Europe" },
+      { value: "1,000+", label: "live 1:1 sessions taught" },
+      { value: "12+", label: "countries across Europe" },
     ],
   },
   stickyCta: "Book a free trial",
