@@ -27,7 +27,7 @@ export const landing = {
   closeMenu: "Close menu",
   hero: {
     title: "Your child's English journey, blooming step by step",
-    sub: "A dedicated teacher guides your child through live 1:1 sessions, following their progress step by step. Ages 9–13.",
+    sub: "We grow your child's English through a journey designed for them alone — the Ward Curriculum, measured by the global CEFR standard. A dedicated teacher in live 1:1 sessions, and a plan built from a real diagnosis of their level and goal. Ages 9–13.",
     note: "Free trial session · no commitment",
     rating: "Loved by 1,000+ families",
     peek: {
@@ -42,9 +42,9 @@ export const landing = {
   how: {
     title: "How it works",
     steps: [
-      { t: "A gentle placement test", d: "We meet your child where they really are — one short, fun session, zero pressure." },
-      { t: "One teacher, all the way", d: "Live 1:1 sessions with a teacher who knows your child by name and tends their progress week by week." },
-      { t: "An honest Bloom Report", d: "Real numbers: what they truly mastered, and what still needs time and care." },
+      { t: "A precise diagnosis", d: "We build a clear picture from the sign-up form, a gentle placement test, the trial session, and the expert teacher's notes — where they are now, where we're heading, and how long it takes." },
+      { t: "A personal plan on the Ward Curriculum (CEFR)", d: "AI drafts a detailed plan around their goal and timeframe — an intensive summer goal or a longer path — sequencing the content and number of sessions, all under the teacher's supervision and approval." },
+      { t: "1:1 sessions & an honest Bloom Report", d: "The same dedicated teacher week by week, and real numbers reach you: what they truly mastered, and what still needs care." },
     ],
   },
   trust: {
@@ -345,7 +345,6 @@ export const starter = {
   subheading: "Pick one to begin — it only takes a tap.",
   options: [
     { key: "speaking", emoji: "💬", label: "Chat with confidence", goal: "Build speaking confidence" },
-    { key: "school", emoji: "📚", label: "Do great at school", goal: "Support school English class" },
     { key: "general", emoji: "🎮", label: "Enjoy games, shows & books", goal: "Improve general English" },
     { key: "exam", emoji: "🎯", label: "Get ready for an exam", goal: "Prepare for an exam" },
   ],
@@ -377,8 +376,7 @@ export const enroll = {
       studentName: { label: "Child's full name", placeholder: "e.g. Adam Johnson" },
       gender: { label: "Gender", placeholder: "Select" },
       age: { label: "Age", placeholder: "Select age" },
-      grade: { label: "School grade / year", placeholder: "Select grade" },
-      schoolType: { label: "Type of school", placeholder: "Select school type" },
+      schoolType: { label: "Your child's language environment (type of school)", placeholder: "Select — helps us gauge their exposure to English" },
       englishLevel: { label: "Current English level", placeholder: "Select level" },
       speaking: { label: "Speaking & listening comfort", placeholder: "Select" },
       reading: { label: "Reading & writing comfort", placeholder: "Select" },
@@ -389,9 +387,6 @@ export const enroll = {
       countries: ["Germany", "Austria", "Switzerland", "Netherlands", "France", "Other"],
       genders: ["Boy", "Girl"],
       ages: ["9", "10", "11", "12", "13"],
-      grades: [
-        "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8",
-      ],
       schoolTypes: [
         "Public school",
         "Private school",
@@ -408,9 +403,9 @@ export const enroll = {
       comfort: ["Not yet", "A little", "Fairly comfortable", "Very comfortable"],
       goals: [
         "Improve general English",
-        "Support school English class",
         "Build speaking confidence",
         "Prepare for an exam",
+        "Intensive summer goal",
         "Not sure yet — please advise",
       ],
     },

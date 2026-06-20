@@ -347,10 +347,6 @@ export async function startPlan(formData: FormData) {
     throw new Error("Only an instructor can generate a plan.");
   }
 
-  const track = String(formData.get("track") ?? "cefr") === "school" ? "school" : "cefr";
-  const grade = String(formData.get("grade") ?? "").trim();
-  const term = String(formData.get("term") ?? "").trim();
-
   const { data: learner } = await supabase.from("profiles").select("full_name").eq("id", learnerId).single();
   const { data: placement } = await supabase
     .from("placement_tests")
@@ -360,12 +356,9 @@ export async function startPlan(formData: FormData) {
     .order("completed_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  const level = track === "school" ? grade || "المدرسة" : placement?.suggested_level ?? "A1";
+  const level = placement?.suggested_level ?? "A1";
 
-  const plan = await generatePlan({ track, level, learnerName: learner?.full_name ?? "the student", grade, term });
-
-  const scopeLabel = track === "school" ? [grade, term, "كتاب المدرسة"].filter(Boolean).join(" · ") : `المستوى ${level}`;
-  const milestoneLabel = track === "school" ? `اختبار الفصل${term ? ` · ${term}` : ""}` : `تقييم المستوى عند إتمام ${level}`;
+  const plan = await generatePlan({ level, learnerName: learner?.full_name ?? "the student" });
 
   await clearLearnerPlans(supabase, learnerId);
   const { error } = await supabase.from("study_plans").insert({
@@ -375,9 +368,9 @@ export async function startPlan(formData: FormData) {
     level,
     items: plan.items.map((it) => ({ ...it, id: crypto.randomUUID() })),
     status: "draft",
-    track,
-    scope_label: scopeLabel,
-    milestone_label: milestoneLabel,
+    track: "cefr",
+    scope_label: `منهاج وَرد · المستوى ${level}`,
+    milestone_label: `تقييم المستوى عند إتمام ${level}`,
     created_by: user.id,
   });
   if (error) throw new Error(error.message);
@@ -412,7 +405,7 @@ export async function approvePlan(formData: FormData) {
   if (toCreate.length) {
     const rows = toCreate.map((it) => ({
       tenant_id: plan.tenant_id,
-      track: plan.track === "school" ? "school" : "cefr",
+      track: "cefr",
       level: it.level ?? null,
       description: String(it.description).trim(),
       skill: it.skill && PLAN_SKILLS.includes(it.skill) ? it.skill : null,
@@ -893,9 +886,6 @@ export async function setSkillAssessment(formData: FormData) {
 
 export async function startPlanFromIndex(formData: FormData) {
   const learnerId = String(formData.get("learnerId") ?? "");
-  const track = String(formData.get("track") ?? "cefr") === "school" ? "school" : "cefr";
-  const grade = String(formData.get("grade") ?? "").trim();
-  const term = String(formData.get("term") ?? "").trim();
   const file = formData.get("index") as File | null;
   if (!learnerId) throw new Error("طالبٌ غير محدّد.");
   if (!file || file.size === 0) throw new Error("ارفع صورة الفهرس أو ملفّه.");
@@ -916,16 +906,10 @@ export async function startPlanFromIndex(formData: FormData) {
     throw new Error("صيغةٌ غير مدعومة — استخدم صورة (JPG/PNG) أو PDF أو ملفّاً نصّياً.");
   }
 
-  const context = [grade, term].filter(Boolean).join(" · ");
-  const plan = await generatePlanFromIndex({ track, context, source });
+  const plan = await generatePlanFromIndex({ source });
 
-  let level = grade || "المنهاج";
-  if (track === "cefr") {
-    const { data: placement } = await supabase.from("placement_tests").select("suggested_level").eq("learner_id", learnerId).eq("status", "completed").order("completed_at", { ascending: false }).limit(1).maybeSingle();
-    level = placement?.suggested_level ?? "A1";
-  }
-  const scopeLabel = track === "school" ? [grade, term, "كتاب المدرسة"].filter(Boolean).join(" · ") : `المنهاج · ${level}`;
-  const milestoneLabel = track === "school" ? `اختبار الفصل${term ? ` · ${term}` : ""}` : "تقييمٌ عند إتمام المنهاج";
+  const { data: placement } = await supabase.from("placement_tests").select("suggested_level").eq("learner_id", learnerId).eq("status", "completed").order("completed_at", { ascending: false }).limit(1).maybeSingle();
+  const level = placement?.suggested_level ?? "A1";
 
   await clearLearnerPlans(supabase, learnerId);
   const { error } = await supabase.from("study_plans").insert({
@@ -935,9 +919,9 @@ export async function startPlanFromIndex(formData: FormData) {
     level,
     items: plan.items.map((it) => ({ ...it, id: crypto.randomUUID() })),
     status: "draft",
-    track,
-    scope_label: scopeLabel,
-    milestone_label: milestoneLabel,
+    track: "cefr",
+    scope_label: `منهاج وَرد · المستوى ${level}`,
+    milestone_label: "تقييمٌ عند إتمام المنهاج",
     created_by: user.id,
   });
   if (error) throw new Error(error.message);
@@ -949,18 +933,14 @@ export async function startPlanFromIndex(formData: FormData) {
 export async function createManualPlan(formData: FormData) {
   const learnerId = String(formData.get("learnerId") ?? "");
   const title = String(formData.get("title") ?? "").trim();
-  const track = String(formData.get("track") ?? "cefr") === "school" ? "school" : "cefr";
-  const grade = String(formData.get("grade") ?? "").trim();
-  const term = String(formData.get("term") ?? "").trim();
   if (!learnerId || !title) throw new Error("أدخِل عنوان الخطّة.");
   const { supabase, user, tenantId } = await instructorCtx();
-  const level = track === "school" ? grade || "المنهاج" : "—";
-  const scopeLabel = track === "school" ? [grade, term, "كتاب المدرسة"].filter(Boolean).join(" · ") : title;
-  const milestoneLabel = track === "school" ? `اختبار الفصل${term ? ` · ${term}` : ""}` : "تقييمٌ عند إتمام المنهاج";
+  const { data: placement } = await supabase.from("placement_tests").select("suggested_level").eq("learner_id", learnerId).eq("status", "completed").order("completed_at", { ascending: false }).limit(1).maybeSingle();
+  const level = placement?.suggested_level ?? "—";
   await clearLearnerPlans(supabase, learnerId);
   const { error } = await supabase.from("study_plans").insert({
     tenant_id: tenantId, learner_id: learnerId, title, level, items: [], status: "draft",
-    track, scope_label: scopeLabel, milestone_label: milestoneLabel, created_by: user.id,
+    track: "cefr", scope_label: level === "—" ? title : `منهاج وَرد · المستوى ${level}`, milestone_label: "تقييمٌ عند إتمام المنهاج", created_by: user.id,
   });
   if (error) throw new Error(error.message);
   revalidatePath(`/studio/students/${learnerId}`);

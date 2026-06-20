@@ -78,12 +78,12 @@ export function FlowerProgress({ skills, size = 120, showLegend = false }: { ski
   );
 }
 
-/** Names the cumulative scope of the flower: CEFR level/season, or school textbook/term. */
-export function ScopeChip({ track, children }: { track: "cefr" | "school"; children: React.ReactNode }) {
+/** Names the cumulative scope of the flower: the Ward (CEFR) level. */
+export function ScopeChip({ children }: { children: React.ReactNode }) {
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 999, fontSize: 12, fontWeight: 600, padding: "4px 11px", whiteSpace: "nowrap", background: "var(--brand-soft)", color: "var(--text-on-soft)" }}>
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        {track === "school" ? <path d="M4 5v14l8-3 8 3V5l-8 3-8-3z" /> : <path d="M12 3v6M12 21v-6M3 12h6M21 12h-6" />}
+        <path d="M12 3v6M12 21v-6M3 12h6M21 12h-6" />
       </svg>
       {children}
     </span>

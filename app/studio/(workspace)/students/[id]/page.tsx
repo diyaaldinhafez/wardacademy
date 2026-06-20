@@ -485,7 +485,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               {plan.status === "draft" ? <Badge tone="warning">مسودّة</Badge> : <Badge tone="success">معتمَدة</Badge>}
-              {plan.scope_label && <ScopeChip track={plan.track === "school" ? "school" : "cefr"}>{plan.scope_label}</ScopeChip>}
+              {plan.scope_label && <ScopeChip>{plan.scope_label}</ScopeChip>}
               {plan.milestone_label && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>🎯 {plan.milestone_label}</span>}
             </div>
             <PlanBuilder
@@ -502,18 +502,12 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
               </SubmitButton>
             </form>
             <details style={{ borderTop: "1px solid var(--ink-100)", paddingTop: 8 }}>
-              <summary style={{ fontSize: 12, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>أو ولّد بالذكاء من فهرس المنهاج (يستبدل الخطّة الحالية)</summary>
+              <summary style={{ fontSize: 12, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>أو ولّد بالذكاء من فهرس كتاب المنهج (يستبدل الخطّة الحالية)</summary>
               <p style={{ fontSize: 11.5, color: "var(--text-muted)", margin: "8px 0", lineHeight: 1.6 }}>
-                ارفع <strong>فهرس المنهاج</strong> (صورة/PDF/نصّ) ليستخرجه الذكاء بدقّةٍ بلا تأليف.{plan.status === "approved" && <> سيُستبدَل المنهاج الحاليّ — وتبقى الأهداف التي عليها تقدّمٌ محفوظة.</>}
+                ارفع <strong>فهرس كتاب منهجٍ بمستوى CEFR</strong> (صورة/PDF/نصّ) ليستخرجه الذكاء بدقّةٍ بلا تأليف.{plan.status === "approved" && <> سيُستبدَل المنهاج الحاليّ — وتبقى الأهداف التي عليها تقدّمٌ محفوظة.</>}
               </p>
               <form action={startPlanFromIndex} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
                 <input type="hidden" name="learnerId" value={id} />
-                <select name="track" defaultValue={plan.track === "school" ? "school" : "cefr"} className={sel} style={{ width: "auto", minHeight: 40 }}>
-                  <option value="cefr">CEFR</option>
-                  <option value="school">مدرسيّ</option>
-                </select>
-                <input name="grade" placeholder="الصفّ/المستوى" className={ctl} style={{ width: "auto", maxWidth: 120 }} />
-                <input name="term" placeholder="الفصل" className={ctl} style={{ width: "auto", maxWidth: 110 }} />
                 <input name="index" type="file" required accept="image/*,.pdf,.txt,.md,.csv" className={ctl} style={{ width: "auto", flex: 1, minWidth: 180 }} />
                 <SubmitButton pendingText="…" className={btn("soft")}><Spark size={14} /> ولّد من الفهرس</SubmitButton>
               </form>
@@ -522,33 +516,19 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <p style={{ fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.7 }}>
-              ارفع <strong>فهرس المنهاج</strong> (صورة / PDF / نصّ) — يقرؤه الذكاء ويستخرج منه وحدات المنهج ودروسه <strong>بدقّةٍ بلا تأليف</strong>.
+              <strong>منهاج وَرد</strong> (CEFR · A1→B2). ارفع <strong>فهرس كتاب المنهج</strong> (صورة / PDF / نصّ) — يقرؤه الذكاء ويستخرج وحداته ودروسه <strong>بدقّةٍ بلا تأليف</strong>.
             </p>
             <form action={startPlanFromIndex} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
               <input type="hidden" name="learnerId" value={id} />
-              <div>
-                <label style={{ fontSize: 11.5, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>المسار</label>
-                <select name="track" defaultValue="cefr" className={sel} style={{ width: "auto", minHeight: 40 }}>
-                  <option value="cefr">CEFR (منهاج وَرد)</option>
-                  <option value="school">منهج المدرسة (تقوية)</option>
-                </select>
-              </div>
-              <input name="grade" placeholder="الصفّ/المستوى" className={ctl} style={{ width: "auto", maxWidth: 120 }} />
-              <input name="term" placeholder="الفصل" className={ctl} style={{ width: "auto", maxWidth: 110 }} />
               <input name="index" type="file" required accept="image/*,.pdf,.txt,.md,.csv" className={ctl} style={{ width: "auto", flex: 1, minWidth: 180 }} />
               <SubmitButton pendingText="جارٍ القراءة والتوليد…" className={btn("soft")}><Spark size={14} /> ولّد من الفهرس</SubmitButton>
             </form>
             <details>
-              <summary style={{ fontSize: 12, color: "var(--text-muted)", cursor: "pointer" }}>أو ولّد من المستوى فقط (بلا فهرس)</summary>
-              <form action={startPlan} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end", marginTop: 8 }}>
+              <summary style={{ fontSize: 12, color: "var(--text-muted)", cursor: "pointer" }}>أو ولّد من مستوى CEFR (بلا فهرس)</summary>
+              <p style={{ fontSize: 11.5, color: "var(--text-muted)", margin: "8px 0", lineHeight: 1.6 }}>يولّد الذكاء خطّةً متدرّجةً من مستوى التحديد ({pl?.suggested_level ?? "A1"}).</p>
+              <form action={startPlan} style={{ marginTop: 4 }}>
                 <input type="hidden" name="learnerId" value={id} />
-                <select name="track" defaultValue="cefr" className={sel} style={{ width: "auto", minHeight: 40 }}>
-                  <option value="cefr">CEFR</option>
-                  <option value="school">مدرسيّ</option>
-                </select>
-                <input name="grade" placeholder="الصفّ (للمدرسيّ)" className={ctl} style={{ width: "auto", maxWidth: 130 }} />
-                <input name="term" placeholder="الفصل" className={ctl} style={{ width: "auto", maxWidth: 110 }} />
-                <SubmitButton pendingText="…" className={btn("ghost")}>ولّد بالذكاء</SubmitButton>
+                <SubmitButton pendingText="…" className={btn("ghost")}><Spark size={14} /> ولّد من المستوى</SubmitButton>
               </form>
             </details>
             <details>
@@ -557,12 +537,6 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
               <form action={createManualPlan} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
                 <input type="hidden" name="learnerId" value={id} />
                 <input name="title" required placeholder="عنوان الخطّة/المنهاج" className={ctl} style={{ width: "auto", flex: 1, minWidth: 160 }} />
-                <select name="track" defaultValue="cefr" className={sel} style={{ width: "auto", minHeight: 40 }}>
-                  <option value="cefr">CEFR</option>
-                  <option value="school">مدرسيّ</option>
-                </select>
-                <input name="grade" placeholder="الصفّ (للمدرسيّ)" className={ctl} style={{ width: "auto", maxWidth: 130 }} />
-                <input name="term" placeholder="الفصل" className={ctl} style={{ width: "auto", maxWidth: 110 }} />
                 <SubmitButton pendingText="…" className={btn("secondary")}>أنشئ خطّةً يدوية</SubmitButton>
               </form>
             </details>
@@ -883,7 +857,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {(plan?.scope_label || plan?.milestone_label) && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          {plan?.scope_label && <ScopeChip track={plan.track === "school" ? "school" : "cefr"}>{plan.scope_label}</ScopeChip>}
+          {plan?.scope_label && <ScopeChip>{plan.scope_label}</ScopeChip>}
           {plan?.milestone_label && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>🎯 {plan.milestone_label}</span>}
         </div>
       )}

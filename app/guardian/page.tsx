@@ -174,7 +174,7 @@ export default async function GuardianPage() {
                     <div className="flex items-center gap-4">
                       <FlowerProgress size={96} skills={stats.map((s) => ({ label: SKILL_AR[s.skill], value: valOf(s), detail: s.skill === "speaking" ? sp?.label ?? "—" : `${s.mastered}/${s.total}` }))} />
                       <div className="flex-1">
-                        {plan?.scope_label && <div className="mb-1"><ScopeChip track={plan.track === "school" ? "school" : "cefr"}>{plan.scope_label}</ScopeChip></div>}
+                        {plan?.scope_label && <div className="mb-1"><ScopeChip>{plan.scope_label}</ScopeChip></div>}
                         <p className="text-sm text-ink" style={{ lineHeight: 1.8 }}>
                           وردة {name} هذا الأسبوع — أتقن <b>{totalM} من {totalT}</b> هدفاً. أرقامٌ حقيقيةٌ بلا تجميل.
                           {plan?.milestone_label ? <span className="text-ink-soft"> 🎯 {plan.milestone_label}.</span> : null}

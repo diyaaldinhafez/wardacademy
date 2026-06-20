@@ -253,7 +253,7 @@ export default async function LearnPage() {
       <section className="mb-8">
         <div className="mb-3 flex items-center gap-2">
           <h2 className="text-lg font-bold text-ink">وردتي</h2>
-          {studyPlan?.scope_label && <ScopeChip track={(studyPlan as any).track === "school" ? "school" : "cefr"}>{studyPlan.scope_label}</ScopeChip>}
+          {studyPlan?.scope_label && <ScopeChip>{studyPlan.scope_label}</ScopeChip>}
         </div>
         <div className={card}>
           <div className="flex items-center gap-4">

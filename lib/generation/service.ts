@@ -497,26 +497,18 @@ const planTool: Anthropic.Tool = {
   },
 };
 
-/** Generate a draft study plan (units → measurable lesson objectives), CEFR or school-aligned. */
-export async function generatePlan(opts: { track: "cefr" | "school"; level: string; learnerName: string; grade?: string; term?: string }): Promise<GeneratedPlan> {
-  const { track, level, learnerName, grade, term } = opts;
+/** Generate a draft study plan (units → measurable lesson objectives) on Ward's own CEFR curriculum. */
+export async function generatePlan(opts: { level: string; learnerName: string }): Promise<GeneratedPlan> {
+  const { level, learnerName } = opts;
   const tagging =
-    "Tag every objective with: the level ref it targets, exactly one primary skill " +
+    "Tag every objective with: the CEFR sub-level it targets, exactly one primary skill " +
     "(listening | speaking | reading | writing | vocabulary — 'vocabulary' here means the language foundation: vocabulary + grammar), " +
     "and the unit it belongs to (lessons in the same unit must share the identical unit string). Order the items unit by unit.";
   const system =
-    track === "school"
-      ? "You design a short reinforcement (tutoring) English plan for a child that FOLLOWS their real government-school curriculum. " +
-        `Produce 2–3 units matching the themes of a typical ${grade || "middle-school"} ${term || ""} English coursebook, ` +
-        "each with 2–4 measurable, original lesson objectives (no copied material) that reinforce what the school teaches. " +
-        `Use the grade (e.g. ${grade || "G7"}) as the level ref. ${tagging} Return via emit_plan.`
-      : "You design a short English study plan for a child aged 9–13. Given a starting CEFR level, " +
-        "produce 2–3 units, each with 2–4 progressive, original, measurable lesson objectives (no copied material) that build on each other. " +
-        `Use the CEFR sub-level as the level ref. ${tagging} Return via emit_plan.`;
-  const userMsg =
-    track === "school"
-      ? `Student: ${learnerName}. School: ${grade || "?"} ${term || ""}. Create a plan that reinforces their school English course.`
-      : `Student: ${learnerName}. Starting level: ${level}. Create the plan.`;
+    "You design a short English study plan on Ward Academy's own CEFR-aligned curriculum (A1→B2) for a child aged 9–13. " +
+    "Given a starting CEFR level, produce 2–3 thematic units, each with 2–4 progressive, original, measurable lesson objectives (no copied material) that build on each other. " +
+    `Use the CEFR sub-level as the level ref. ${tagging} Return via emit_plan.`;
+  const userMsg = `Student: ${learnerName}. Starting CEFR level: ${level}. Create the plan.`;
   const res = await client().messages.create({
     model: MODEL,
     max_tokens: 1200,
@@ -543,15 +535,15 @@ export type PlanIndexSource =
  * Build a study plan by reading an uploaded curriculum INDEX (image / PDF / text)
  * and extracting its real units and lessons exactly — no invention/authoring.
  */
-export async function generatePlanFromIndex(opts: { track: "cefr" | "school"; context?: string; source: PlanIndexSource }): Promise<GeneratedPlan> {
-  const { track, context, source } = opts;
+export async function generatePlanFromIndex(opts: { context?: string; source: PlanIndexSource }): Promise<GeneratedPlan> {
+  const { context, source } = opts;
   const instruction =
-    "You are given the table of contents / index of an English coursebook. " +
+    "You are given the table of contents / index of an English curriculum book (CEFR-aligned). " +
     "Extract its REAL units and lessons EXACTLY as listed — do NOT invent, add, or author anything not present in the index. " +
     "Preserve the index's order and its actual unit and lesson names. For each lesson, produce one objective whose description is that lesson's topic/title from the index, " +
     "tagged with: the single primary skill it builds (listening | speaking | reading | writing | vocabulary — 'vocabulary' = the language foundation: vocabulary + grammar), " +
-    "the unit it belongs to (the book's unit; lessons of the same unit share the identical unit string), and a level ref " +
-    (track === "school" ? "(use the grade/term as the level ref). " : "(use the CEFR sub-level if the index shows one, else a short ref). ") +
+    "the unit it belongs to (the book's unit; lessons of the same unit share the identical unit string), and a CEFR sub-level ref " +
+    "(use the CEFR sub-level if the index shows one, else a short ref). " +
     (context ? `Context: ${context}. ` : "") +
     "Include every lesson in order. The plan title should be the book/course name if visible. Return via emit_plan.";
 
