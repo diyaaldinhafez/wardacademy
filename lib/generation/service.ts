@@ -126,17 +126,20 @@ export async function generateItem(input: GenerateItemInput): Promise<GeneratedI
 
 export type ReportInput = {
   learnerName: string;
-  progress: { objective: string; attempts: number; correct: number; completions: number }[];
+  lessonTitle?: string | null;
+  engagement?: string; // Arabic label
+  comprehension?: string; // Arabic label
+  behavior?: string; // Arabic label
+  focusNext?: string; // Arabic label
+  teacherNote?: string; // free text
 };
 export type GeneratedReport = { summary: string; strengths: string; improve: string };
 
-const REPORT_SYSTEM = `You write a short, warm, honest post-session report for a parent about their child's English learning at Ward Academy (ages 9–13).
-
-Rules:
-- Base everything ONLY on the progress data provided. Never invent facts, scores, or events.
-- Be specific, encouraging, and easy for a non-teacher parent to understand.
-- summary: 2–3 sentences. strengths: one short sentence. improve: one short, kind next step.
-- Return the report ONLY by calling the emit_report tool.`;
+const REPORT_SYSTEM =
+  "تكتب تقريراً عربياً موجزاً ودافئاً ومهنياً لوليّ الأمر بعد جلسةٍ فرديةٍ لطفله في أكاديمية وَرد (أعمار 9–13). " +
+  "ابنِ التقرير فقط على مُدخَلات المعلّم المُعطاة ولا تختلق وقائع أو أرقاماً أو أحداثاً. يجب أن يُقرأ في أقلّ من دقيقة، بنبرةٍ لطيفةٍ مشجّعةٍ غير تسويقية، بصيغة المخاطب لوليّ الأمر. " +
+  "summary: ٢–٣ جُمَلٍ تلخّص الجلسة بإيجابيةٍ وصدق. strengths: جملةٌ واحدةٌ عن أبرز نقطة قوّة. improve: خطوةٌ تاليةٌ لطيفةٌ وعملية. " +
+  "أعِد التقرير عبر أداة emit_report فقط.";
 
 const reportTool: Anthropic.Tool = {
   name: "emit_report",
@@ -154,21 +157,25 @@ const reportTool: Anthropic.Tool = {
 
 /** Draft a post-session report from the learner's progress. Teacher edits + approves. */
 export async function generateSessionReportDraft(input: ReportInput): Promise<GeneratedReport> {
-  const lines = input.progress.length
-    ? input.progress
-        .map((p) => `- ${p.objective}: ${p.correct}/${p.attempts} correct${p.completions ? `, ${p.completions} practiced` : ""}`)
-        .join("\n")
-    : "- No graded activity yet.";
-
-  const userPrompt = `Student: ${input.learnerName}\nProgress by objective:\n${lines}\n\nWrite the report. Call emit_report.`;
+  const lines = [
+    `اسم الطالب: ${input.learnerName}`,
+    input.lessonTitle ? `درس الجلسة: ${input.lessonTitle}` : "",
+    input.engagement ? `تفاعل الطالب وحضوره: ${input.engagement}` : "",
+    input.comprehension ? `فهم الدرس: ${input.comprehension}` : "",
+    input.behavior ? `المشاركة والسلوك: ${input.behavior}` : "",
+    input.focusNext ? `تركيز الجلسة القادمة: ${input.focusNext}` : "",
+    input.teacherNote ? `ملاحظة المعلّم: ${input.teacherNote}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   const res = await client().messages.create({
     model: MODEL,
-    max_tokens: 512,
+    max_tokens: 1000, // Arabic is token-dense; the tool JSON must finish
     system: REPORT_SYSTEM,
     tools: [reportTool],
     tool_choice: { type: "tool", name: "emit_report" },
-    messages: [{ role: "user", content: userPrompt }],
+    messages: [{ role: "user", content: `${lines}\n\nاكتب التقرير الآن.` }],
   });
 
   const toolUse = res.content.find(

@@ -245,30 +245,21 @@ export async function draftReportWithAI(formData: FormData) {
 
   const { data: session } = await supabase
     .from("sessions")
-    .select("id, tenant_id, learner_id")
+    .select("id, tenant_id, learner_id, lesson_title")
     .eq("id", sessionId)
     .single();
   if (!session) throw new Error("Session not found");
 
   const { data: learner } = await supabase.from("profiles").select("full_name").eq("id", session.learner_id).single();
-  const { data: prog } = await supabase
-    .from("progress_records")
-    .select("attempts, correct, completions, objectives(description)")
-    .eq("learner_id", session.learner_id);
-
-  const progress = (prog ?? []).map((p) => {
-    const o = Array.isArray(p.objectives) ? p.objectives[0] : p.objectives;
-    return {
-      objective: (o as { description?: string })?.description ?? "Objective",
-      attempts: p.attempts as number,
-      correct: p.correct as number,
-      completions: p.completions as number,
-    };
-  });
 
   const draft = await generateSessionReportDraft({
-    learnerName: learner?.full_name ?? "the student",
-    progress,
+    learnerName: learner?.full_name ?? "الطالب",
+    lessonTitle: session.lesson_title,
+    engagement: String(formData.get("engagement") ?? "").trim() || undefined,
+    comprehension: String(formData.get("comprehension") ?? "").trim() || undefined,
+    behavior: String(formData.get("behavior") ?? "").trim() || undefined,
+    focusNext: String(formData.get("focusNext") ?? "").trim() || undefined,
+    teacherNote: String(formData.get("teacherNote") ?? "").trim() || undefined,
   });
 
   const { error } = await supabase.from("session_reports").insert({

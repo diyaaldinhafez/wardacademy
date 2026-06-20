@@ -139,6 +139,14 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       if (data?.signedUrl) resourceUrls.set(r.id, data.signedUrl);
     }));
   }
+  // Guardian WhatsApp (leads is admin-gated by RLS; this learner is already authorised, so read the phone via service-role).
+  let guardianPhone: string | null = null;
+  {
+    const admin = createAdminClient();
+    const { data: leadRow } = await admin.from("leads").select("guardian_phone").eq("converted_learner_id", id).maybeSingle();
+    guardianPhone = (leadRow?.guardian_phone ?? "").replace(/\D/g, "") || null;
+  }
+
   const { data: assessments } = await supabase.from("assessments").select("id, title, scope, status, score, max_score, notes, scheduled_for, completed_at").eq("learner_id", id).order("created_at", { ascending: false });
   const { data: lessonSlots } = await supabase.from("lesson_schedules").select("id, weekday, time_of_day, duration_minutes").eq("learner_id", id).order("weekday");
   const { data: availRules } = await supabase.from("availability_rules").select("weekday, start_time, end_time, slot_minutes").eq("active", true);
@@ -275,46 +283,93 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     </details>
   );
 
-  const SessionCard = ({ s }: { s: any }) => {
+  // Post-session report: teacher fills ready choices + an open note → AI writes it.
+  const REPORT_FIELDS: { name: string; label: string; required?: boolean; opts: string[] }[] = [
+    { name: "engagement", label: "تفاعل الطالب وحضوره", required: true, opts: ["متفاعلٌ ومتحمّس", "جيّد", "هادئ", "يحتاج تحفيزاً"] },
+    { name: "comprehension", label: "فهم الدرس", required: true, opts: ["تجاوز التوقّعات", "حقّق هدف الدرس", "حقّقه جزئياً", "يحتاج إعادة"] },
+    { name: "behavior", label: "المشاركة والسلوك", opts: ["متعاونٌ ومنظّم", "جيّد", "يحتاج متابعة"] },
+    { name: "focusNext", label: "تركيز الجلسة القادمة", opts: ["مواصلة المنهج", "مراجعة الدرس", "مزيد تدريبٍ على المهارة"] },
+  ];
+  const reportWaLink = (s: any, report: any) => {
+    if (!guardianPhone) return null;
+    const text =
+      `*تقرير جلسة ${name}*\n${fmtUTC(s.scheduled_at)}${s.lesson_title ? ` — ${s.lesson_title}` : ""}\n\n${report.summary}` +
+      (report.strengths ? `\n\n✨ نقاط القوّة: ${report.strengths}` : "") +
+      (report.improve ? `\n🎯 الخطوة القادمة: ${report.improve}` : "") +
+      `\n\nأكاديمية وَرد`;
+    return `https://wa.me/${guardianPhone}?text=${encodeURIComponent(text)}`;
+  };
+
+  const SessionCard = ({ s, showJoin = false, showReport = false }: { s: any; showJoin?: boolean; showReport?: boolean }) => {
     const report = one(s.session_reports);
+    const waLink = report?.status === "approved" ? reportWaLink(s, report) : null;
     return (
       <div style={{ borderRadius: 12, border: "1px solid var(--border-soft)", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-strong)", fontVariantNumeric: "tabular-nums" }}>{fmtUTC(s.scheduled_at)}</span>
           <span style={{ fontSize: 12, color: "var(--text-muted)" }}>· {s.duration_minutes}د</span>
-          <Badge tone={s.status === "completed" ? "success" : s.status === "scheduled" ? "brand" : "neutral"}>{s.status}</Badge>
+          {showReport && report?.status === "approved" && <Badge tone="success">تقريرٌ مُرسَل</Badge>}
         </div>
         {s.lesson_title && <div style={{ fontSize: 13, color: "var(--text-body)" }}>📖 الدرس: <strong>{s.lesson_title}</strong></div>}
-        {s.status === "scheduled" && <VideoCall sessionId={s.id} />}
+        {showJoin && s.status === "scheduled" && <VideoCall sessionId={s.id} />}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--ink-100)", paddingTop: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>التقرير</span>
+        {showReport && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--ink-100)", paddingTop: 8 }}>
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-strong)" }}>تقرير الجلسة</span>
+
             {!report && (
-              <form action={draftReportWithAI} style={{ marginInlineStart: "auto" }}>
+              <form action={draftReportWithAI} style={{ display: "flex", flexDirection: "column", gap: 8, background: "var(--surface-soft)", borderRadius: 10, padding: 10 }}>
                 <input type="hidden" name="sessionId" value={s.id} />
-                <SubmitButton pendingText="…" className={btn("soft")}><Spark size={13} /> ولّد بالذكاء</SubmitButton>
+                <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>عبّئي اختيارات الجلسة، ويكتب الذكاء تقريراً موجزاً لوليّ الأمر تراجعينه قبل الإرسال.</p>
+                {REPORT_FIELDS.map((f) => (
+                  <label key={f.name} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
+                    <span style={{ width: 130, flexShrink: 0, color: "var(--text-body)" }}>{f.label}</span>
+                    <select name={f.name} required={f.required} defaultValue="" className={sel} style={{ flex: 1, minHeight: 36, fontSize: 12.5 }}>
+                      <option value="" disabled>اختَر…</option>
+                      {f.opts.map((o) => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </label>
+                ))}
+                <textarea name="teacherNote" rows={2} className={ctl} placeholder="ملاحظةٌ من الجلسة (سؤال مفتوح، اختياري)" />
+                <SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}><Spark size={13} /> ولّد التقرير بالذكاء</SubmitButton>
               </form>
             )}
-            {report?.status === "approved" && <span style={{ marginInlineStart: "auto", display: "flex", alignItems: "center", gap: 6 }}><AITrustBadge status="approved" compact /><span style={{ fontSize: 12, color: "var(--leaf-700)" }}>ظاهرٌ للعائلة</span></span>}
+
+            {report?.status === "draft" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, background: "var(--surface-soft)", borderRadius: 10, padding: 10 }}>
+                <AITrustBadge status="draft" />
+                <form action={updateReport} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <input type="hidden" name="reportId" value={report.id} />
+                  <textarea name="summary" required rows={3} defaultValue={report.summary ?? ""} className={ctl} placeholder="الملخّص" />
+                  <input name="strengths" defaultValue={report.strengths ?? ""} className={ctl} placeholder="نقاط القوّة" />
+                  <input name="improve" defaultValue={report.improve ?? ""} className={ctl} placeholder="الخطوة القادمة" />
+                  <SubmitButton pendingText="…" className={btn("secondary")}>احفظ التعديلات</SubmitButton>
+                </form>
+                <form action={approveReport}>
+                  <input type="hidden" name="reportId" value={report.id} />
+                  <SubmitButton pendingText="…" className={btn("success")}>اعتمِد التقرير</SubmitButton>
+                </form>
+              </div>
+            )}
+
+            {report?.status === "approved" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, background: "var(--surface-soft)", borderRadius: 10, padding: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  <AITrustBadge status="approved" compact />
+                  <span style={{ fontSize: 12, color: "var(--leaf-700)" }}>مُعتمَد وظاهرٌ للعائلة</span>
+                  {waLink ? (
+                    <a href={waLink} target="_blank" rel="noreferrer" className={btn("success")} style={{ marginInlineStart: "auto", textDecoration: "none" }}>📲 شارك عبر واتساب</a>
+                  ) : (
+                    <span style={{ marginInlineStart: "auto", fontSize: 11.5, color: "var(--text-muted)" }}>لا رقم واتساب لوليّ الأمر</span>
+                  )}
+                </div>
+                <p style={{ fontSize: 12.5, color: "var(--text-body)", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{report.summary}</p>
+                {report.strengths && <p style={{ fontSize: 12, color: "var(--text-muted)" }}>✨ {report.strengths}</p>}
+                {report.improve && <p style={{ fontSize: 12, color: "var(--text-muted)" }}>🎯 {report.improve}</p>}
+              </div>
+            )}
           </div>
-          {report?.status === "draft" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, background: "var(--surface-soft)", borderRadius: 10, padding: 10 }}>
-              <AITrustBadge status="draft" />
-              <form action={updateReport} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <input type="hidden" name="reportId" value={report.id} />
-                <textarea name="summary" required rows={2} defaultValue={report.summary ?? ""} className={ctl} placeholder="ملخّص" />
-                <input name="strengths" defaultValue={report.strengths ?? ""} className={ctl} placeholder="نقاط القوة" />
-                <input name="improve" defaultValue={report.improve ?? ""} className={ctl} placeholder="للتحسين" />
-                <SubmitButton pendingText="…" className={btn("secondary")}>احفظ التعديلات</SubmitButton>
-              </form>
-              <form action={approveReport}>
-                <input type="hidden" name="reportId" value={report.id} />
-                <SubmitButton pendingText="…" className={btn("success")}>اعتمِد — يظهر للعائلة</SubmitButton>
-              </form>
-            </div>
-          )}
-        </div>
+        )}
       </div>
     );
   };
@@ -567,8 +622,8 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       )}
       {past.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-muted)" }}>السابقة ({past.length})</p>
-          {past.map((s: any) => <SessionCard key={s.id} s={s} />)}
+          <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-muted)" }}>السابقة — اكتبي تقريرها ({past.length})</p>
+          {past.map((s: any) => <SessionCard key={s.id} s={s} showReport />)}
         </div>
       )}
       {(sessions ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا جلسات بعد — جدوِلي من «إدارة المواعيد والجدولة» أدناه.</p>}
