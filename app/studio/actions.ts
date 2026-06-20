@@ -15,7 +15,7 @@ import {
   type PlanIndexSource,
 } from "@/lib/generation/service";
 import { homePathForRoles } from "@/lib/roles";
-import { SPEAKING_LEVELS } from "@/lib/skills";
+import { SPEAKING_LEVELS, SKILLS } from "@/lib/skills";
 import type { ItemFormat, Difficulty } from "@/lib/items";
 
 export async function login(_prev: { error?: string } | undefined, formData: FormData) {
@@ -837,6 +837,60 @@ export async function startPlanFromIndex(formData: FormData) {
     milestone_label: milestoneLabel,
     created_by: user.id,
   });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/studio/students/${learnerId}`);
+}
+
+// — Manual study plan: the teacher builds the whole plan by hand —
+
+export async function createManualPlan(formData: FormData) {
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  const track = String(formData.get("track") ?? "cefr") === "school" ? "school" : "cefr";
+  const grade = String(formData.get("grade") ?? "").trim();
+  const term = String(formData.get("term") ?? "").trim();
+  if (!learnerId || !title) throw new Error("أدخِل عنوان الخطّة.");
+  const { supabase, user, tenantId } = await instructorCtx();
+  const level = track === "school" ? grade || "المنهاج" : "—";
+  const scopeLabel = track === "school" ? [grade, term, "كتاب المدرسة"].filter(Boolean).join(" · ") : title;
+  const milestoneLabel = track === "school" ? `اختبار الفصل${term ? ` · ${term}` : ""}` : "تقييمٌ عند إتمام المنهاج";
+  const { error } = await supabase.from("study_plans").insert({
+    tenant_id: tenantId, learner_id: learnerId, title, level, items: [], status: "draft",
+    track, scope_label: scopeLabel, milestone_label: milestoneLabel, created_by: user.id,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/studio/students/${learnerId}`);
+}
+
+/** Append a lesson to a DRAFT plan (manual editing — works on AI or manual plans). */
+export async function addPlanLesson(formData: FormData) {
+  const planId = String(formData.get("planId") ?? "");
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const description = String(formData.get("description") ?? "").trim();
+  const unit = String(formData.get("unit") ?? "").trim() || "الوحدة 1";
+  const skill = String(formData.get("skill") ?? "").trim();
+  const level = String(formData.get("level") ?? "").trim() || null;
+  if (!planId || !description) throw new Error("أدخِل عنوان/وصف الدرس.");
+  const { supabase } = await instructorCtx();
+  const { data: plan } = await supabase.from("study_plans").select("items, status").eq("id", planId).single();
+  if (!plan) throw new Error("الخطّة غير موجودة.");
+  if (plan.status !== "draft") throw new Error("لا يمكن تعديل خطّةٍ معتمَدة.");
+  const items = [...((plan.items as Array<Record<string, unknown>>) ?? []), { description, level, skill: (SKILLS as readonly string[]).includes(skill) ? skill : null, unit }];
+  const { error } = await supabase.from("study_plans").update({ items }).eq("id", planId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/studio/students/${learnerId}`);
+}
+
+export async function removePlanLesson(formData: FormData) {
+  const planId = String(formData.get("planId") ?? "");
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const index = Number(formData.get("index"));
+  const { supabase } = await instructorCtx();
+  const { data: plan } = await supabase.from("study_plans").select("items, status").eq("id", planId).single();
+  if (!plan) throw new Error("الخطّة غير موجودة.");
+  if (plan.status !== "draft") throw new Error("لا يمكن تعديل خطّةٍ معتمَدة.");
+  const items = ((plan.items as Array<Record<string, unknown>>) ?? []).filter((_, i) => i !== index);
+  const { error } = await supabase.from("study_plans").update({ items }).eq("id", planId);
   if (error) throw new Error(error.message);
   revalidatePath(`/studio/students/${learnerId}`);
 }

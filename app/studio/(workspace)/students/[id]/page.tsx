@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  startPlacement, startPlan, startPlanFromIndex, approvePlan, draftReportWithAI, assignItem,
+  startPlacement, startPlan, startPlanFromIndex, createManualPlan, addPlanLesson, removePlanLesson, approvePlan, draftReportWithAI, assignItem,
   addResource, removeResource, createAssessment, recordAssessment, removeAssessment,
   generateDraft, approveItem, rejectItem, updateReport, approveReport,
   addLessonSlot, removeLessonSlot, generateLessonSessions,
@@ -437,6 +437,14 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                           <span style={{ flex: 1, color: done ? "var(--text-muted)" : "var(--text-body)", textDecoration: done ? "line-through" : "none" }}>{it.level ? `${it.level} · ` : ""}{it.description}</span>
                           {it.skill && SKILL_AR[it.skill as keyof typeof SKILL_AR] && <Badge tone="neutral">{SKILL_AR[it.skill as keyof typeof SKILL_AR]}</Badge>}
                           {current && <Badge tone="brand">الحاليّ</Badge>}
+                          {plan.status === "draft" && (
+                            <form action={removePlanLesson}>
+                              <input type="hidden" name="planId" value={plan.id} />
+                              <input type="hidden" name="learnerId" value={id} />
+                              <input type="hidden" name="index" value={i} />
+                              <SubmitButton className={btn("ghost")}>✕</SubmitButton>
+                            </form>
+                          )}
                         </div>
                       );
                     })}
@@ -444,6 +452,20 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                 );
               })}
             </div>
+            {plan.status === "draft" && (
+              <form action={addPlanLesson} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end", borderTop: "1px solid var(--ink-100)", paddingTop: 10 }}>
+                <input type="hidden" name="planId" value={plan.id} />
+                <input type="hidden" name="learnerId" value={id} />
+                <input name="unit" placeholder="الوحدة" className={ctl} style={{ width: "auto", maxWidth: 140 }} />
+                <input name="description" required placeholder="عنوان/وصف الدرس" className={ctl} style={{ width: "auto", flex: 1, minWidth: 160 }} />
+                <select name="skill" defaultValue="" className={sel} style={{ width: "auto", minHeight: 40 }}>
+                  <option value="">المهارة…</option>
+                  {SKILLS.map((s) => <option key={s} value={s}>{SKILL_AR[s]}</option>)}
+                </select>
+                <input name="level" placeholder="المستوى" className={ctl} style={{ width: "auto", maxWidth: 90 }} />
+                <SubmitButton pendingText="…" className={btn("secondary")}>أضِف درساً</SubmitButton>
+              </form>
+            )}
             {plan.status === "draft" && (
               <form action={approvePlan}>
                 <input type="hidden" name="planId" value={plan.id} />
@@ -481,6 +503,21 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                 <input name="grade" placeholder="الصفّ (للمدرسيّ)" className={ctl} style={{ width: "auto", maxWidth: 130 }} />
                 <input name="term" placeholder="الفصل" className={ctl} style={{ width: "auto", maxWidth: 110 }} />
                 <SubmitButton pendingText="…" className={btn("ghost")}>ولّد بالذكاء</SubmitButton>
+              </form>
+            </details>
+            <details>
+              <summary style={{ fontSize: 12, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>أو أنشئ خطّةً يدويةً بالكامل</summary>
+              <p style={{ fontSize: 11.5, color: "var(--text-muted)", margin: "8px 0", lineHeight: 1.6 }}>أنشئ الخطّة فارغةً ثمّ أضِف وحداتها ودروسها يدوياً بالتفصيل.</p>
+              <form action={createManualPlan} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
+                <input type="hidden" name="learnerId" value={id} />
+                <input name="title" required placeholder="عنوان الخطّة/المنهاج" className={ctl} style={{ width: "auto", flex: 1, minWidth: 160 }} />
+                <select name="track" defaultValue="cefr" className={sel} style={{ width: "auto", minHeight: 40 }}>
+                  <option value="cefr">CEFR</option>
+                  <option value="school">مدرسيّ</option>
+                </select>
+                <input name="grade" placeholder="الصفّ (للمدرسيّ)" className={ctl} style={{ width: "auto", maxWidth: 130 }} />
+                <input name="term" placeholder="الفصل" className={ctl} style={{ width: "auto", maxWidth: 110 }} />
+                <SubmitButton pendingText="…" className={btn("secondary")}>أنشئ خطّةً يدوية</SubmitButton>
               </form>
             </details>
           </div>
