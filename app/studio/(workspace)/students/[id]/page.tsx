@@ -7,7 +7,7 @@ import {
   startPlacement, startPlan, startPlanFromIndex, approvePlan, draftReportWithAI, assignItem,
   addResource, removeResource, createAssessment, recordAssessment, removeAssessment,
   generateDraft, approveItem, rejectItem, updateReport, approveReport,
-  setLessonSchedule, generateLessonSessions,
+  addLessonSlot, removeLessonSlot, generateLessonSessions,
   createManualHomework, gradeManualHomework, removeManualHomework,
   generateDiagnosticReport, updateDiagnostic, approveDiagnostic,
   setSkillAssessment,
@@ -148,7 +148,21 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     }));
   }
   const { data: assessments } = await supabase.from("assessments").select("id, title, scope, status, score, max_score, notes, scheduled_for, completed_at").eq("learner_id", id).order("created_at", { ascending: false });
-  const { data: lessonSchedule } = await supabase.from("lesson_schedules").select("weekday, time_of_day, duration_minutes").eq("learner_id", id).maybeSingle();
+  const { data: lessonSlots } = await supabase.from("lesson_schedules").select("id, weekday, time_of_day, duration_minutes").eq("learner_id", id).order("weekday");
+  const { data: availRules } = await supabase.from("availability_rules").select("weekday, start_time, end_time, slot_minutes").eq("active", true);
+  const { data: tenantRow } = await supabase.from("tenants").select("slot_break_minutes").maybeSingle();
+  const lessonBreak = tenantRow?.slot_break_minutes ?? 15;
+  // Discrete bookable times per weekday, inside the teacher's availability windows.
+  const toMinT = (t: string) => { const [h, m] = String(t).split(":").map(Number); return h * 60 + (m || 0); };
+  const fmtT = (min: number) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+  const availByWeekday = new Map<number, { time: string; duration: number }[]>();
+  for (const r of (availRules ?? []) as any[]) {
+    const s = toMinT(r.start_time), e = toMinT(r.end_time), step = r.slot_minutes + lessonBreak;
+    const arr = availByWeekday.get(r.weekday) ?? [];
+    for (let t = s; t + r.slot_minutes <= e; t += step) arr.push({ time: fmtT(t), duration: r.slot_minutes });
+    availByWeekday.set(r.weekday, arr);
+  }
+  const slotByKey = new Map<string, any>((lessonSlots ?? []).map((s: any) => [`${s.weekday}|${String(s.time_of_day).slice(0, 5)}`, s]));
   const { data: diagnostic } = await supabase.from("diagnostics").select("report, status").eq("learner_id", id).maybeSingle();
 
   // Manual homework (image-based) + signed URLs for its files, grouped by session.
@@ -558,29 +572,50 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
   const Sessions = (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      {/* Fixed weekly slot → generate the plan's sessions ahead */}
+      {/* Recurring weekly lesson slots — constrained to the teacher's availability windows */}
       <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <div style={secTitle}>الموعد الأسبوعيّ الثابت</div>
-        <form action={setLessonSchedule} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
-          <input type="hidden" name="learnerId" value={id} />
-          <select name="weekday" defaultValue={lessonSchedule?.weekday ?? 0} className={sel} style={{ width: "auto", minHeight: 40 }}>
-            {WEEKDAY_AR.map((w, i) => <option key={i} value={i}>{w}</option>)}
-          </select>
-          <input name="time" type="time" required defaultValue={lessonSchedule ? String(lessonSchedule.time_of_day).slice(0, 5) : "16:00"} className={ctl} style={{ width: "auto" }} />
-          <select name="duration" defaultValue={String(lessonSchedule?.duration_minutes ?? 30)} className={sel} style={{ width: "auto", minHeight: 40 }}>
-            <option value="30">30 دقيقة</option>
-            <option value="45">45 دقيقة</option>
-            <option value="60">60 دقيقة</option>
-          </select>
-          <SubmitButton pendingText="…" className={btn("secondary")}>احفظ الموعد</SubmitButton>
-        </form>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <form action={generateLessonSessions}>
-            <input type="hidden" name="learnerId" value={id} />
-            <SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}>ولّد جلسات الخطّة</SubmitButton>
-          </form>
-          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>يجدول دروس الخطّة أسبوعياً ابتداءً من الموعد، ويربط كلّ جلسةٍ بدرسها.</span>
-        </div>
+        <div style={secTitle}>مواعيد الجلسات الأسبوعية المتكرّرة</div>
+        {(availRules ?? []).length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>حدّدي تفرّغك أولاً من صفحة «تفرّغي»، ثمّ اختاري المواعيد من ضمنه.</p>
+        ) : (
+          <>
+            <p style={{ fontSize: 12, color: "var(--text-muted)" }}>اختاري المواعيد من ضمن تفرّغك (المُختار باللون البنفسجيّ — اضغطيه للحذف):</p>
+            {WEEKDAY_AR.map((label, wd) => {
+              const options = availByWeekday.get(wd) ?? [];
+              if (options.length === 0) return null;
+              return (
+                <div key={wd} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-strong)", width: 56, flexShrink: 0 }}>{label}</span>
+                  {options.map((o) => {
+                    const existing = slotByKey.get(`${wd}|${o.time}`);
+                    return existing ? (
+                      <form key={o.time} action={removeLessonSlot}>
+                        <input type="hidden" name="slotId" value={existing.id} />
+                        <input type="hidden" name="learnerId" value={id} />
+                        <SubmitButton className="ward-btn ward-btn--primary ward-btn--sm" pendingText="…">{o.time} ✕</SubmitButton>
+                      </form>
+                    ) : (
+                      <form key={o.time} action={addLessonSlot}>
+                        <input type="hidden" name="learnerId" value={id} />
+                        <input type="hidden" name="weekday" value={wd} />
+                        <input type="hidden" name="time" value={o.time} />
+                        <input type="hidden" name="duration" value={o.duration} />
+                        <SubmitButton className="ward-btn ward-btn--ghost ward-btn--sm" pendingText="…">{o.time}</SubmitButton>
+                      </form>
+                    );
+                  })}
+                </div>
+              );
+            })}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", borderTop: "1px solid var(--ink-100)", paddingTop: 8 }}>
+              <form action={generateLessonSessions}>
+                <input type="hidden" name="learnerId" value={id} />
+                <SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}>ولّد جلسات الخطّة</SubmitButton>
+              </form>
+              <span style={{ fontSize: 12, color: "var(--text-muted)" }}>يجدول دروس الخطّة على المواعيد المختارة بالتسلسل، ويربط كلّ جلسةٍ بدرسها.</span>
+            </div>
+          </>
+        )}
       </Card>
 
       {/* One-off extra session */}

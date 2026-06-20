@@ -546,18 +546,39 @@ export async function removeAssessment(formData: FormData) {
 // — Recurring weekly lessons (Note 3) —
 
 /** Set a student's fixed weekly lesson slot (weekday 0=Sunday + local time). */
-export async function setLessonSchedule(formData: FormData) {
+const toMinTime = (t: string) => {
+  const [h, m] = String(t).split(":").map(Number);
+  return h * 60 + (m || 0);
+};
+
+/** Add a recurring weekly lesson slot — must fall inside the teacher's availability. */
+export async function addLessonSlot(formData: FormData) {
   const learnerId = String(formData.get("learnerId") ?? "");
   const weekday = Number(formData.get("weekday"));
   const time = String(formData.get("time") ?? "").trim();
-  const duration = Number(formData.get("duration") ?? 30);
-  if (!learnerId || Number.isNaN(weekday) || !time) throw new Error("أكمِل بيانات الموعد.");
-  const { user, tenantId } = await instructorCtx();
+  const duration = Number(formData.get("duration") ?? 45);
+  if (!learnerId || Number.isNaN(weekday) || !time) throw new Error("بيانات الموعد ناقصة.");
+
+  const { supabase, user, tenantId } = await instructorCtx();
+  const { data: rules } = await supabase.from("availability_rules").select("start_time, end_time").eq("instructor_id", user.id).eq("weekday", weekday).eq("active", true);
+  const tMin = toMinTime(time);
+  const insideAvailability = (rules ?? []).some((r: { start_time: string; end_time: string }) => tMin >= toMinTime(r.start_time) && tMin + duration <= toMinTime(r.end_time));
+  if (!insideAvailability) throw new Error("هذا الموعد خارج تفرّغك المُحدَّد في «تفرّغي».");
+
   const admin = createAdminClient();
   const { error } = await admin.from("lesson_schedules").upsert(
     { tenant_id: tenantId, learner_id: learnerId, instructor_id: user.id, weekday, time_of_day: time, duration_minutes: duration, active: true },
-    { onConflict: "learner_id" },
+    { onConflict: "learner_id,weekday,time_of_day" },
   );
+  if (error) throw new Error(error.message);
+  revalidatePath(`/studio/students/${learnerId}`);
+}
+
+export async function removeLessonSlot(formData: FormData) {
+  const id = String(formData.get("slotId") ?? "");
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const { supabase } = await instructorCtx();
+  const { error } = await supabase.from("lesson_schedules").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath(`/studio/students/${learnerId}`);
 }
@@ -570,8 +591,8 @@ export async function generateLessonSessions(formData: FormData) {
   const learnerId = String(formData.get("learnerId") ?? "");
   const { supabase, user, tenantId } = await instructorCtx();
 
-  const { data: sched } = await supabase.from("lesson_schedules").select("weekday, time_of_day, duration_minutes, active").eq("learner_id", learnerId).maybeSingle();
-  if (!sched || !sched.active) throw new Error("حدّد الموعد الأسبوعيّ الثابت أولاً.");
+  const { data: slots } = await supabase.from("lesson_schedules").select("weekday, time_of_day, duration_minutes").eq("learner_id", learnerId).eq("active", true);
+  if (!slots || slots.length === 0) throw new Error("أضِف موعداً أسبوعياً واحداً على الأقلّ من ضمن تفرّغك.");
 
   const { data: plan } = await supabase.from("study_plans").select("items, status").eq("learner_id", learnerId).order("created_at", { ascending: false }).limit(1).maybeSingle();
   if (!plan || plan.status !== "approved") throw new Error("اعتمِد خطّةً دراسيةً أولاً.");
@@ -584,19 +605,27 @@ export async function generateLessonSessions(formData: FormData) {
 
   const { data: tenant } = await supabase.from("tenants").select("timezone").eq("id", tenantId).maybeSingle();
   const tz = tenant?.timezone ?? "Asia/Riyadh";
-  const [hh, mm] = String(sched.time_of_day).split(":").map(Number);
-  const luxonWd = sched.weekday === 0 ? 7 : sched.weekday; // luxon: 1=Mon..7=Sun
   const now = DateTime.now().setZone(tz);
-  let first = now.set({ hour: hh, minute: mm, second: 0, millisecond: 0 });
-  first = first.plus({ days: (luxonWd - first.weekday + 7) % 7 });
-  if (first <= now) first = first.plus({ weeks: 1 });
 
-  for (let k = 0; k < remaining.length; k++) {
-    const when = first.plus({ weeks: k }).toUTC().toISO();
+  // Build upcoming occurrences across ALL weekly slots, then assign lessons chronologically.
+  const weeksNeeded = Math.ceil(remaining.length / slots.length) + 1;
+  const occurrences: { dt: DateTime; duration: number }[] = [];
+  for (const s of slots) {
+    const [hh, mm] = String(s.time_of_day).split(":").map(Number);
+    const luxonWd = s.weekday === 0 ? 7 : s.weekday;
+    let first = now.set({ hour: hh, minute: mm, second: 0, millisecond: 0 });
+    first = first.plus({ days: (luxonWd - first.weekday + 7) % 7 });
+    if (first <= now) first = first.plus({ weeks: 1 });
+    for (let w = 0; w < weeksNeeded; w++) occurrences.push({ dt: first.plus({ weeks: w }), duration: s.duration_minutes });
+  }
+  occurrences.sort((a, b) => a.dt.toMillis() - b.dt.toMillis());
+
+  for (let k = 0; k < remaining.length && k < occurrences.length; k++) {
+    const occ = occurrences[k];
     const { it, i } = remaining[k];
     const { error } = await supabase.from("sessions").insert({
       tenant_id: tenantId, instructor_id: user.id, learner_id: learnerId,
-      scheduled_at: when, duration_minutes: sched.duration_minutes,
+      scheduled_at: occ.dt.toUTC().toISO(), duration_minutes: occ.duration,
       lesson_title: it.description, plan_item_index: i,
     });
     if (error && error.code !== "23P01" && error.code !== "23505") throw new Error(error.message); // skip taken slots
