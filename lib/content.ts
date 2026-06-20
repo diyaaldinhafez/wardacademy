@@ -207,21 +207,21 @@ export const landing = {
     plans: [
       {
         name: "Essential",
-        price: "€76",
+        price: "$76",
         cadence: "1 session a week",
         sessions: "4 sessions a month",
         featured: false,
       },
       {
         name: "Steady",
-        price: "€144",
+        price: "$144",
         cadence: "2 sessions a week",
         sessions: "8 sessions a month",
         featured: true,
       },
       {
         name: "Intensive",
-        price: "€204",
+        price: "$204",
         cadence: "3 sessions a week",
         sessions: "12 sessions a month",
         featured: false,

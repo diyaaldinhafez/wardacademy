@@ -222,21 +222,21 @@ const ar: Dict = {
       plans: [
         {
           name: "الأساسية",
-          price: "€76",
+          price: "$76",
           cadence: "جلسة أسبوعياً",
           sessions: "4 جلسات شهرياً",
           featured: false,
         },
         {
           name: "المنتظمة",
-          price: "€144",
+          price: "$144",
           cadence: "جلستان أسبوعياً",
           sessions: "8 جلسات شهرياً",
           featured: true,
         },
         {
           name: "المكثّفة",
-          price: "€204",
+          price: "$204",
           cadence: "3 جلسات أسبوعياً",
           sessions: "12 جلسة شهرياً",
           featured: false,
