@@ -426,6 +426,23 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                 {plan.status === "draft" ? "اعتمِد الخطّة — تصبح أهدافاً قابلةً للتدريس" : "مزامنة المنهاج — أضِف الدروس الجديدة كأهداف"}
               </SubmitButton>
             </form>
+            {plan.status === "draft" && (
+              <details style={{ borderTop: "1px solid var(--ink-100)", paddingTop: 8 }}>
+                <summary style={{ fontSize: 12, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>أو ولّد بالذكاء (يستبدل هذه المسودّة)</summary>
+                <p style={{ fontSize: 11.5, color: "var(--text-muted)", margin: "8px 0", lineHeight: 1.6 }}>ارفع <strong>فهرس المنهاج</strong> (صورة/PDF/نصّ) ليستخرجه الذكاء بدقّةٍ بلا تأليف.</p>
+                <form action={startPlanFromIndex} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
+                  <input type="hidden" name="learnerId" value={id} />
+                  <select name="track" defaultValue={plan.track === "school" ? "school" : "cefr"} className={sel} style={{ width: "auto", minHeight: 40 }}>
+                    <option value="cefr">CEFR</option>
+                    <option value="school">مدرسيّ</option>
+                  </select>
+                  <input name="grade" placeholder="الصفّ/المستوى" className={ctl} style={{ width: "auto", maxWidth: 120 }} />
+                  <input name="term" placeholder="الفصل" className={ctl} style={{ width: "auto", maxWidth: 110 }} />
+                  <input name="index" type="file" required accept="image/*,.pdf,.txt,.md,.csv" className={ctl} style={{ width: "auto", flex: 1, minWidth: 180 }} />
+                  <SubmitButton pendingText="…" className={btn("soft")}><Spark size={14} /> ولّد من الفهرس</SubmitButton>
+                </form>
+              </details>
+            )}
           </>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

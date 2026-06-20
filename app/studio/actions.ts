@@ -358,6 +358,7 @@ export async function startPlan(formData: FormData) {
   const scopeLabel = track === "school" ? [grade, term, "كتاب المدرسة"].filter(Boolean).join(" · ") : `المستوى ${level}`;
   const milestoneLabel = track === "school" ? `اختبار الفصل${term ? ` · ${term}` : ""}` : `تقييم المستوى عند إتمام ${level}`;
 
+  await supabase.from("study_plans").delete().eq("learner_id", learnerId).eq("status", "draft");
   const { error } = await supabase.from("study_plans").insert({
     tenant_id: profile.tenant_id,
     learner_id: learnerId,
@@ -863,6 +864,7 @@ export async function startPlanFromIndex(formData: FormData) {
   const scopeLabel = track === "school" ? [grade, term, "كتاب المدرسة"].filter(Boolean).join(" · ") : `المنهاج · ${level}`;
   const milestoneLabel = track === "school" ? `اختبار الفصل${term ? ` · ${term}` : ""}` : "تقييمٌ عند إتمام المنهاج";
 
+  await supabase.from("study_plans").delete().eq("learner_id", learnerId).eq("status", "draft");
   const { error } = await supabase.from("study_plans").insert({
     tenant_id: tenantId,
     learner_id: learnerId,
@@ -892,6 +894,7 @@ export async function createManualPlan(formData: FormData) {
   const level = track === "school" ? grade || "المنهاج" : "—";
   const scopeLabel = track === "school" ? [grade, term, "كتاب المدرسة"].filter(Boolean).join(" · ") : title;
   const milestoneLabel = track === "school" ? `اختبار الفصل${term ? ` · ${term}` : ""}` : "تقييمٌ عند إتمام المنهاج";
+  await supabase.from("study_plans").delete().eq("learner_id", learnerId).eq("status", "draft");
   const { error } = await supabase.from("study_plans").insert({
     tenant_id: tenantId, learner_id: learnerId, title, level, items: [], status: "draft",
     track, scope_label: scopeLabel, milestone_label: milestoneLabel, created_by: user.id,
