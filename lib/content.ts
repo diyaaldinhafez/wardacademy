@@ -29,7 +29,7 @@ export const landing = {
     title: "Your child's English journey, blooming step by step",
     sub: "We grow your child's English through a journey designed for them alone — the Ward Curriculum, measured by the global CEFR standard. A dedicated teacher in live 1:1 sessions, and a plan built from a real diagnosis of their level and goal. Ages 9–13.",
     note: "Free trial session · no commitment",
-    rating: "Loved by 1,000+ families",
+    rating: "Loved by 150+ families",
     peek: {
       student: "Layan",
     },
