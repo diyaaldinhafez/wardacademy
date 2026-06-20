@@ -733,3 +733,54 @@ export async function adminLogout() {
   await supabase.auth.signOut();
   redirect("/studio/login");
 }
+
+// — Intro/trial session availability (admin-owned, independent of any teacher) —
+
+/** Regenerate the bookable intro slots from the admin's intro availability rules. */
+export async function regenerateIntroSlots() {
+  const { supabase, user, profile } = await assertAdmin();
+  const { data: tenant } = await supabase.from("tenants").select("timezone, slot_break_minutes").eq("id", profile.tenant_id).maybeSingle();
+  const timezone = tenant?.timezone ?? "Asia/Riyadh";
+  const breakMinutes = tenant?.slot_break_minutes ?? 15;
+
+  const { data: rules } = await supabase.from("intro_availability_rules").select("id, weekday, start_time, end_time, slot_minutes").eq("active", true);
+  const mapped: Rule[] = (rules ?? []).map((r: { id: string; weekday: number; start_time: string; end_time: string; slot_minutes: number }) => ({
+    id: r.id, instructor_id: user.id, weekday: r.weekday, start_time: r.start_time, end_time: r.end_time, slot_minutes: r.slot_minutes,
+  }));
+  const desired = expandSlots({ rules: mapped, exceptionDates: new Set<string>(), timezone, horizonWeeks: HORIZON_WEEKS, breakMinutes });
+
+  const admin = createAdminClient();
+  if (desired.length) {
+    const rows = desired.map((d) => ({ tenant_id: profile.tenant_id, instructor_id: user.id, starts_at: d.starts_at, duration_minutes: d.duration_minutes, status: "open", source_rule_id: d.source_rule_id }));
+    const { error } = await admin.from("availability_slots").upsert(rows, { onConflict: "instructor_id,starts_at", ignoreDuplicates: true });
+    if (error) throw new Error(error.message);
+  }
+  const desiredEpochs = new Set(desired.map((d) => Date.parse(d.starts_at)));
+  const nowIso = new Date().toISOString();
+  const { data: existing } = await admin.from("availability_slots").select("id, starts_at").eq("instructor_id", user.id).eq("status", "open").gte("starts_at", nowIso);
+  const stale = (existing ?? []).filter((s: { id: string; starts_at: string }) => !desiredEpochs.has(Date.parse(s.starts_at))).map((s: { id: string }) => s.id);
+  if (stale.length) await admin.from("availability_slots").delete().in("id", stale);
+  revalidatePath("/admin/registrations", "layout");
+}
+
+export async function addIntroRule(formData: FormData) {
+  const weekday = Number(formData.get("weekday"));
+  const startTime = String(formData.get("startTime") ?? "");
+  const endTime = String(formData.get("endTime") ?? "");
+  const slotMinutes = Number(formData.get("slotMinutes") ?? 30);
+  if (Number.isNaN(weekday) || !startTime || !endTime) throw new Error("أكمِل بيانات الموعد.");
+  if (endTime <= startTime) throw new Error("وقت النهاية يجب أن يكون بعد البداية.");
+  const { supabase, profile } = await assertAdmin();
+  const { error } = await supabase.from("intro_availability_rules").insert({ tenant_id: profile.tenant_id, weekday, start_time: startTime, end_time: endTime, slot_minutes: slotMinutes });
+  if (error) throw new Error(error.message);
+  await regenerateIntroSlots();
+}
+
+export async function deleteIntroRule(formData: FormData) {
+  const id = String(formData.get("ruleId") ?? "");
+  const { supabase } = await assertAdmin();
+  await supabase.from("availability_slots").delete().eq("source_rule_id", id).eq("status", "open").gte("starts_at", new Date().toISOString());
+  const { error } = await supabase.from("intro_availability_rules").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  await regenerateIntroSlots();
+}

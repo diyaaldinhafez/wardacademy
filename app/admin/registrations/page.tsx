@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Card, Avatar } from "@/components/ward/ui";
+import { Card, Avatar, Badge } from "@/components/ward/ui";
 import PipelineStepper from "@/components/admin/PipelineStepper";
+import RuleForm from "@/components/admin/RuleForm";
+import AvailabilityMatrix from "@/components/availability/AvailabilityMatrix";
+import SubmitButton from "@/components/studio/SubmitButton";
+import { addIntroRule, deleteIntroRule, regenerateIntroSlots } from "@/app/admin/actions";
 import { labelOf } from "@/lib/enrollOptions";
+import { WEEKDAY_AR, sessionsPerRule } from "@/lib/availability";
 import { PIPELINE, computePipeline } from "@/lib/leads";
 import { fmtUTC } from "@/lib/datetime";
 
@@ -23,6 +28,9 @@ export default async function RegistrationsPage({
   const { data: slots } = await supabase.from("availability_slots").select("lead_id, starts_at, status");
   const { data: tests } = await supabase.from("lead_tests").select("lead_id, status, created_at").order("created_at", { ascending: false });
   const { data: intros } = await supabase.from("intro_reports").select("lead_id, status");
+  const { data: introRules } = await supabase.from("intro_availability_rules").select("id, weekday, start_time, end_time, slot_minutes").order("weekday");
+  const { data: introTenant } = await supabase.from("tenants").select("slot_break_minutes").maybeSingle();
+  const introBrk = introTenant?.slot_break_minutes ?? 15;
 
   const bookedByLead = new Map<string, string>();
   for (const s of (slots ?? []) as any[]) if (s.lead_id && s.status === "booked") bookedByLead.set(s.lead_id, s.starts_at);
@@ -52,6 +60,35 @@ export default async function RegistrationsPage({
 
   return (
     <>
+      {/* Intro/trial session availability — admin-owned, independent of any teacher */}
+      <Card style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+        <details>
+          <summary style={{ cursor: "pointer", fontSize: 14.5, fontWeight: 700, color: "var(--text-strong)", listStyle: "none", display: "flex", alignItems: "center", gap: 8 }}>
+            📅 مواعيد الجلسات التعريفية
+            <span style={{ fontSize: 12, fontWeight: 400, color: "var(--text-muted)" }}>(منفصلةٌ عن تفرّغ المعلّم — يحجزها الزائر في القمع)</span>
+          </summary>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
+            {(introRules ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا مواعيد بعد — أضِف نافذةً أدناه.</p>}
+            {(introRules ?? []).map((r: any) => (
+              <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid var(--ink-100)", paddingBottom: 8 }}>
+                <Badge tone="brand">{WEEKDAY_AR[r.weekday]}</Badge>
+                <span style={{ fontSize: 14, color: "var(--text-body)", fontVariantNumeric: "tabular-nums" }}>{String(r.start_time).slice(0, 5)} – {String(r.end_time).slice(0, 5)}</span>
+                <Badge tone="success">≈ {sessionsPerRule(r.start_time, r.end_time, r.slot_minutes, introBrk)} موعد/أسبوع</Badge>
+                <form action={deleteIntroRule} style={{ marginInlineStart: "auto" }}>
+                  <input type="hidden" name="ruleId" value={r.id} />
+                  <SubmitButton className="ward-btn ward-btn--danger ward-btn--sm">حذف</SubmitButton>
+                </form>
+              </div>
+            ))}
+            <RuleForm breakMinutes={introBrk} action={addIntroRule} />
+            <form action={regenerateIntroSlots}>
+              <SubmitButton pendingText="…" className="ward-btn ward-btn--ghost ward-btn--sm">حدِّث مواعيد الحجز</SubmitButton>
+            </form>
+            <AvailabilityMatrix rules={(introRules ?? []) as any} />
+          </div>
+        </details>
+      </Card>
+
       {/* Filter tabs */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {tabs.map((t) => {

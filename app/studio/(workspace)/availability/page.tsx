@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from "@/lib/supabase/server";
-import { tDeleteRule, tRegenerate, tAddRule } from "@/app/studio/availability-actions";
+import { tDeleteRule, tAddRule } from "@/app/studio/availability-actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import RuleForm from "@/components/admin/RuleForm";
 import AvailabilityMatrix from "@/components/availability/AvailabilityMatrix";
@@ -23,11 +23,8 @@ export default async function MyAvailabilityPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <Card style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <p style={{ fontSize: 13.5, color: "var(--text-muted)", flex: 1, minWidth: 220 }}>
-          حدّدي تفرّغك الأسبوعيّ بالمنطقة الزمنية <Badge tone="neutral">{tz}</Badge>؛ يُولِّد النظام مواعيد الحجز تلقائياً.
+          حدّدي تفرّغك الأسبوعيّ بالمنطقة الزمنية <Badge tone="neutral">{tz}</Badge>؛ منه تُجدوَل جلسات طلابك المنتظمة (من صفحة الطالب).
         </p>
-        <form action={tRegenerate}>
-          <SubmitButton pendingText="جارٍ التحديث…" className={btn("soft", "md")}>حدِّث المواعيد</SubmitButton>
-        </form>
       </Card>
 
       <Card style={{ display: "flex", flexDirection: "column", gap: 12 }}>
