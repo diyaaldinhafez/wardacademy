@@ -37,11 +37,23 @@ export default async function GuardianPage() {
   for (const a of (assess ?? []) as any[]) if (a.skill === "speaking") speakingByLearner.set(a.learner_id, { value: a.value, label: a.label });
   const { data: sessions } = await supabase
     .from("sessions")
-    .select("id, scheduled_at, duration_minutes, learner_id")
-    .order("scheduled_at");
-  const { data: reports } = await supabase.from("session_reports").select("session_id, summary");
+    .select("id, scheduled_at, duration_minutes, learner_id, lesson_title")
+    .order("scheduled_at", { ascending: false });
+  const { data: reports } = await supabase.from("session_reports").select("session_id, summary, strengths, improve");
   const reportBySession = new Map<string, any>();
   for (const r of (reports ?? []) as any[]) reportBySession.set(r.session_id, r);
+  // Completed assessments → the guardian sees the per-skill milestone result.
+  const { data: doneAssess } = await supabase
+    .from("assessments")
+    .select("learner_id, title, unit, score, max_score, result, completed_at")
+    .eq("status", "completed")
+    .order("completed_at", { ascending: false });
+  const assessByLearner = new Map<string, any[]>();
+  for (const a of (doneAssess ?? []) as any[]) {
+    const arr = assessByLearner.get(a.learner_id) ?? [];
+    arr.push(a);
+    assessByLearner.set(a.learner_id, arr);
+  }
   const sessionsByLearner = new Map<string, any[]>();
   for (const s of (sessions ?? []) as any[]) {
     const arr = sessionsByLearner.get(s.learner_id) ?? [];
@@ -120,19 +132,30 @@ export default async function GuardianPage() {
                   </SubmitButton>
                 </form>
               )}
-              {plan && (
-                <div className="mb-3 rounded-xl border border-brand-100 bg-brand-50/50 p-2">
-                  <p className="text-xs font-bold text-brand-700">الخطّة: {plan.title}</p>
-                  <ol className="mt-1 list-decimal pr-4 text-xs text-ink-soft">
-                    {((plan.items as any[]) ?? []).map((it: any, i: number) => (
-                      <li key={i}>
-                        {it.level ? `${it.level} · ` : ""}
-                        {it.description}
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              )}
+              {plan && (() => {
+                const units: { unit: string; lessons: any[] }[] = [];
+                for (const it of ((plan.items as any[]) ?? [])) {
+                  const u = (it.unit as string) || "الدروس";
+                  let g = units[units.length - 1];
+                  if (!g || g.unit !== u) { g = { unit: u, lessons: [] }; units.push(g); }
+                  g.lessons.push(it);
+                }
+                return (
+                  <div className="mb-3 rounded-xl border border-brand-100 bg-brand-50/50 p-3">
+                    <p className="mb-1 text-xs font-bold text-brand-700">الخطّة: {plan.title}</p>
+                    <div className="flex flex-col gap-2">
+                      {units.map((g, gi) => (
+                        <div key={gi}>
+                          <p className="text-xs font-bold text-brand-700">{g.unit}</p>
+                          <ol className="mt-0.5 list-decimal pr-4 text-xs text-ink-soft">
+                            {g.lessons.map((it: any, i: number) => <li key={i}>{it.description}</li>)}
+                          </ol>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
               {rows.length === 0 ? (
                 <p className="text-sm text-ink-soft">لا نشاط بعد — سيبدأ تقرير التفتّح بمجرّد أوّل واجب.</p>
               ) : (() => {
@@ -177,22 +200,52 @@ export default async function GuardianPage() {
                   </div>
                 );
               })()}
-              {(sessionsByLearner.get(c.learner_id) ?? []).length > 0 && (
+              {(assessByLearner.get(c.learner_id) ?? []).length > 0 && (
                 <div className="mt-3 border-t border-brand-100 pt-3">
-                  <p className="mb-1 text-xs font-bold text-ink-soft">الجلسات</p>
-                  <ul className="flex flex-col gap-1">
-                    {(sessionsByLearner.get(c.learner_id) ?? []).map((s: any) => {
-                      const r = reportBySession.get(s.id);
+                  <p className="mb-1 text-xs font-bold text-ink-soft">نتائج الاختبارات</p>
+                  <ul className="flex flex-col gap-2">
+                    {(assessByLearner.get(c.learner_id) ?? []).map((a: any, ai: number) => {
+                      const result = (a.result ?? {}) as Record<string, { correct: number; total: number }>;
+                      const pct = a.max_score ? Math.round((a.score / a.max_score) * 100) : 0;
                       return (
-                        <li key={s.id} className="text-sm text-ink">
-                          {fmtUTC(s.scheduled_at)}
-                          {r ? ` — ${r.summary}` : ""}
+                        <li key={ai} className="rounded-xl bg-brand-50/60 p-2.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-bold text-ink">{a.unit ?? a.title}</span>
+                            <span className="flex-shrink-0 text-sm font-bold text-leaf">{a.score}/{a.max_score} · {pct}%</span>
+                          </div>
+                          <div className="mt-1 flex flex-wrap gap-1.5">
+                            {Object.entries(result).map(([sk, v]) => (
+                              <span key={sk} className="rounded-full bg-white px-2 py-0.5 text-xs text-ink-soft">{SKILL_AR[sk as keyof typeof SKILL_AR] ?? sk}: <b className="text-brand-700">{v.correct}/{v.total}</b></span>
+                            ))}
+                          </div>
                         </li>
                       );
                     })}
                   </ul>
                 </div>
               )}
+              {(() => {
+                const withReport = (sessionsByLearner.get(c.learner_id) ?? []).filter((s: any) => reportBySession.get(s.id)).slice(0, 5);
+                if (withReport.length === 0) return null;
+                return (
+                  <div className="mt-3 border-t border-brand-100 pt-3">
+                    <p className="mb-1 text-xs font-bold text-ink-soft">تقارير الجلسات</p>
+                    <ul className="flex flex-col gap-2">
+                      {withReport.map((s: any) => {
+                        const r = reportBySession.get(s.id);
+                        return (
+                          <li key={s.id} className="rounded-xl bg-brand-50/60 p-2.5 text-sm">
+                            <p className="text-xs font-medium text-ink-soft">{fmtUTC(s.scheduled_at)}{s.lesson_title ? ` · ${s.lesson_title}` : ""}</p>
+                            <p className="mt-0.5 text-ink">{r.summary}</p>
+                            {r.strengths && <p className="text-ink-soft"><span className="font-medium">نقاط القوّة:</span> {r.strengths}</p>}
+                            {r.improve && <p className="text-ink-soft"><span className="font-medium">الخطوة القادمة:</span> {r.improve}</p>}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                );
+              })()}
             </li>
           );
         })}

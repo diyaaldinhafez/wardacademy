@@ -94,6 +94,14 @@ export default async function LearnPage() {
     assessmentQuestions = data ?? [];
   }
 
+  // Completed assessments → the child sees their result (per skill).
+  const { data: doneAssessments } = await supabase
+    .from("assessments")
+    .select("id, title, unit, score, max_score, result, completed_at")
+    .eq("learner_id", user.id)
+    .eq("status", "completed")
+    .order("completed_at", { ascending: false });
+
   const { data: studyPlan } = await supabase
     .from("study_plans")
     .select("title, level, items, track, scope_label, milestone_label")
@@ -296,6 +304,39 @@ export default async function LearnPage() {
           })}
         </ul>
       </section>
+
+      {/* Assessment results */}
+      {(doneAssessments ?? []).length > 0 && (
+        <section className="mt-8">
+          <h2 className={h2}>نتائج اختباراتي 🎯</h2>
+          <ul className="flex flex-col gap-3">
+            {(doneAssessments ?? []).map((a: any) => {
+              const result = (a.result ?? {}) as Record<string, { correct: number; total: number }>;
+              const pct = a.max_score ? Math.round((a.score / a.max_score) * 100) : 0;
+              return (
+                <li key={a.id} className={card}>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-bold text-ink">{a.unit ?? a.title}</p>
+                    <span className="flex-shrink-0 rounded-full bg-leaf/10 px-2.5 py-0.5 text-sm font-bold text-leaf">{a.score}/{a.max_score} · {pct}%</span>
+                  </div>
+                  <ul className="mt-2 flex flex-col gap-1.5">
+                    {Object.entries(result).map(([sk, v]) => {
+                      const p = v.total ? Math.round((v.correct / v.total) * 100) : 0;
+                      return (
+                        <li key={sk} className="flex items-center gap-2 text-sm">
+                          <span className="w-20 flex-shrink-0 text-ink">{SKILL_AR[sk as keyof typeof SKILL_AR] ?? sk}</span>
+                          <div className="h-2 flex-1 overflow-hidden rounded-full bg-brand-50"><div className="h-full rounded-full bg-brand" style={{ width: `${p}%` }} /></div>
+                          <span className="w-10 text-end font-bold text-brand-700" style={{ fontVariantNumeric: "tabular-nums" }}>{v.correct}/{v.total}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       {/* Homework */}
       <section>
