@@ -164,7 +164,7 @@ export const landing = {
       { name: "Speaking", value: 46, tag: "developing" },
       { name: "Reading", value: 90, tag: "9 of 10" },
       { name: "Writing", value: 38, tag: "3 of 8" },
-      { name: "Vocabulary", value: 60, tag: "24 of 40" },
+      { name: "Building Blocks", value: 60, tag: "24 of 40" },
     ],
   },
   session: {
