@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
 
 export type StudentTab = { key: string; label: string; badge?: number; content: ReactNode };
 
-/** Segmented tabs for the student detail page. Horizontally scrollable on phones. */
+/** Segmented tabs for the student detail page. Horizontally scrollable on phones. Opens on ?tab=<key> if present. */
 export default function StudentTabs({ tabs }: { tabs: StudentTab[] }) {
-  const [active, setActive] = useState(tabs[0]?.key);
+  const wanted = useSearchParams().get("tab");
+  const [active, setActive] = useState(tabs.some((t) => t.key === wanted) ? wanted! : tabs[0]?.key);
   const current = tabs.find((t) => t.key === active) ?? tabs[0];
 
   return (
