@@ -13,8 +13,8 @@ import { useEffect, useId, useRef, useState } from "react";
  * Pure CSS timeline lives in globals.css ("bloom story"). Used only here.
  */
 const PETAL =
-  "M50,50 C38,46 30,34 33,22 C35,12 42,6 50,2 C58,6 65,12 67,22 C70,34 62,46 50,50 Z";
-const ROT = [0, 72, 144, 216, 288];
+  "M50,50 C38.7,46.2 31.2,35 34,22.7 C35.9,12.4 42.5,6.8 50,3 C57.5,6.8 64.1,12.4 66,22.7 C68.8,35 61.3,46.2 50,50 Z";
+const ROT = [0, 90, 180, 270];
 
 /* burst particles: direction each flies on pop (in svg px) */
 const BURST: { dx: number; dy: number; r: number; fill: string }[] = [

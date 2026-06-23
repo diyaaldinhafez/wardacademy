@@ -1,7 +1,11 @@
-// Five petals = five skills (Design System §9b, fixed legal order).
-// The 5th petal is the language foundation (vocabulary + grammar / "Building
-// Blocks"); the internal key stays "vocabulary" for data continuity.
-export const SKILLS = ["listening", "speaking", "reading", "writing", "vocabulary"] as const;
+// Ward Academy progress model (presentation contract for the Bloom Map).
+// Source of truth for the curriculum/model: Ward_Curriculum_Master_Reference.md.
+// The design layer holds NO assessment logic — the platform computes the numbers
+// here and passes plain props (value 0–10, fraction 0..1, counts) to the components.
+
+// Four petals = four skills. Vocabulary is NOT a petal — it is a separate track
+// shown by VocabCounter (the language foundation: vocabulary + grammar).
+export const SKILLS = ["listening", "speaking", "reading", "writing"] as const;
 export type Skill = (typeof SKILLS)[number];
 
 export const SKILL_AR: Record<Skill, string> = {
@@ -9,7 +13,6 @@ export const SKILL_AR: Record<Skill, string> = {
   speaking: "المحادثة",
   reading: "القراءة",
   writing: "الكتابة",
-  vocabulary: "الأساس اللغوي",
 };
 
 export const SKILL_EN: Record<Skill, string> = {
@@ -17,8 +20,15 @@ export const SKILL_EN: Record<Skill, string> = {
   speaking: "Speaking",
   reading: "Reading",
   writing: "Writing",
-  vocabulary: "Building Blocks",
 };
+
+// Vocabulary — tracked and counted, never a petal.
+export const VOCAB_SKILL = "vocabulary" as const;
+export const VOCAB_AR = "الأساس اللغوي";
+export const VOCAB_EN = "Building Blocks";
+
+// Every objective skill that can exist in the data (the 4 petals + vocabulary).
+export const OBJECTIVE_SKILLS = [...SKILLS, VOCAB_SKILL] as const;
 
 // Speaking is filled by teacher assessment only (no auto pronunciation scoring).
 export const TEACHER_ASSESSED: Skill = "speaking";
@@ -31,16 +41,18 @@ export const SPEAKING_LEVELS: { value: number; label: string }[] = [
   { value: 1, label: "متمكّنة" },
 ];
 
-export type Petal = { name: Skill; ar: string; value: number };
+export type Petal = { name: Skill; ar: string; value: number; mastered: number; total: number };
 
 type ProgressLike = { attempts: number; correct: number; skill?: string | null };
 
 // An objective counts as "mastered" once attempted with a solid correct ratio.
-const isMastered = (p: ProgressLike) => p.attempts >= 1 && p.correct / Math.max(1, p.attempts) >= 0.6;
+export const isMastered = (p: { attempts: number; correct: number }) =>
+  p.attempts >= 1 && p.correct / Math.max(1, p.attempts) >= 0.6;
 
 /**
- * Each petal fills from the % of mastered objectives in that skill — from real
- * progress, never a fabricated percentage. Skills with no activity stay at 0.
+ * Four petal values (0..1) = the fraction of mastered objectives in each skill —
+ * real progress, never a fabricated percentage. Skills with no activity stay at 0.
+ * (Vocabulary is excluded — it is the VocabCounter track.)
  */
 export function petalValues(progress: ProgressLike[]): Petal[] {
   const by = new Map<string, { total: number; mastered: number }>();
@@ -52,16 +64,34 @@ export function petalValues(progress: ProgressLike[]): Petal[] {
     by.set(p.skill, b);
   }
   return SKILLS.map((s) => {
-    const b = by.get(s);
-    return { name: s, ar: SKILL_AR[s], value: b && b.total ? Math.round((b.mastered / b.total) * 100) : 0 };
+    const b = by.get(s) ?? { total: 0, mastered: 0 };
+    return { name: s, ar: SKILL_AR[s], value: b.total ? b.mastered / b.total : 0, mastered: b.mastered, total: b.total };
   });
 }
 
-// bud → balloon → bloom: three states of one unit (objective) progressing.
-export type BloomStage = "bud" | "balloon" | "bloom";
-export function unitStage(p: { attempts: number; correct: number }): BloomStage {
-  if (p.attempts === 0) return "bud";
-  const ratio = p.correct / Math.max(1, p.attempts);
-  if (ratio >= 0.8 && p.attempts >= 2) return "bloom";
-  return "balloon";
+/** Count of mastered vocabulary objectives — the VocabCounter value. */
+export function vocabMastered(progress: ProgressLike[]): number {
+  return progress.filter((p) => p.skill === VOCAB_SKILL && isMastered(p)).length;
+}
+
+// ————— The shared lifecycle scale (objective · unit · skill) —————
+// FOUR states on one continuous value 0–10 (computed by the platform, never here).
+export type BloomStage = "seed" | "bud" | "balloon" | "bloom";
+
+/**
+ * stageForValue — the ONE shared visual scale.
+ *   seed 0 – <2 · bud 2 – <5.5 · balloon 5.5 – <8.5 · bloom 8.5 – 10
+ */
+export function stageForValue(value: number): BloomStage {
+  const v = Number(value) || 0;
+  if (v < 2) return "seed";
+  if (v < 5.5) return "bud";
+  if (v < 8.5) return "balloon";
+  return "bloom";
+}
+
+/** Map an honest progress tally → the 0–10 lifecycle value (no attempts = seed). */
+export function valueOf(p: { attempts: number; correct: number }): number {
+  if (!p.attempts) return 0;
+  return Math.max(0, Math.min(10, (p.correct / p.attempts) * 10));
 }

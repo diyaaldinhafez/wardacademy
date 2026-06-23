@@ -179,7 +179,6 @@ const ar: Dict = {
         { name: "المحادثة", value: 46, tag: "قيد التطوّر" },
         { name: "القراءة", value: 90, tag: "9 من 10" },
         { name: "الكتابة", value: 38, tag: "3 من 8" },
-        { name: "الأساس اللغوي", value: 60, tag: "24 من 40" },
       ],
     },
     session: {

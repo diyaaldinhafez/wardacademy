@@ -19,8 +19,8 @@ import PlanBuilder from "@/components/studio/PlanBuilder";
 import ItemCard from "@/components/studio/ItemCard";
 import VideoCall from "@/components/VideoCall";
 import { Card, Badge, Avatar, AITrustBadge, Spark } from "@/components/ward/ui";
-import { petalValues, SKILL_AR, SKILLS, unitStage, SPEAKING_LEVELS } from "@/lib/skills";
-import { UnitBloom, FlowerProgress, ScopeChip } from "@/components/bloom/Bloom";
+import { petalValues, SKILL_AR, SKILLS, valueOf, vocabMastered, VOCAB_AR, SPEAKING_LEVELS } from "@/lib/skills";
+import { UnitBloom, FlowerProgress, ScopeChip, VocabCounter } from "@/components/bloom/Bloom";
 import { FORMAT_LABELS, ITEM_FORMATS, DIFFICULTIES } from "@/lib/items";
 import { WEEKDAY_AR } from "@/lib/availability";
 import { fmtUTC } from "@/lib/datetime";
@@ -68,8 +68,10 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
   const { data: prog } = await supabase.from("progress_records").select("attempts, correct, completions, objectives(description, level, skill, unit)").eq("learner_id", id);
   const rows = (prog ?? []) as any[];
-  const petals = petalValues(rows.map((r) => ({ attempts: r.attempts, correct: r.correct, skill: objOf(r.objectives).skill })));
-  const overall = petals.length ? Math.round(petals.reduce((a, p) => a + p.value, 0) / petals.length) : 0;
+  const skillProgress = rows.map((r) => ({ attempts: r.attempts, correct: r.correct, skill: objOf(r.objectives).skill }));
+  const petals = petalValues(skillProgress);
+  const vocabCount = vocabMastered(skillProgress);
+  const overall = petals.length ? Math.round((petals.reduce((a, p) => a + p.value, 0) / petals.length) * 100) : 0;
 
   // Bloom Map: per-skill honest meters (% of mastered objectives) + objectives grouped by unit.
   const isMastered = (r: any) => r.attempts >= 1 && r.correct / Math.max(1, r.attempts) >= 0.6;
@@ -458,11 +460,12 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         </Card>
       )}
       <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={secTitle}>المهارات الخمس</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        <div style={secTitle}>المهارات الأربع + الأساس اللغوي</div>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
           {petals.map((p) => (
-            <span key={p.name} style={{ fontSize: 11.5, color: "var(--text-muted)", background: "var(--surface-sunken)", borderRadius: 999, padding: "3px 10px" }}>{p.ar} {Math.round(p.value)}%</span>
+            <span key={p.name} style={{ fontSize: 11.5, color: "var(--text-muted)", background: "var(--surface-sunken)", borderRadius: 999, padding: "3px 10px" }}>{p.ar} {Math.round(p.value * 100)}%</span>
           ))}
+          <VocabCounter count={vocabCount} label={`${VOCAB_AR} — كلمة`} variant="chip" />
         </div>
       </Card>
     </div>
@@ -861,12 +864,15 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           {plan?.milestone_label && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>🎯 {plan.milestone_label}</span>}
         </div>
       )}
-      {/* Five-skill mastery, as honest meters (% of mastered objectives) */}
+      {/* Four-skill mastery (honest meters) + the separate vocabulary counter */}
       <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <FlowerProgress size={92} skills={skillStats.map((s) => ({ label: SKILL_AR[s.skill], value: skillValue(s.skill, s.mastered, s.total), detail: s.skill === "speaking" ? speakingAssess?.label ?? "—" : `${s.mastered}/${s.total}` }))} />
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <FlowerProgress size={92} skills={skillStats.map((s) => ({ label: SKILL_AR[s.skill], value: skillValue(s.skill, s.mastered, s.total), detail: s.skill === "speaking" ? speakingAssess?.label ?? "—" : `${s.mastered}/${s.total}` }))} />
+            <VocabCounter count={vocabCount} label={`${VOCAB_AR} — كلمة`} variant="chip" />
+          </div>
           <div style={{ flex: 1, minWidth: 200, display: "flex", flexDirection: "column", gap: 6 }}>
-            <div style={secTitle}>إتقان المهارات الخمس</div>
+            <div style={secTitle}>إتقان المهارات الأربع</div>
             {skillStats.map((s) => {
               if (s.skill === "speaking") {
                 return (
@@ -919,7 +925,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
               const o = objOf(r.objectives);
               return (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, borderBottom: i < urows.length - 1 ? "1px solid var(--ink-100)" : "none", paddingBottom: 6 }}>
-                  <UnitBloom stage={unitStage({ attempts: r.attempts, correct: r.correct })} size={30} />
+                  <UnitBloom value={valueOf({ attempts: r.attempts, correct: r.correct })} size={30} />
                   <span style={{ fontSize: 13, color: "var(--text-body)", flex: 1 }}>{o.description ?? "هدف"}</span>
                   {o.skill && <Badge tone="neutral">{SKILL_AR[o.skill as keyof typeof SKILL_AR] ?? o.skill}</Badge>}
                   <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-brand)", fontVariantNumeric: "tabular-nums" }}>{r.correct}/{r.attempts}</span>

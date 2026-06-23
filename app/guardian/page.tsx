@@ -3,8 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { addChild, grantConsent } from "./actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import WorkspaceHeader from "@/components/studio/WorkspaceHeader";
-import { FlowerProgress, ScopeChip } from "@/components/bloom/Bloom";
-import { SKILLS, SKILL_AR } from "@/lib/skills";
+import { FlowerProgress, ScopeChip, VocabCounter } from "@/components/bloom/Bloom";
+import { SKILLS, SKILL_AR, VOCAB_AR } from "@/lib/skills";
 import { fmtUTC } from "@/lib/datetime";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -164,6 +164,7 @@ export default async function GuardianPage() {
                   const inSkill = rows.filter((r: any) => first(r.objectives).skill === sk);
                   return { skill: sk, total: inSkill.length, mastered: inSkill.filter(isM).length };
                 });
+                const vocabCount = rows.filter((r: any) => first(r.objectives).skill === "vocabulary" && isM(r)).length;
                 const sp = speakingByLearner.get(c.learner_id);
                 const totalM = stats.reduce((a, s) => a + s.mastered, 0);
                 const totalT = stats.reduce((a, s) => a + s.total, 0);
@@ -172,7 +173,7 @@ export default async function GuardianPage() {
                 return (
                   <div className="rounded-2xl border border-brand-100 bg-white p-3">
                     <div className="flex items-center gap-4">
-                      <FlowerProgress size={96} skills={stats.map((s) => ({ label: SKILL_AR[s.skill], value: valOf(s), detail: s.skill === "speaking" ? sp?.label ?? "—" : `${s.mastered}/${s.total}` }))} />
+                      <FlowerProgress size={96} skills={stats.map((s) => ({ label: SKILL_AR[s.skill as keyof typeof SKILL_AR] ?? s.skill, value: valOf(s), detail: s.skill === "speaking" ? sp?.label ?? "—" : `${s.mastered}/${s.total}` }))} />
                       <div className="flex-1">
                         {plan?.scope_label && <div className="mb-1"><ScopeChip>{plan.scope_label}</ScopeChip></div>}
                         <p className="text-sm text-ink" style={{ lineHeight: 1.8 }}>
@@ -184,7 +185,7 @@ export default async function GuardianPage() {
                     <ul className="mt-2 flex flex-col">
                       {stats.map((s) => (
                         <li key={s.skill} className="flex items-center gap-2 py-1.5 text-sm" style={{ borderTop: "1px solid var(--ink-100)" }}>
-                          <span className="flex-1 font-medium text-ink">{SKILL_AR[s.skill]}</span>
+                          <span className="flex-1 font-medium text-ink">{SKILL_AR[s.skill as keyof typeof SKILL_AR] ?? s.skill}</span>
                           {s.skill === "speaking" ? (
                             <span className="font-bold text-brand-700" style={{ whiteSpace: "nowrap" }}>{sp?.label ? `تقييم المعلّم: ${sp.label}` : "بانتظار تقييم المعلّم"}</span>
                           ) : (
@@ -196,7 +197,10 @@ export default async function GuardianPage() {
                         </li>
                       ))}
                     </ul>
-                    <p className="mt-2 text-xs text-ink-soft">«الأساس اللغوي» = المفردات والقواعد. التحدّث يُقيّمه المعلّم.</p>
+                    <div className="mt-2 flex items-center justify-between gap-2 border-t border-brand-100 pt-2">
+                      <VocabCounter count={vocabCount} label={`${VOCAB_AR} — كلمة متقَنة`} variant="chip" />
+                    </div>
+                    <p className="mt-2 text-xs text-ink-soft">أربع بتلات = أربع مهارات. «{VOCAB_AR}» (المفردات والقواعد) عدّادٌ مستقلّ. التحدّث يُقيّمه المعلّم.</p>
                   </div>
                 );
               })()}

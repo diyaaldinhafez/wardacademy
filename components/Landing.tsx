@@ -22,11 +22,11 @@ const NAV_HREFS = ["#how", "#pricing", "#faq"];
 /* White flower for the final CTA (on the purple bloom gradient) */
 function WhiteFlower() {
   const PETAL =
-    "M50,50 C38,46 30,34 33,22 C35,12 42,6 50,2 C58,6 65,12 67,22 C70,34 62,46 50,50 Z";
+    "M50,50 C38.7,46.2 31.2,35 34,22.7 C35.9,12.4 42.5,6.8 50,3 C57.5,6.8 64.1,12.4 66,22.7 C68.8,35 61.3,46.2 50,50 Z";
   return (
     <svg viewBox="0 0 100 100" width="54" height="54" aria-hidden className="mx-auto">
       <g fill="#FFFFFF">
-        {[0, 72, 144, 216, 288].map((d) => (
+        {[0, 90, 180, 270].map((d) => (
           <path key={d} d={PETAL} transform={`rotate(${d} 50 50)`} />
         ))}
       </g>

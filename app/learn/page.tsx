@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { unitStage, SKILLS, SKILL_AR, type BloomStage } from "@/lib/skills";
-import { FlowerProgress, UnitBloom as BloomUnit, ScopeChip } from "@/components/bloom/Bloom";
+import { stageForValue, valueOf, vocabMastered, SKILLS, SKILL_AR, VOCAB_AR, type BloomStage } from "@/lib/skills";
+import { FlowerProgress, UnitBloom as BloomUnit, ScopeChip, VocabCounter } from "@/components/bloom/Bloom";
 import { submitPlacement, submitManualHomework, submitAssessment } from "./actions";
 import AnswerForm from "@/components/learn/AnswerForm";
 import SubmitButton from "@/components/studio/SubmitButton";
@@ -117,7 +117,8 @@ export default async function LearnPage() {
   }
 
   // Flower (5 skills) + the daily unit hero — from real progress.
-  const progRows = (prog ?? []).map((p: any) => ({ attempts: p.attempts, correct: p.correct, o: objOf(p), stage: unitStage(p) }));
+  const progRows = (prog ?? []).map((p: any) => ({ attempts: p.attempts, correct: p.correct, o: objOf(p), stage: stageForValue(valueOf(p)) }));
+  const vocabCount = vocabMastered((prog ?? []).map((p: any) => ({ attempts: p.attempts, correct: p.correct, skill: objOf(p).skill })));
   const inProgress = progRows.filter((p) => p.stage !== "bloom").sort((a, b) => b.attempts - a.attempts);
   const currentUnit = inProgress[0] ?? progRows[0];
 
@@ -257,10 +258,13 @@ export default async function LearnPage() {
         </div>
         <div className={card}>
           <div className="flex items-center gap-4">
-            <FlowerProgress size={104} skills={skillStats.map((s) => ({ label: SKILL_AR[s.skill], value: skillValue(s.skill, s.mastered, s.total), detail: s.skill === "speaking" ? speakingAssess?.label ?? "—" : `${s.mastered}/${s.total}` }))} />
+            <FlowerProgress size={104} skills={skillStats.map((s) => ({ label: SKILL_AR[s.skill as keyof typeof SKILL_AR] ?? s.skill, value: skillValue(s.skill, s.mastered, s.total), detail: s.skill === "speaking" ? speakingAssess?.label ?? "—" : `${s.mastered}/${s.total}` }))} />
             <p className="flex-1 text-sm text-ink-soft" style={{ lineHeight: 1.8 }}>
-              كل بتلةٍ مهارة — تنمو ببطءٍ كلّما أتقنتَ أهدافها. الأرقام صادقة: عدد الأهداف المُتقَنة من إجماليها.
+              أربع بتلات — أربع مهارات، تنمو كلّما أتقنتَ أهدافها. الأرقام صادقة: عدد الأهداف المُتقَنة من إجماليها.
             </p>
+          </div>
+          <div className="mt-3 flex items-center justify-between gap-3 border-t border-brand-100 pt-3">
+            <VocabCounter count={vocabCount} label={`${VOCAB_AR} — كلمة متقَنة`} variant="stat" />
           </div>
         </div>
       </section>
