@@ -319,18 +319,14 @@ export async function startPlacement(formData: FormData) {
 
 /**
  * Clear a learner's existing plan(s) before (re)creating one — so switching plan
- * methods (AI / manual) never leaves orphans. Objectives with no progress are
- * removed; ones that already carry progress are kept (their plan link is nulled).
+ * methods (AI / manual) never leaves orphans. (Progress now lives in the new
+ * catalog model — objective_progress — so plan objectives are pruned directly.)
  */
 async function clearLearnerPlans(supabase: Awaited<ReturnType<typeof createClient>>, learnerId: string) {
   const { data: plans } = await supabase.from("study_plans").select("id").eq("learner_id", learnerId);
   const ids = (plans ?? []).map((p: { id: string }) => p.id);
   if (!ids.length) return;
-  const { data: objs } = await supabase.from("objectives").select("id").in("plan_id", ids);
-  for (const o of (objs ?? []) as { id: string }[]) {
-    const { count } = await supabase.from("progress_records").select("id", { count: "exact", head: true }).eq("objective_id", o.id);
-    if (!count) await supabase.from("objectives").delete().eq("id", o.id);
-  }
+  await supabase.from("objectives").delete().in("plan_id", ids);
   await supabase.from("study_plans").delete().in("id", ids);
 }
 
@@ -419,12 +415,11 @@ export async function approvePlan(formData: FormData) {
     if (oErr) throw new Error(oErr.message);
   }
 
-  // Drop objectives whose lesson was removed — only if they carry no progress yet.
-  const orphans = (existingObjs ?? []).filter((o: { plan_lesson_id: string | null }) => o.plan_lesson_id && !currentIds.has(o.plan_lesson_id));
-  for (const o of orphans as { id: string }[]) {
-    const { count } = await supabase.from("progress_records").select("id", { count: "exact", head: true }).eq("objective_id", o.id);
-    if (!count) await supabase.from("objectives").delete().eq("id", o.id);
-  }
+  // Drop objectives whose lesson was removed from the plan.
+  const orphanIds = (existingObjs ?? [])
+    .filter((o: { id: string; plan_lesson_id: string | null }) => o.plan_lesson_id && !currentIds.has(o.plan_lesson_id))
+    .map((o: { id: string }) => o.id);
+  if (orphanIds.length) await supabase.from("objectives").delete().in("id", orphanIds);
 
   if (plan.status !== "approved") {
     const { error } = await supabase.from("study_plans").update({ status: "approved", approved_at: new Date().toISOString() }).eq("id", planId);
@@ -609,28 +604,31 @@ export async function removeAssessment(formData: FormData) {
 /** Generate an AI unit assessment from the unit's objectives → a DRAFT the teacher reviews. */
 export async function generateAssessmentTest(formData: FormData) {
   const learnerId = String(formData.get("learnerId") ?? "");
-  const unit = String(formData.get("unit") ?? "").trim();
+  const curriculumUnitId = String(formData.get("curriculumUnitId") ?? "").trim();
   const count = Math.min(Math.max(Number(formData.get("count") ?? 8) || 8, 4), 15);
-  if (!learnerId || !unit) throw new Error("اختاري الوحدة.");
+  if (!learnerId || !curriculumUnitId) throw new Error("اختاري الوحدة.");
   const { supabase, user, tenantId } = await instructorCtx();
 
-  // The learner's objectives for this unit (objectives carry plan_id + unit + skill).
-  const { data: plan } = await supabase.from("study_plans").select("id").eq("learner_id", learnerId).eq("status", "approved").order("created_at", { ascending: false }).limit(1).maybeSingle();
-  if (!plan) throw new Error("اعتمِدي خطّةً للطالب أولاً (تبويب «الخطّة»).");
-  const { data: objectives } = await supabase.from("objectives").select("description, skill, level").eq("plan_id", plan.id).eq("unit", unit);
-  if (!objectives?.length) throw new Error("لا أهداف في هذه الوحدة.");
+  // Catalog-driven: the test is built from a curriculum unit's objectives, and is
+  // tagged with curriculum_unit_id so its result feeds objective_assessments(auto).
+  const { data: cUnit } = await supabase.from("curriculum_units").select("unit_id, title_ar, level").eq("unit_id", curriculumUnitId).single();
+  if (!cUnit) throw new Error("وحدةٌ غير معروفة في المنهج.");
+  const { data: cObjectives } = await supabase
+    .from("curriculum_objectives").select("descriptor_ar, skill, cefr_level").eq("unit_id", curriculumUnitId).order("seq");
+  if (!cObjectives?.length) throw new Error("لا أهداف في هذه الوحدة.");
+  const unit = cUnit.title_ar as string;
 
   const { data: learner } = await supabase.from("profiles").select("full_name").eq("id", learnerId).single();
   const questions = await generateAssessment({
     learnerName: learner?.full_name ?? "الطالب",
     unit,
-    objectives: objectives as Array<{ description: string; skill?: string | null; level?: string | null }>,
+    objectives: (cObjectives as Array<{ descriptor_ar: string; skill?: string | null; cefr_level?: string | null }>).map((o) => ({ description: o.descriptor_ar, skill: o.skill, level: o.cefr_level })),
     count,
   });
 
   const { data: assessment, error } = await supabase
     .from("assessments")
-    .insert({ tenant_id: tenantId, learner_id: learnerId, title: `اختبار وحدة: ${unit}`, scope: "unit", unit, status: "draft", created_by: user.id })
+    .insert({ tenant_id: tenantId, learner_id: learnerId, title: `اختبار وحدة: ${unit}`, scope: "unit", unit, curriculum_unit_id: curriculumUnitId, status: "draft", created_by: user.id })
     .select("id")
     .single();
   if (error || !assessment) throw new Error(error?.message ?? "تعذّر إنشاء الاختبار.");

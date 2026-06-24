@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { valueForPercent } from "@/lib/progress/evidence";
+import { stageForValue, SKILLS } from "@/lib/skills";
 
 const norm = (s: string) => s.trim().toLowerCase();
 
@@ -117,7 +119,7 @@ export async function submitAssessment(formData: FormData) {
   if (!user) redirect("/studio/login");
 
   // Ownership: a learner can only see their own assessment (RLS).
-  const { data: a } = await supabase.from("assessments").select("id, status, learner_id").eq("id", assessmentId).single();
+  const { data: a } = await supabase.from("assessments").select("id, status, learner_id, tenant_id, curriculum_unit_id").eq("id", assessmentId).single();
   if (!a || a.learner_id !== user.id || a.status !== "ready") throw new Error("الاختبار غير متاح.");
 
   const admin = createAdminClient();
@@ -144,6 +146,25 @@ export async function submitAssessment(formData: FormData) {
     .from("assessments")
     .update({ status: "completed", score: correctTotal, max_score: total, result, completed_at: new Date().toISOString() })
     .eq("id", assessmentId);
+
+  // Auto evidence → the new model: each skill's % → percent key → value →
+  // objective_assessments(evidence='auto') for every catalog objective of
+  // (unit, skill). The DB trigger rolls it into the decaying average. Vocabulary
+  // has no curriculum objectives (separate track), so it is skipped.
+  if (a.curriculum_unit_id) {
+    const { data: catObjs } = await admin
+      .from("curriculum_objectives").select("objective_id, skill").eq("unit_id", a.curriculum_unit_id);
+    const rows: { tenant_id: string; student_id: string; objective_id: string; value: number; state: string; evidence: string }[] = [];
+    for (const skill of SKILLS) {
+      const s = bySkill.get(skill);
+      if (!s || s.total === 0) continue;
+      const value = valueForPercent((s.correct / s.total) * 100);
+      for (const o of (catObjs ?? []).filter((o) => o.skill === skill)) {
+        rows.push({ tenant_id: a.tenant_id, student_id: a.learner_id, objective_id: o.objective_id, value, state: stageForValue(value), evidence: "auto" });
+      }
+    }
+    if (rows.length) await admin.from("objective_assessments").insert(rows);
+  }
 
   revalidatePath("/learn");
 }

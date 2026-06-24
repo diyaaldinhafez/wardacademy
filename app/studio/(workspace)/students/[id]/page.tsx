@@ -74,6 +74,9 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const skillStats = bloom.skills;
   const lagging = bloom.skills.filter((s) => s.total > 0 && s.fraction < 0.5).map((s) => SKILL_AR[s.skill]);
   const startedUnits = bloom.startedUnits;
+  // Catalog units drive AI unit-test generation (auto evidence feeds the new model).
+  const { data: curriculumUnits } = await supabase
+    .from("curriculum_units").select("unit_id, level, unit_number, title_ar").order("level").order("unit_number");
 
   const { data: sessions } = await supabase
     .from("sessions")
@@ -144,7 +147,6 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       aqByAssessment.set(q.assessment_id, arr);
     }
   }
-  const planUnits: string[] = [...new Set(planItems.map((it: any) => (it.unit as string) || "").filter(Boolean))];
   const { data: lessonSlots } = await supabase.from("lesson_schedules").select("id, weekday, time_of_day, duration_minutes").eq("learner_id", id).order("weekday");
   const { data: availRules } = await supabase.from("availability_rules").select("weekday, start_time, end_time, slot_minutes").eq("active", true);
   const { data: tenantRow } = await supabase.from("tenants").select("slot_break_minutes").maybeSingle();
@@ -749,16 +751,14 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           <span style={secTitle}>ولّد اختبار وحدة بالذكاء</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}><Spark size={13} /> من أهداف الوحدة</span>
         </div>
-        {!plan ? (
-          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>اعتمِدي خطّةً دراسيةً أولاً (تبويب «الخطّة»).</p>
-        ) : planUnits.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا وحداتٍ في الخطّة بعد.</p>
+        {(curriculumUnits ?? []).length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>المنهج غير محمَّل بعد.</p>
         ) : (
           <form action={generateAssessmentTest} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
             <input type="hidden" name="learnerId" value={id} />
-            <select name="unit" required defaultValue="" className={sel} style={{ width: "auto", flex: 1, minWidth: 160, minHeight: 40 }}>
-              <option value="" disabled>اختاري الوحدة…</option>
-              {planUnits.map((u) => <option key={u} value={u}>{u}</option>)}
+            <select name="curriculumUnitId" required defaultValue="" className={sel} style={{ width: "auto", flex: 1, minWidth: 160, minHeight: 40 }}>
+              <option value="" disabled>اختاري وحدة المنهج…</option>
+              {(curriculumUnits ?? []).map((u: any) => <option key={u.unit_id} value={u.unit_id}>{u.level} · {u.title_ar}</option>)}
             </select>
             <select name="count" defaultValue="8" className={sel} style={{ width: "auto", minHeight: 40 }}>
               {[6, 8, 10, 12].map((n) => <option key={n} value={n}>{n} أسئلة</option>)}
@@ -766,7 +766,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             <SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}><Spark size={14} /> ولّد الاختبار</SubmitButton>
           </form>
         )}
-        <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>يُولِّد أسئلةً من أهداف الوحدة → تراجعينها وتعتمدينها → يؤدّيها الطالب من حسابه ويُصحَّح آلياً بنتيجةٍ لكلّ مهارة.</p>
+        <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>يُولِّد أسئلةً من أهداف وحدة المنهج → تراجعينها وتعتمدينها → يؤدّيها الطالب ويُصحَّح آلياً، فتُحرّك نتيجتُه قيمَ أهداف الوحدة (مفتاح النسبة).</p>
       </Card>
 
       {(assessments ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا اختبارات بعد.</p>}
