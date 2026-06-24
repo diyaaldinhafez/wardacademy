@@ -7,14 +7,15 @@ import HeroBloom from "./HeroBloom";
 import Spark from "./Spark";
 import Icon from "./Icon";
 import Button from "./ui/Button";
-import LangToggle from "./LangToggle";
+import LocaleSwitcher from "./LocaleSwitcher";
 import Reveal from "./Reveal";
 import ProductShowcase from "./ProductShowcase";
 import BloomReport from "./BloomReport";
 import TeacherDashboard from "./TeacherDashboard";
 import Outcomes from "./Outcomes";
 import StickyTrialBar from "./StickyTrialBar";
-import { useT } from "./LanguageProvider";
+import { useLocale } from "next-intl";
+import { useLandingMessages } from "./landingMessages";
 
 const ENROLL = "/enroll";
 const NAV_HREFS = ["#how", "#pricing", "#faq"];
@@ -136,13 +137,15 @@ function HeroFlower() {
 }
 
 export default function Landing() {
-  const t = useT();
-  const L = t.landing;
+  // Locale-driven (cookie LOCALE). useLandingMessages() returns the active-locale
+  // landing object, so the existing L.x.y access carries over unchanged.
+  const locale = useLocale();
+  const L = useLandingMessages();
   const shell = "mx-auto w-full max-w-[1080px] px-6";
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div dir={locale === "ar" ? "rtl" : "ltr"} lang={locale} className="min-h-screen bg-white">
       {/* ---- Nav ---- */}
       <div className="sticky top-0 z-30 border-b border-transparent bg-white/85 backdrop-blur">
         <div className={shell}>
@@ -161,7 +164,7 @@ export default function Landing() {
             </div>
 
             <div className="ms-auto flex items-center gap-3">
-              <LangToggle />
+              <LocaleSwitcher />
               <Link href="/studio/login" className="hidden text-sm font-semibold text-ink-soft hover:text-brand sm:inline">
                 {L.login}
               </Link>

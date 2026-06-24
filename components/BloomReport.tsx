@@ -2,7 +2,7 @@
 
 import Icon from "./Icon";
 import Reveal from "./Reveal";
-import { useT } from "./LanguageProvider";
+import { useLandingMessages } from "./landingMessages";
 
 /**
  * The Bloom Report — the brand's signature progress visual, shown as the
@@ -24,7 +24,7 @@ function Sprout() {
 }
 
 export default function BloomReport() {
-  const L = useT().landing;
+  const L = useLandingMessages();
   const r = L.bloomReport;
   const overall = Math.round(
     r.skills.reduce((sum, s) => sum + s.value, 0) / r.skills.length,

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Reveal from "./Reveal";
-import { useT } from "./LanguageProvider";
+import { useLandingMessages } from "./landingMessages";
 
 /**
  * "Inside a live session" — a look at the actual lesson screen (flashcards, the
@@ -10,7 +10,7 @@ import { useT } from "./LanguageProvider";
  * is self-contained, so it's shown clean in a simple framed card.
  */
 export default function SessionScene() {
-  const s = useT().landing.session;
+  const s = useLandingMessages().session;
   return (
     <section id="tour" className="mx-auto w-full max-w-[1080px] px-6 pt-16">
       <Reveal className="text-center">

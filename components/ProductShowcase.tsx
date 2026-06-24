@@ -2,7 +2,7 @@
 
 import Icon from "./Icon";
 import Reveal from "./Reveal";
-import { useT } from "./LanguageProvider";
+import { useLandingMessages } from "./landingMessages";
 
 /**
  * "A peek inside" — the parent app and the student app, designed as detailed,
@@ -10,7 +10,7 @@ import { useT } from "./LanguageProvider";
  * no full names. Bilingual via the screens copy in content.ts / i18n.ts.
  */
 export default function ProductShowcase() {
-  const L = useT().landing;
+  const L = useLandingMessages();
   const s = L.showcase;
 
   return (
@@ -135,7 +135,7 @@ function MiniBloom({ className = "h-14 w-14" }: { className?: string }) {
 /* ---- Parent app ------------------------------------------------------ */
 
 function ParentScreen() {
-  const p = useT().landing.screens.parent;
+  const p = useLandingMessages().screens.parent;
   return (
     <div className="grid gap-3 bg-gradient-to-b from-brand-50/70 to-white p-3.5 pt-7 text-start">
       <div className="flex items-start justify-between gap-2">
@@ -197,7 +197,7 @@ function ChildTab({ name, active }: { name: string; active?: boolean }) {
 /* ---- Student app ----------------------------------------------------- */
 
 function StudentScreen() {
-  const s = useT().landing.screens.student;
+  const s = useLandingMessages().screens.student;
   return (
     <div className="grid gap-3 bg-gradient-to-b from-brand-50/70 to-white p-3.5 pt-7 text-start">
       <div className="flex items-start justify-between gap-2">

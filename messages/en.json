@@ -540,7 +540,7 @@
         "flowerDesc": "The big picture — grows as you finish quests this season.",
         "streak": "7-day streak",
         "moreTitle": "More quests",
-        "moreItem": "Speak: My favourite place",
+        "moreItem": "Speak: My favorite place",
         "moreNote": "Record 1 minute · Ms. Sara will listen",
         "moreWhen": "Tomorrow"
       },
@@ -612,7 +612,7 @@
         "WhatsApp updates from the teacher",
         "Cancel anytime — no long contracts"
       ],
-      "note": "Prices in euro · No card needed for the trial",
+      "note": "Prices in USD · No card needed for the trial",
       "plans": [
         { "name": "Essential", "price": "$76", "cadence": "1 session a week", "sessions": "4 sessions a month", "featured": false },
         { "name": "Steady", "price": "$144", "cadence": "2 sessions a week", "sessions": "8 sessions a month", "featured": true },

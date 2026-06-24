@@ -1,14 +1,14 @@
 "use client";
 
 import Reveal from "./Reveal";
-import { useT } from "./LanguageProvider";
+import { useLandingMessages } from "./landingMessages";
 
 /**
  * Outcomes band — calm social-proof stats (placeholder figures for now).
  * Soft gradient panel, bento-style grid.
  */
 export default function Outcomes() {
-  const L = useT().landing;
+  const L = useLandingMessages();
   const o = L.outcomes;
   return (
     <section id="outcomes" className="mx-auto w-full max-w-[1080px] px-6 pt-16">

@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Button from "./ui/Button";
-import { useT } from "./LanguageProvider";
+import { useLandingMessages } from "./landingMessages";
 
 /**
  * Sticky mobile CTA — appears after the user scrolls past the hero, keeping
  * "Book a free trial" one tap away. Mobile only; hidden on larger screens.
  */
 export default function StickyTrialBar() {
-  const L = useT().landing;
+  const L = useLandingMessages();
   const [show, setShow] = useState(false);
 
   useEffect(() => {

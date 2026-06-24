@@ -3,7 +3,7 @@
 import FlowerMark from "./FlowerMark";
 import Spark from "./Spark";
 import Icon from "./Icon";
-import { useT } from "./LanguageProvider";
+import { useLandingMessages } from "./landingMessages";
 
 /**
  * Teacher dashboard mockup (browser frame), modelled on the Claude Design ref.
@@ -13,8 +13,9 @@ import { useT } from "./LanguageProvider";
  * First names only.
  */
 export default function TeacherDashboard() {
-  const tr = useT().landing.screens.teacher;
-  const brand = useT().landing.brand;
+  const messages = useLandingMessages();
+  const tr = messages.screens.teacher;
+  const brand = messages.brand;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-ink/10 bg-white shadow-ward-2">
