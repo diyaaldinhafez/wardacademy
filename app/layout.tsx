@@ -4,7 +4,6 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 import "./ward.css";
-import LanguageProvider from "@/components/LanguageProvider";
 
 // English body — Nunito (clean, friendly)
 const nunito = Nunito({
@@ -58,23 +57,23 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // next-intl: the active locale (LOCALE cookie, default en) + its messages, so
-  // Server AND Client Components can translate. Additive — the html lang/dir and
-  // the legacy LanguageProvider are unchanged here; per-surface migration takes
-  // over dir as each surface moves to next-intl.
+  // next-intl is the single i18n system: the active locale (LOCALE cookie,
+  // default en) + its messages drive both Server and Client Components. The root
+  // html lang/dir follow the locale (English-first → ltr); each surface still
+  // owns its own dir container (forced-en on child/studio/admin, locale-driven
+  // on the parent-facing surfaces).
   const locale = await getLocale();
   const messages = await getMessages();
   return (
-    // Arabic is the default; LanguageProvider updates lang/dir at runtime.
     <html
-      lang="ar"
-      dir="rtl"
+      lang={locale}
+      dir={locale === "ar" ? "rtl" : "ltr"}
       suppressHydrationWarning
       className={`${nunito.variable} ${baloo.variable} ${plexArabic.variable} h-full antialiased`}
     >
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-cream text-ink">
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <LanguageProvider>{children}</LanguageProvider>
+          {children}
         </NextIntlClientProvider>
       </body>
     </html>
