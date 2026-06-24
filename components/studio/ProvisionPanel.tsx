@@ -10,13 +10,10 @@ export default function ProvisionPanel({ leadId, guardianPhone }: { leadId: stri
 
   if (state?.guardian && state?.student) {
     const phone = (guardianPhone ?? "").replace(/[^0-9]/g, "");
-    // PARENT-FACING invite message → kept Arabic (the guardian reads Arabic);
-    // bilingualised in the comms surface (plan surface 6). NOT internal-admin copy.
-    const msg =
-      `أهلاً بك في أكاديمية وَرد! جهّزنا حسابيكما. عيّن كلمة المرور والدخول عبر الروابط:\n\n` +
-      `وليّ الأمر (${state.guardian.email}):\n${state.guardian.link}\n\n` +
-      `الطالب:\n${state.student.link}`;
-    const wa = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : "";
+    // PARENT-FACING invite text is built server-side in the guardian's language
+    // (provisionAccounts → state.inviteMessage); this client just links to it.
+    const msg = state.inviteMessage ?? "";
+    const wa = phone && msg ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : "";
     return (
       <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 text-sm">
         <p className="mb-2 font-semibold text-emerald-800">{t("provisioned")}</p>

@@ -135,7 +135,7 @@ export async function approveLeadTestAction(formData: FormData) {
  */
 export async function provisionAccounts(
   _prev:
-    | { error?: string; guardian?: { email: string; link: string }; student?: { email: string; link: string } }
+    | { error?: string; guardian?: { email: string; link: string }; student?: { email: string; link: string }; inviteMessage?: string }
     | undefined,
   formData: FormData,
 ) {
@@ -200,7 +200,19 @@ export async function provisionAccounts(
   await admin.from("leads").update({ status: "converted", converted_learner_id: s.user.id }).eq("id", leadId);
   await logEvent(supabase, profile, leadId, "Accounts provisioned");
   revalidatePath(`/admin/registrations/${leadId}`);
-  return { guardian: { email: lead.guardian_email, link: guardianLink }, student: { email: sEmail, link: studentLink } };
+
+  // The WhatsApp invite text is built here in the GUARDIAN's language (not the
+  // admin's forced-en UI), so ProvisionPanel renders it without a client locale.
+  const inviteLocale = lead.guardian_locale === "en" ? "en" : "ar";
+  const twa = await getTranslations({ locale: inviteLocale, namespace: "comms.whatsapp.invite" });
+  const inviteMessage =
+    `${twa("intro")}\n\n${twa("guardianLabel")} (${lead.guardian_email}):\n${guardianLink}\n\n${twa("studentLabel")}:\n${studentLink}`;
+
+  return {
+    guardian: { email: lead.guardian_email, link: guardianLink },
+    student: { email: sEmail, link: studentLink },
+    inviteMessage,
+  };
 }
 
 /**

@@ -134,11 +134,17 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   }
   // Guardian WhatsApp (leads is admin-gated by RLS; this learner is already authorised, so read the phone via service-role).
   let guardianPhone: string | null = null;
+  let guardianLocale = "ar"; // parent-facing WhatsApp goes out in the guardian's language (fallback Arabic).
   {
     const admin = createAdminClient();
-    const { data: leadRow } = await admin.from("leads").select("guardian_phone").eq("converted_learner_id", id).maybeSingle();
+    const { data: leadRow } = await admin.from("leads").select("guardian_phone, guardian_locale").eq("converted_learner_id", id).maybeSingle();
     guardianPhone = (leadRow?.guardian_phone ?? "").replace(/\D/g, "") || null;
+    if (leadRow?.guardian_locale === "en") guardianLocale = "en";
   }
+  // Parent-locale translators for the WhatsApp messages (NOT the teacher's forced-en UI).
+  const twa = await getTranslations({ locale: guardianLocale, namespace: "comms.whatsapp" });
+  const tcwa = await getTranslations({ locale: guardianLocale, namespace: "common" });
+  const waSkillLabel = (sk: string) => (["listening", "speaking", "reading", "writing"].includes(sk) ? tcwa(`skills.${sk}`) : sk === "vocabulary" ? tcwa("vocab.label") : sk);
 
   const { data: assessments } = await supabase.from("assessments").select("id, title, scope, status, score, max_score, notes, scheduled_for, completed_at, unit, result").eq("learner_id", id).order("created_at", { ascending: false });
   // Questions for DRAFT assessments, so the teacher can review before approving.
@@ -293,16 +299,16 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     label: t(`reportFields.${nameKey}.label`),
     opts: t.raw(`reportFields.${nameKey}.opts`) as string[],
   }));
-  // Parent-facing WhatsApp template — English-first default; the bilingual (Arabic)
-  // layer comes in the comms surface (plan surface 6). Interpolated values
-  // (report.summary/strengths/improve) are the AI-authored content, left as-is.
+  // Parent-facing WhatsApp template — rendered in the guardian's language (twa),
+  // not the teacher's forced-en UI. Interpolated values (report.summary/strengths/
+  // improve) are the AI-authored content, left as-is.
   const reportWaLink = (s: any, report: any) => {
     if (!guardianPhone) return null;
     const text =
-      `*${name} — ${t("report.title")}*\n${fmtUTC(s.scheduled_at)}${s.lesson_title ? ` — ${s.lesson_title}` : ""}\n\n${report.summary}` +
-      (report.strengths ? `\n\n${t("report.strengthsPlaceholder")}: ${report.strengths}` : "") +
-      (report.improve ? `\n${t("report.nextStepPlaceholder")}: ${report.improve}` : "") +
-      `\n\n${tc("appName")}`;
+      `*${name} — ${twa("report.title")}*\n${fmtUTC(s.scheduled_at)}${s.lesson_title ? ` — ${s.lesson_title}` : ""}\n\n${report.summary}` +
+      (report.strengths ? `\n\n${twa("report.strengths")}: ${report.strengths}` : "") +
+      (report.improve ? `\n${twa("report.nextStep")}: ${report.improve}` : "") +
+      `\n\n${tcwa("appName")}`;
     return `https://wa.me/${guardianPhone}?text=${encodeURIComponent(text)}`;
   };
 
@@ -744,8 +750,8 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const assessmentWaLink = (a: any, result: Record<string, { correct: number; total: number }>) => {
     if (!guardianPhone) return null;
     const pct = a.max_score ? Math.round((a.score / a.max_score) * 100) : 0;
-    const skillLines = Object.entries(result).map(([sk, v]) => `• ${skillLabel(sk)}: ${v.correct}/${v.total}`).join("\n");
-    const text = `*${a.title}*\n${name}\n\n${a.score}/${a.max_score} (${pct}%)\n${skillLines}\n\n${tc("appName")}`;
+    const skillLines = Object.entries(result).map(([sk, v]) => `• ${waSkillLabel(sk)}: ${v.correct}/${v.total}`).join("\n");
+    const text = `*${a.title}*\n${name}\n\n${a.score}/${a.max_score} (${pct}%)\n${skillLines}\n\n${tcwa("appName")}`;
     return `https://wa.me/${guardianPhone}?text=${encodeURIComponent(text)}`;
   };
 

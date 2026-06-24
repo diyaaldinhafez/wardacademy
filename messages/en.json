@@ -760,6 +760,17 @@
         "button": "Set password and sign in",
         "fallbackNote": "If the button doesn't work, copy this link:"
       }
+    },
+    "whatsapp": {
+      "report": { "title": "Lesson report", "strengths": "Strengths", "nextStep": "Next step" },
+      "test": "Your child's placement test: ",
+      "book": "Book your child's free trial session: ",
+      "payment": "Payment link to complete your child's registration at Ward Academy:",
+      "invite": {
+        "intro": "Welcome to Ward Academy! Both accounts are ready. Set the password and sign in via the links below:",
+        "guardianLabel": "Guardian",
+        "studentLabel": "Student"
+      }
     }
   },
   "guardian": {

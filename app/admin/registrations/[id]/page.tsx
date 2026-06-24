@@ -111,11 +111,13 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
   const phone = (lead.guardian_phone ?? "").replace(/[^0-9]/g, "");
   const shareLink = test?.share_token ? `${SITE_URL}/t/${test.share_token}` : "";
-  // PARENT-FACING WhatsApp message text → kept Arabic (the guardian reads Arabic);
-  // made bilingual in the comms surface (plan surface 6). NOT internal-admin copy.
-  const waTest = phone && shareLink ? `https://wa.me/${phone}?text=${encodeURIComponent("اختبار تحديد المستوى لطفلك: " + shareLink)}` : "";
+  // PARENT-FACING WhatsApp text → rendered in the guardian's language (twa), not
+  // the admin's forced-en UI. Fallback Arabic when guardian_locale is absent.
+  const guardianLocale = lead.guardian_locale === "en" ? "en" : "ar";
+  const twa = await getTranslations({ locale: guardianLocale, namespace: "comms.whatsapp" });
+  const waTest = phone && shareLink ? `https://wa.me/${phone}?text=${encodeURIComponent(twa("test") + shareLink)}` : "";
   const bookUrl = lead.book_token ? `${SITE_URL}/book/${lead.book_token}` : "";
-  const waBook = phone && bookUrl ? `https://wa.me/${phone}?text=${encodeURIComponent("احجز جلسة طفلك التعريفية المجانية: " + bookUrl)}` : "";
+  const waBook = phone && bookUrl ? `https://wa.me/${phone}?text=${encodeURIComponent(twa("book") + bookUrl)}` : "";
 
   const pipeline = computePipeline({
     hasBooking: !!slot,
@@ -403,8 +405,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             </form>
           )}
           {phone && (
-            /* PARENT-FACING WhatsApp payload kept Arabic (surface 6); the button is internal */
-            <a href={`https://wa.me/${phone}?text=${encodeURIComponent("رابط الدفع لإتمام تسجيل طفلكم في أكاديمية وَرد:")}`} target="_blank" rel="noopener noreferrer" className={btn("ghost")}>
+            /* PARENT-FACING WhatsApp payload in the guardian's language (twa); the button label is internal-en */
+            <a href={`https://wa.me/${phone}?text=${encodeURIComponent(twa("payment"))}`} target="_blank" rel="noopener noreferrer" className={btn("ghost")}>
               {t("sendPaymentWa")}
             </a>
           )}
