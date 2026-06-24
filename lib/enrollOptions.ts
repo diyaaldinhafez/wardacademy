@@ -168,3 +168,59 @@ export const LABELS_EN: Record<string, Record<string, string>> = {
 };
 export const labelOfEn = (group: keyof typeof LABELS_EN, value?: string | null) =>
   value ? LABELS_EN[group]?.[value] ?? value : "—";
+
+// English suggestion lists for the bilingual enrolment form (parent surface 5).
+// Same order as the Arabic lists so the two stay easy to diff.
+export const COUNTRIES_EN: string[] = [
+  "Saudi Arabia", "United Arab Emirates", "Kuwait", "Qatar", "Bahrain", "Oman", "Yemen", "Jordan", "Lebanon", "Syria",
+  "Palestine", "Iraq", "Egypt", "Sudan", "Libya", "Tunisia", "Algeria", "Morocco", "Mauritania", "Somalia",
+  "Djibouti", "Comoros", "Iran", "Turkey",
+  "Germany", "France", "Italy", "Spain", "Portugal", "Netherlands", "Belgium", "Sweden", "Norway", "Denmark",
+  "Finland", "Iceland", "United Kingdom", "Ireland", "Switzerland", "Austria", "Greece", "Poland", "Czechia", "Slovakia",
+  "Hungary", "Romania", "Bulgaria", "Croatia", "Serbia", "Slovenia", "Bosnia and Herzegovina", "Montenegro", "North Macedonia", "Albania",
+  "Kosovo", "Ukraine", "Russia", "Belarus", "Lithuania", "Latvia", "Estonia", "Malta", "Cyprus", "Luxembourg",
+  "Monaco", "Liechtenstein", "Andorra", "San Marino", "Moldova",
+  "United States", "Canada", "Mexico", "Brazil", "Argentina", "Chile", "Colombia", "Peru", "Venezuela", "Ecuador",
+  "Bolivia", "Paraguay", "Uruguay", "Guyana", "Suriname", "Panama", "Costa Rica", "Nicaragua", "Honduras", "El Salvador",
+  "Guatemala", "Belize", "Cuba", "Jamaica", "Haiti", "Dominican Republic", "Trinidad and Tobago", "Bahamas", "Barbados",
+  "China", "Japan", "South Korea", "North Korea", "India", "Pakistan", "Bangladesh", "Sri Lanka", "Nepal", "Bhutan",
+  "Maldives", "Afghanistan", "Kazakhstan", "Uzbekistan", "Turkmenistan", "Tajikistan", "Kyrgyzstan", "Azerbaijan", "Armenia", "Georgia",
+  "Thailand", "Vietnam", "Cambodia", "Laos", "Myanmar", "Malaysia", "Singapore", "Indonesia", "Philippines", "Brunei",
+  "Timor-Leste", "Mongolia",
+  "Nigeria", "Ethiopia", "Kenya", "Tanzania", "Uganda", "Ghana", "Senegal", "Côte d'Ivoire", "Cameroon", "South Africa",
+  "Zimbabwe", "Zambia", "Angola", "Mozambique", "DR Congo", "Congo", "Gabon", "Chad", "Niger", "Mali",
+  "Burkina Faso", "Guinea", "Sierra Leone", "Liberia", "Togo", "Benin", "Rwanda", "Burundi", "Madagascar", "Mauritius",
+  "Malawi", "Botswana", "Namibia", "Eritrea", "South Sudan", "Cape Verde", "Gambia", "Guinea-Bissau", "Equatorial Guinea",
+  "Australia", "New Zealand", "Fiji", "Papua New Guinea",
+  "Other country",
+];
+
+export const NATIONALITIES_EN: string[] = [
+  "Saudi", "Emirati", "Kuwaiti", "Qatari", "Bahraini", "Omani", "Yemeni", "Jordanian", "Lebanese", "Syrian",
+  "Palestinian", "Iraqi", "Egyptian", "Sudanese", "Libyan", "Tunisian", "Algerian", "Moroccan", "Mauritanian", "Somali",
+  "Djiboutian", "Comoran", "Iranian", "Turkish",
+  "German", "French", "Italian", "Spanish", "Portuguese", "Dutch", "Belgian", "Swedish", "Norwegian", "Danish",
+  "Finnish", "Icelandic", "British", "Irish", "Swiss", "Austrian", "Greek", "Polish", "Czech", "Slovak",
+  "Hungarian", "Romanian", "Bulgarian", "Croatian", "Serbian", "Slovenian", "Bosnian", "Montenegrin", "Macedonian", "Albanian",
+  "Kosovar", "Ukrainian", "Russian", "Belarusian", "Lithuanian", "Latvian", "Estonian", "Maltese", "Cypriot", "Luxembourgish",
+  "Monégasque", "Liechtensteiner", "Andorran", "Sammarinese", "Moldovan",
+  "American", "Canadian", "Mexican", "Brazilian", "Argentine", "Chilean", "Colombian", "Peruvian", "Venezuelan", "Ecuadorian",
+  "Bolivian", "Paraguayan", "Uruguayan", "Guyanese", "Surinamese", "Panamanian", "Costa Rican", "Nicaraguan", "Honduran", "Salvadoran",
+  "Guatemalan", "Belizean", "Cuban", "Jamaican", "Haitian", "Dominican", "Trinidadian", "Bahamian", "Barbadian",
+  "Chinese", "Japanese", "South Korean", "North Korean", "Indian", "Pakistani", "Bangladeshi", "Sri Lankan", "Nepali", "Bhutanese",
+  "Maldivian", "Afghan", "Kazakh", "Uzbek", "Turkmen", "Tajik", "Kyrgyz", "Azerbaijani", "Armenian", "Georgian",
+  "Thai", "Vietnamese", "Cambodian", "Laotian", "Burmese", "Malaysian", "Singaporean", "Indonesian", "Filipino", "Bruneian",
+  "Timorese", "Mongolian",
+  "Nigerian", "Ethiopian", "Kenyan", "Tanzanian", "Ugandan", "Ghanaian", "Senegalese", "Ivorian", "Cameroonian", "South African",
+  "Zimbabwean", "Zambian", "Angolan", "Mozambican", "Congolese", "Gabonese", "Chadian", "Nigerien", "Malian", "Burkinabè",
+  "Guinean", "Sierra Leonean", "Liberian", "Togolese", "Beninese", "Rwandan", "Burundian", "Malagasy", "Mauritian", "Malawian",
+  "Botswanan", "Namibian", "Eritrean", "South Sudanese", "Cape Verdean", "Gambian", "Bissau-Guinean", "Equatorial Guinean",
+  "Australian", "New Zealander", "Fijian", "Papua New Guinean",
+  "Other",
+];
+
+// Home-language display labels keyed by the stored (Arabic) value.
+export const HOME_LANGUAGES_EN: Record<string, string> = {
+  "العربية": "Arabic", "الإنجليزية": "English", "الألمانية": "German", "الفرنسية": "French",
+  "الإسبانية": "Spanish", "الإيطالية": "Italian", "السويدية": "Swedish", "الهولندية": "Dutch", "أخرى": "Other",
+};

@@ -1,5 +1,6 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendBookingConfirmation } from "@/lib/email";
 import { ENROLL_SKILLS } from "@/lib/enrollOptions";
@@ -7,9 +8,12 @@ import { ENROLL_SKILLS } from "@/lib/enrollOptions";
 type LeadState = { error?: string; leadId?: string };
 type BookState = { error?: string; booked?: boolean; at?: string };
 
+// Parent-facing form errors follow the active locale (bilingual surface 5).
+const enErr = async (key: string) => (await getTranslations("enrollForm.errors"))(key);
+
 /** Public registration form — creates a LEAD (not an account). */
 export async function submitLead(_prev: LeadState | undefined, formData: FormData): Promise<LeadState> {
-  if (String(formData.get("company") ?? "")) return { error: "تعذّر الإرسال." }; // honeypot
+  if (String(formData.get("company") ?? "")) return { error: await enErr("sendFailed") }; // honeypot
 
   const get = (k: string) => String(formData.get(k) ?? "").trim();
   const guardian_name = get("guardianName");
@@ -38,15 +42,15 @@ export async function submitLead(_prev: LeadState | undefined, formData: FormDat
   }
 
   if (!guardian_name || !guardian_email || !student_name) {
-    return { error: "يرجى تعبئة اسمك وبريدك واسم الطفل." };
+    return { error: await enErr("fillRequired") };
   }
   if (!consent) {
-    return { error: "يرجى الموافقة على معالجة البيانات للمتابعة." };
+    return { error: await enErr("consentRequired") };
   }
 
   const admin = createAdminClient();
   const { data: tenant } = await admin.from("tenants").select("id").eq("is_default", true).single();
-  if (!tenant) return { error: "التسجيل غير متاح حالياً." };
+  if (!tenant) return { error: await enErr("enrollClosed") };
 
   const { data: lead, error } = await admin
     .from("leads")
@@ -75,7 +79,7 @@ export async function submitLead(_prev: LeadState | undefined, formData: FormDat
     })
     .select("id")
     .single();
-  if (error || !lead) return { error: error?.message ?? "تعذّر الإرسال." };
+  if (error || !lead) return { error: error?.message ?? (await enErr("sendFailed")) };
 
   return { leadId: lead.id };
 }
@@ -85,7 +89,7 @@ export async function submitLead(_prev: LeadState | undefined, formData: FormDat
 // confirmation email (best-effort). Shared by the inline flow and the /book link.
 async function claimAndConfirm(admin: any, leadId: string, slotId: string): Promise<BookState> {
   const { data: slot } = await admin.from("availability_slots").select("id, starts_at, status").eq("id", slotId).single();
-  if (!slot || slot.status !== "open") return { error: "هذا الموعد لم يعد متاحاً — اختر غيره." };
+  if (!slot || slot.status !== "open") return { error: await enErr("slotTaken") };
 
   const { data: claimed, error } = await admin
     .from("availability_slots")
@@ -93,7 +97,7 @@ async function claimAndConfirm(admin: any, leadId: string, slotId: string): Prom
     .eq("id", slotId)
     .eq("status", "open")
     .select("id");
-  if (error || !claimed || claimed.length === 0) return { error: "حُجز هذا الموعد للتوّ — اختر غيره." };
+  if (error || !claimed || claimed.length === 0) return { error: await enErr("slotJustTaken") };
 
   await admin.from("leads").update({ status: "booked" }).eq("id", leadId);
 
@@ -124,7 +128,7 @@ async function claimAndConfirm(admin: any, leadId: string, slotId: string): Prom
 export async function bookSlot(_prev: BookState | undefined, formData: FormData): Promise<BookState> {
   const leadId = String(formData.get("leadId") ?? "");
   const slotId = String(formData.get("slotId") ?? "");
-  if (!leadId || !slotId) return { error: "اختر موعداً متاحاً." };
+  if (!leadId || !slotId) return { error: await enErr("pickSlot") };
   return claimAndConfirm(createAdminClient(), leadId, slotId);
 }
 
@@ -132,10 +136,10 @@ export async function bookSlot(_prev: BookState | undefined, formData: FormData)
 export async function bookSlotByToken(_prev: BookState | undefined, formData: FormData): Promise<BookState> {
   const token = String(formData.get("token") ?? "");
   const slotId = String(formData.get("slotId") ?? "");
-  if (!token || !slotId) return { error: "اختر موعداً متاحاً." };
+  if (!token || !slotId) return { error: await enErr("pickSlot") };
   const admin = createAdminClient();
   const { data: lead } = await admin.from("leads").select("id, status").eq("book_token", token).maybeSingle();
-  if (!lead) return { error: "رابط الحجز غير صالح." };
-  if (lead.status === "converted") return { error: "اكتمل تسجيلك بالفعل." };
+  if (!lead) return { error: await enErr("badLink") };
+  if (lead.status === "converted") return { error: await enErr("alreadyDone") };
   return claimAndConfirm(admin, lead.id, slotId);
 }

@@ -1,14 +1,17 @@
 /* eslint-disable react-hooks/purity -- server component: date math per request is intentional */
 import type { Metadata } from "next";
+import { getLocale, getTranslations } from "next-intl/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import EnrollFlow from "@/components/enroll/EnrollFlow";
+import LocaleSwitcher from "@/components/LocaleSwitcher";
 
-export const metadata: Metadata = {
-  title: "سجّل طفلك — أكاديمية وَرد",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("enrollForm");
+  return { title: t("metaTitle"), robots: { index: false, follow: false } };
+}
 
 export default async function EnrollPage() {
+  const locale = await getLocale();
   const admin = createAdminClient();
   const { data: tenant } = await admin.from("tenants").select("id").eq("is_default", true).single();
 
@@ -29,8 +32,13 @@ export default async function EnrollPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-cream px-5 py-12">
-      <EnrollFlow slots={slots} />
-    </main>
+    <div dir={locale === "ar" ? "rtl" : "ltr"} lang={locale} className="min-h-screen bg-cream">
+      <div className="flex justify-end px-5 pt-5">
+        <LocaleSwitcher />
+      </div>
+      <main className="flex items-center justify-center px-5 pb-12 pt-4">
+        <EnrollFlow slots={slots} />
+      </main>
+    </div>
   );
 }
