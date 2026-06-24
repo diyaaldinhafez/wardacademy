@@ -453,7 +453,62 @@
     "matrixEmpty": "No availability set yet."
   },
   "guardian": {},
-  "admin": {},
+  "admin": {
+    "brand": "Ward Academy",
+    "subtitle": "Admin & Operations",
+    "studentFallback": "student",
+    "nav": {
+      "dashboard": "Dashboard",
+      "registrations": "Registrations",
+      "students": "Students",
+      "teachers": "Teachers",
+      "requests": "Cases",
+      "logout": "Log out",
+      "fallbackTitle": "Admin",
+      "adminFallback": "Admin"
+    },
+    "dashboard": {
+      "intro": "An operational view of the registration funnel — times in {tz}.",
+      "newThisWeek": "New requests this week",
+      "convRate": "Conversion rate ({converted} of {total})",
+      "capacity": "Capacity (open / booked · 2 weeks)",
+      "funnelTitle": "Registration funnel",
+      "actionTitle": "Needs action now",
+      "act": "Act →",
+      "queueTestsToApprove": "Tests awaiting approval",
+      "queueReportsToSend": "Reports ready to send",
+      "queueToProvision": "Accounts ready to provision",
+      "queueStaleNoBooking": "Requests with no booking for 2+ days",
+      "upcomingTitle": "Upcoming intro sessions",
+      "noUpcoming": "No upcoming sessions.",
+      "learningPhase": "Learning phase",
+      "activeStudents": "Active students",
+      "mrr": "Monthly recurring revenue",
+      "overdueInvoices": "Overdue invoices",
+      "openCases": "Open cases",
+      "atRiskTitle": "Students at risk of churn",
+      "atRiskNone": "No risk signals — all stable.",
+      "riskOverduePayment": "Overdue payment",
+      "riskMissedSessions": "{n} missed session(s)",
+      "riskLowEval": "Low evaluation",
+      "riskCancel": "Cancel/complaint request",
+      "riskPaused": "Subscription paused"
+    },
+    "requests": {
+      "tabActive": "Open",
+      "tabClosed": "Closed",
+      "tabAll": "All",
+      "empty": "No cases.",
+      "resolutionLabel": "Resolution:",
+      "resolutionPlaceholder": "Resolution note (optional)",
+      "inProgress": "In progress",
+      "close": "Close"
+    },
+    "availabilityView": {
+      "readonlyA": "Read-only — the teacher sets her availability from her account; regular student sessions are scheduled from it. Time zone",
+      "readonlyB": "."
+    }
+  },
   "landing": {},
   "enroll": {}
 }

@@ -40,6 +40,16 @@ export const PIPELINE_STEPS = [
   { key: "accounts", label: "الحسابات" },
 ] as const;
 
+// English labels (admin is English by internal decision), keyed by step.key.
+export const PIPELINE_LABEL_EN: Record<string, string> = {
+  register: "Register",
+  book: "Book",
+  test: "Test",
+  session: "Session",
+  payment: "Payment",
+  accounts: "Accounts",
+};
+
 export type Step = { key: string; label: string; done: boolean };
 export type PipelineInput = {
   hasBooking: boolean;

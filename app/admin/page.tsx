@@ -1,15 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/purity -- server component: per-request date math is intentional */
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { Card, Badge } from "@/components/ward/ui";
-import { PIPELINE_STEPS, computePipeline } from "@/lib/leads";
+import { PIPELINE_STEPS, PIPELINE_LABEL_EN, computePipeline } from "@/lib/leads";
 
 const DAY = 24 * 3600 * 1000;
 const secTitle = { fontSize: 15, fontWeight: 700, color: "var(--text-strong)", marginBottom: 14 } as const;
 
 export default async function AdminDashboard() {
   const supabase = await createClient();
+  const t = await getTranslations({ locale: "en", namespace: "admin.dashboard" });
   const [{ data: leads }, { data: slots }, { data: tests }, { data: intros }, { data: tenant }] = await Promise.all([
     supabase.from("leads").select("id, student_name, status, payment_status, created_at"),
     supabase.from("availability_slots").select("lead_id, starts_at, status"),
@@ -39,7 +41,7 @@ export default async function AdminDashboard() {
 
   const now = Date.now();
   const all = (leads ?? []) as any[];
-  for (const l of all) nameByLead.set(l.id, l.student_name ?? "طالب");
+  for (const l of all) nameByLead.set(l.id, l.student_name ?? "student");
 
   // Per-lead pipeline position.
   const pos = all.map((l) => ({
@@ -66,7 +68,7 @@ export default async function AdminDashboard() {
 
   // Upcoming intro sessions (platform tz).
   const fmtWhen = (iso: string) =>
-    new Intl.DateTimeFormat("ar", { timeZone: tz, weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+    new Intl.DateTimeFormat("en", { timeZone: tz, weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
   const upcoming = ((slots ?? []) as any[])
     .filter((s) => s.status === "booked" && s.lead_id && new Date(s.starts_at).getTime() >= now)
     .sort((a, b) => +new Date(a.starts_at) - +new Date(b.starts_at))
@@ -92,10 +94,10 @@ export default async function AdminDashboard() {
   const trendTone = trend > 0 ? "var(--leaf-700)" : trend < 0 ? "var(--rose-700)" : "var(--text-muted)";
 
   const queue = [
-    { label: "اختبارات بانتظار الاعتماد", n: testsToApprove, href: "/admin/registrations?status=testing", tone: "warning" as const },
-    { label: "تقارير جاهزة للإرسال", n: reportsToSend, href: "/admin/registrations", tone: "warning" as const },
-    { label: "حسابات جاهزة للتجهيز", n: toProvision, href: "/admin/registrations?status=tested", tone: "success" as const },
-    { label: "طلبات بلا حجزٍ منذ يومين+", n: staleNoBooking, href: "/admin/registrations?status=new", tone: "apricot" as const },
+    { label: t("queueTestsToApprove"), n: testsToApprove, href: "/admin/registrations?status=testing", tone: "warning" as const },
+    { label: t("queueReportsToSend"), n: reportsToSend, href: "/admin/registrations", tone: "warning" as const },
+    { label: t("queueToProvision"), n: toProvision, href: "/admin/registrations?status=tested", tone: "success" as const },
+    { label: t("queueStaleNoBooking"), n: staleNoBooking, href: "/admin/registrations?status=new", tone: "apricot" as const },
   ];
 
   // ===== Learning-phase metrics + at-risk =====
@@ -138,47 +140,47 @@ export default async function AdminDashboard() {
   for (const e of (enrollments ?? []) as any[]) {
     if (e.status === "cancelled") continue;
     const reasons: string[] = [];
-    if (overdueByLearner.get(e.learner_id)) reasons.push("دفعة متأخّرة");
-    if (missedByLearner.get(e.learner_id)) reasons.push(`${missedByLearner.get(e.learner_id)} جلسة فائتة`);
-    if (lowEvalByLearner.get(e.learner_id)) reasons.push("تقييمٌ منخفض");
-    if (openCancelByLearner.get(e.learner_id)) reasons.push("طلب إيقاف/شكوى");
-    if (e.status === "paused") reasons.push("الاشتراك مُعلَّق");
-    if (reasons.length) atRisk.push({ id: e.learner_id, name: nameById.get(e.learner_id) ?? "طالب", reasons });
+    if (overdueByLearner.get(e.learner_id)) reasons.push(t("riskOverduePayment"));
+    if (missedByLearner.get(e.learner_id)) reasons.push(t("riskMissedSessions", { n: missedByLearner.get(e.learner_id) as number }));
+    if (lowEvalByLearner.get(e.learner_id)) reasons.push(t("riskLowEval"));
+    if (openCancelByLearner.get(e.learner_id)) reasons.push(t("riskCancel"));
+    if (e.status === "paused") reasons.push(t("riskPaused"));
+    if (reasons.length) atRisk.push({ id: e.learner_id, name: nameById.get(e.learner_id) ?? "student", reasons });
   }
 
   return (
     <>
-      <p style={{ fontSize: 14, color: "var(--text-muted)" }}>نظرةٌ تشغيليّةٌ على قمع التسجيل — الأوقات بتوقيت {tz}.</p>
+      <p style={{ fontSize: 14, color: "var(--text-muted)" }}>{t("intro", { tz })}</p>
 
       {/* Headline metrics */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 16 }}>
         <Card style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span style={{ fontSize: 30, fontWeight: 700, color: "var(--text-strong)" }}>{newThisWeek}</span>
           <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
-            طلباتٌ جديدة هذا الأسبوع <span style={{ color: trendTone, fontWeight: 700 }}>{trendStr}</span>
+            {t("newThisWeek")} <span style={{ color: trendTone, fontWeight: 700 }}>{trendStr}</span>
           </span>
         </Card>
         <Card style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span style={{ fontSize: 30, fontWeight: 700, color: "var(--text-strong)" }}>{convRate}%</span>
-          <span style={{ fontSize: 13, color: "var(--text-muted)" }}>معدّل التحويل ({converted} من {total})</span>
+          <span style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("convRate", { converted, total })}</span>
         </Card>
         <Card style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span style={{ fontSize: 30, fontWeight: 700, color: "var(--text-strong)" }}>{openSoon}<span style={{ fontSize: 16, color: "var(--text-muted)" }}> / {bookedSoon}</span></span>
-          <span style={{ fontSize: 13, color: "var(--text-muted)" }}>السعة (مفتوح / محجوز · أسبوعان)</span>
+          <span style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("capacity")}</span>
         </Card>
       </div>
 
       {/* Funnel + action queue */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16, alignItems: "start" }}>
         <Card>
-          <div style={secTitle}>قمع التسجيل</div>
+          <div style={secTitle}>{t("funnelTitle")}</div>
           <Link href="/admin/registrations" style={{ display: "flex", flexDirection: "column", gap: 10, textDecoration: "none" }}>
             {PIPELINE_STEPS.map((s, i) => {
               const n = reached[i];
               const pct = Math.round((n / total) * 100);
               return (
                 <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ width: 56, fontSize: 13, color: "var(--text-body)", flexShrink: 0 }}>{s.label}</span>
+                  <span style={{ width: 56, fontSize: 13, color: "var(--text-body)", flexShrink: 0 }}>{PIPELINE_LABEL_EN[s.key]}</span>
                   <div style={{ flex: 1, height: 22, borderRadius: 999, background: "var(--surface-sunken)", overflow: "hidden" }}>
                     <div style={{ width: `${Math.max(pct, n > 0 ? 6 : 0)}%`, height: "100%", borderRadius: 999, background: "var(--grad-bloom)" }} />
                   </div>
@@ -190,7 +192,7 @@ export default async function AdminDashboard() {
         </Card>
 
         <Card>
-          <div style={secTitle}>يحتاج إجراءً الآن</div>
+          <div style={secTitle}>{t("actionTitle")}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {queue.map((q) => (
               <Link
@@ -210,7 +212,7 @@ export default async function AdminDashboard() {
               >
                 <Badge tone={q.n > 0 ? q.tone : "neutral"}>{q.n}</Badge>
                 <span style={{ flex: 1, fontSize: 13.5, color: "var(--text-body)" }}>{q.label}</span>
-                {q.n > 0 && <span style={{ fontSize: 13, color: "var(--text-brand)", fontWeight: 600 }}>افعل ←</span>}
+                {q.n > 0 && <span style={{ fontSize: 13, color: "var(--text-brand)", fontWeight: 600 }}>{t("act")}</span>}
               </Link>
             ))}
           </div>
@@ -219,9 +221,9 @@ export default async function AdminDashboard() {
 
       {/* Upcoming intro sessions */}
       <Card>
-        <div style={secTitle}>جلسات تعريفية قادمة</div>
+        <div style={secTitle}>{t("upcomingTitle")}</div>
         {upcoming.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا جلسات قادمة.</p>
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("noUpcoming")}</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column" }}>
             {upcoming.map((s, i) => (
@@ -231,7 +233,7 @@ export default async function AdminDashboard() {
               >
                 <span style={{ fontSize: 13, fontWeight: 700, color: "var(--leaf-700)", minWidth: 150, flexShrink: 0 }}>{fmtWhen(s.starts_at)}</span>
                 <Link href={`/admin/registrations/${s.lead_id}`} style={{ fontSize: 14, fontWeight: 600, color: "var(--text-strong)", textDecoration: "none" }}>
-                  {nameByLead.get(s.lead_id) ?? "طالب"}
+                  {nameByLead.get(s.lead_id) ?? "student"}
                 </Link>
               </div>
             ))}
@@ -240,39 +242,39 @@ export default async function AdminDashboard() {
       </Card>
 
       {/* ===== Learning phase ===== */}
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-strong)", marginTop: 8 }}>مرحلة التعلّم</h2>
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-strong)", marginTop: 8 }}>{t("learningPhase")}</h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 16 }}>
         <Link href="/admin/students" style={{ textDecoration: "none" }}>
           <Card interactive style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <span style={{ fontSize: 30, fontWeight: 700, color: "var(--text-strong)" }}>{activeStudents}</span>
-            <span style={{ fontSize: 13, color: "var(--text-muted)" }}>طلابٌ نشطون</span>
+            <span style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("activeStudents")}</span>
           </Card>
         </Link>
         <Card style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span style={{ fontSize: 30, fontWeight: 700, color: "var(--leaf-700)" }}>{mrr} <span style={{ fontSize: 15, color: "var(--text-muted)" }}>{currency}</span></span>
-          <span style={{ fontSize: 13, color: "var(--text-muted)" }}>الإيراد الشهريّ المتكرّر</span>
+          <span style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("mrr")}</span>
         </Card>
         <Link href="/admin/students" style={{ textDecoration: "none" }}>
           <Card interactive style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <span style={{ fontSize: 30, fontWeight: 700, color: overdueInvoices > 0 ? "var(--rose-700)" : "var(--text-strong)" }}>{overdueInvoices}</span>
-            <span style={{ fontSize: 13, color: "var(--text-muted)" }}>فواتير متأخّرة</span>
+            <span style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("overdueInvoices")}</span>
           </Card>
         </Link>
         <Link href="/admin/requests" style={{ textDecoration: "none" }}>
           <Card interactive style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <span style={{ fontSize: 30, fontWeight: 700, color: "var(--text-strong)" }}>{openCasesCount}</span>
-            <span style={{ fontSize: 13, color: "var(--text-muted)" }}>حالاتٌ مفتوحة</span>
+            <span style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("openCases")}</span>
           </Card>
         </Link>
       </div>
 
       <Card>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>طلابٌ مُعرَّضون للتوقّف</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>{t("atRiskTitle")}</span>
           {atRisk.length > 0 && <Badge tone="danger">{atRisk.length}</Badge>}
         </div>
         {atRisk.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا مؤشّرات خطر — كلّ شيءٍ مستقرّ. ✓</p>
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("atRiskNone")}</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {atRisk.map((s) => (

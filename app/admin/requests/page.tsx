@@ -1,22 +1,23 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { updateRequestStatus } from "@/app/admin/actions";
 import { Card, Badge, Avatar } from "@/components/ward/ui";
-import { REQUEST_TYPE_AR, REQUEST_TYPE_TONE, REQUEST_STATUS_AR, REQUEST_STATUS_TONE } from "@/lib/requests";
+import { REQUEST_TYPE_EN, REQUEST_TYPE_TONE, REQUEST_STATUS_EN, REQUEST_STATUS_TONE } from "@/lib/requests";
 import { fmtUTC } from "@/lib/datetime";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const btn = (v: string, s = "sm") => `ward-btn ward-btn--${v} ward-btn--${s}`;
 
-const TABS = [
-  { key: "active", label: "المفتوحة" },
-  { key: "closed", label: "المُغلقة" },
-  { key: "all", label: "الكلّ" },
-];
-
 export default async function RequestsPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const { view = "active" } = await searchParams;
   const supabase = await createClient();
+  const t = await getTranslations({ locale: "en", namespace: "admin.requests" });
+  const TABS = [
+    { key: "active", label: t("tabActive") },
+    { key: "closed", label: t("tabClosed") },
+    { key: "all", label: t("tabAll") },
+  ];
 
   const { data: reqs } = await supabase
     .from("requests")
@@ -53,30 +54,30 @@ export default async function RequestsPage({ searchParams }: { searchParams: Pro
         })}
       </div>
 
-      {list.length === 0 && <p style={{ fontSize: 14, color: "var(--text-muted)" }}>لا حالات.</p>}
+      {list.length === 0 && <p style={{ fontSize: 14, color: "var(--text-muted)" }}>{t("empty")}</p>}
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {list.map((r) => (
           <Card key={r.id} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <Avatar name={nameOf.get(r.learner_id) ?? "?"} size={32} />
               <Link href={`/admin/students/${r.learner_id}`} style={{ fontWeight: 700, color: "var(--text-strong)", textDecoration: "none" }}>
-                {nameOf.get(r.learner_id) ?? "طالب"}
+                {nameOf.get(r.learner_id) ?? "student"}
               </Link>
-              <Badge tone={REQUEST_TYPE_TONE[r.type] ?? "neutral"}>{REQUEST_TYPE_AR[r.type] ?? r.type}</Badge>
-              <Badge tone={REQUEST_STATUS_TONE[r.status] ?? "neutral"}>{REQUEST_STATUS_AR[r.status] ?? r.status}</Badge>
+              <Badge tone={REQUEST_TYPE_TONE[r.type] ?? "neutral"}>{REQUEST_TYPE_EN[r.type] ?? r.type}</Badge>
+              <Badge tone={REQUEST_STATUS_TONE[r.status] ?? "neutral"}>{REQUEST_STATUS_EN[r.status] ?? r.status}</Badge>
               <span style={{ marginInlineStart: "auto", fontSize: 12, color: "var(--text-muted)" }}>{fmtUTC(r.created_at)}</span>
             </div>
             {r.details && <p style={{ fontSize: 13.5, color: "var(--text-body)" }}>{r.details}</p>}
-            {r.resolution && <p style={{ fontSize: 13, color: "var(--leaf-700)" }}>الحلّ: {r.resolution}</p>}
+            {r.resolution && <p style={{ fontSize: 13, color: "var(--leaf-700)" }}>{t("resolutionLabel")} {r.resolution}</p>}
             {r.status !== "closed" && (
               <form action={updateRequestStatus} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "end" }}>
                 <input type="hidden" name="requestId" value={r.id} />
                 <input type="hidden" name="learnerId" value={r.learner_id} />
-                <input name="resolution" placeholder="ملاحظة الحلّ (اختياري)" className="ward-field__control" style={{ width: "auto", flex: 1, minWidth: 180 }} />
+                <input name="resolution" placeholder={t("resolutionPlaceholder")} className="ward-field__control" style={{ width: "auto", flex: 1, minWidth: 180 }} />
                 {r.status === "open" && (
-                  <button type="submit" name="status" value="in_progress" className={btn("secondary")}>قيد المعالجة</button>
+                  <button type="submit" name="status" value="in_progress" className={btn("secondary")}>{t("inProgress")}</button>
                 )}
-                <button type="submit" name="status" value="closed" className={btn("success")}>إغلاق</button>
+                <button type="submit" name="status" value="closed" className={btn("success")}>{t("close")}</button>
               </form>
             )}
           </Card>
