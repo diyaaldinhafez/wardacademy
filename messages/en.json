@@ -31,8 +31,8 @@
   "learn": {
     "header": { "title": "My Garden" },
     "assessment": {
-      "heading": "🎯 Test: {unit}",
-      "intro": "Answer the questions and show what you know. You can do it! 🌟",
+      "heading": "Test: {unit}",
+      "intro": "Answer the questions. You can do it!",
       "submit": "Send my test",
       "sending": "Sending…"
     },
@@ -46,7 +46,7 @@
     "unit": {
       "heading": "My unit",
       "stage": {
-        "bloom": "You did it! This unit is all done 🎉",
+        "bloom": "You did it! This unit is all done!",
         "balloon": "Your balloon is filling up — keep going!",
         "bud": "Your bud is growing — keep going!",
         "seed": "Let's start this unit!"
@@ -60,8 +60,8 @@
     },
     "flower": {
       "heading": "My flower",
-      "blurb": "Four petals — four skills. They grow as you learn. Each number is your real score.",
-      "vocabLabel": "Building Blocks — words you know"
+      "blurb": "Four petals = four skills. They grow when you learn!",
+      "vocabLabel": "Words I know"
     },
     "plan": { "heading": "My plan" },
     "sessions": {
@@ -75,7 +75,7 @@
         "improve": "What to practice:"
       }
     },
-    "results": { "heading": "My test results 🎯" },
+    "results": { "heading": "My tests" },
     "homework": {
       "heading": "My homework",
       "empty": "No homework yet. Your teacher will add some soon.",
@@ -108,15 +108,15 @@
       "true": "True",
       "false": "False",
       "placeholder": "Your answer",
-      "audioHint": "Say it out loud, then mark it as practiced.",
+      "audioHint": "Say it out loud. Then tap \"I practiced it.\"",
       "audioDone": "I practiced it",
       "send": "Send answer",
       "sending": "Sending…"
     },
     "errors": {
-      "testUnavailable": "This test isn't ready.",
+      "testUnavailable": "This test is not ready yet.",
       "uploadImage": "Please add a photo of your answer.",
-      "fileTooBig": "That photo is too big (max 25 MB).",
+      "fileTooBig": "That photo is too big. Try a smaller one.",
       "homeworkNotFound": "We can't find that homework."
     }
   },
