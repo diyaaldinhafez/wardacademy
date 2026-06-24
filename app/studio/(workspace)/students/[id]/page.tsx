@@ -20,6 +20,7 @@ import ItemCard from "@/components/studio/ItemCard";
 import VideoCall from "@/components/VideoCall";
 import { Card, Badge, Avatar, AITrustBadge, Spark } from "@/components/ward/ui";
 import { SKILLS, SKILL_AR, VOCAB_AR } from "@/lib/skills";
+import { getTranslations } from "next-intl/server";
 import { UnitBloom, FlowerProgress, ScopeChip, VocabCounter } from "@/components/bloom/Bloom";
 import { fetchStudentBloom } from "@/lib/progress/bloom";
 import { FORMAT_LABELS, ITEM_FORMATS, DIFFICULTIES } from "@/lib/items";
@@ -32,15 +33,15 @@ const ctl = "ward-field__control";
 const sel = "ward-select__control";
 const secTitle = { fontSize: 14.5, fontWeight: 700, color: "var(--text-strong)" } as const;
 
-const fmtSize = (n?: number | null) => (n == null ? "" : n > 1048576 ? `${(n / 1048576).toFixed(1)} م.ب` : `${Math.max(1, Math.round(n / 1024))} ك.ب`);
+const fmtSize = (n?: number | null) => (n == null ? "" : n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 function fileKind(name?: string | null, mime?: string | null): string {
   const ext = (name ?? "").split(".").pop()?.toLowerCase() ?? "";
   if (ext === "pdf" || mime?.includes("pdf")) return "PDF";
   if (["doc", "docx"].includes(ext) || mime?.includes("word")) return "Word";
   if (["ppt", "pptx"].includes(ext) || mime?.includes("presentation") || mime?.includes("powerpoint")) return "PowerPoint";
   if (["xls", "xlsx"].includes(ext) || mime?.includes("sheet") || mime?.includes("excel")) return "Excel";
-  if (ext === "txt") return "نصّ";
-  return "ملفّ";
+  if (ext === "txt") return "Text";
+  return "File";
 }
 
 function subStatus(sub: any) {
@@ -61,6 +62,9 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   if (!learner || !((learner.roles as string[]) ?? []).includes("learner")) notFound();
   if (learner.assigned_instructor_id && learner.assigned_instructor_id !== user?.id) notFound();
   const name = (learner.full_name as string) ?? id;
+  // The teacher studio is English by internal decision — force `en` for UI text.
+  const t = await getTranslations({ locale: "en", namespace: "studio.student" });
+  const tc = await getTranslations({ locale: "en", namespace: "common" });
 
   const { data: pl } = await supabase.from("placement_tests").select("status, suggested_level, created_at").eq("learner_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle();
   const { data: plan } = await supabase.from("study_plans").select("id, title, level, items, status, track, scope_label, milestone_label").eq("learner_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle();
@@ -69,7 +73,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   // New progress model: unit/skill blooms rolled up from objective_progress (§5).
   const bloom = await fetchStudentBloom(supabase, id);
   const vocabCount = 0; // vocabulary is a separate track (not in curriculum_objectives yet)
-  const petals = bloom.skills.map((s) => ({ name: s.skill, ar: SKILL_AR[s.skill], value: s.fraction }));
+  const petals = bloom.skills.map((s) => ({ name: s.skill, label: tc(`skills.${s.skill}`), value: s.fraction }));
   const overall = bloom.skills.length ? Math.round((bloom.skills.reduce((a, s) => a + s.fraction, 0) / bloom.skills.length) * 100) : 0;
   const skillStats = bloom.skills;
   const lagging = bloom.skills.filter((s) => s.total > 0 && s.fraction < 0.5).map((s) => SKILL_AR[s.skill]);
@@ -194,9 +198,9 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const ungraded = (subs ?? []).filter((s: any) => !s.graded).length;
   const noApprovedPlan = !plan || plan.status !== "approved";
   const alerts: { tone: "danger" | "warning" | "neutral"; label: string }[] = [];
-  if (noApprovedPlan) alerts.push({ tone: "warning", label: "لا خطّة معتمَدة" });
-  if (pastNoReport) alerts.push({ tone: "danger", label: `${pastNoReport} جلسة بلا تقرير` });
-  if (ungraded) alerts.push({ tone: "warning", label: `${ungraded} واجب بانتظار التصحيح` });
+  if (noApprovedPlan) alerts.push({ tone: "warning", label: t("alerts.noApprovedPlan") });
+  if (pastNoReport) alerts.push({ tone: "danger", label: t("alerts.sessionsNoReport", { n: pastNoReport }) });
+  if (ungraded) alerts.push({ tone: "warning", label: t("alerts.ungradedHomework", { n: ungraded }) });
 
   // ————— Reusable bits —————
   const HomeworkRow = ({ a }: { a: any }) => {
@@ -399,25 +403,25 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       {/* Diagnostic (baseline) — generated from all the student's inputs */}
       <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={secTitle}>تقرير التشخيص</span>
+          <span style={secTitle}>{t("overview.diagnosisTitle")}</span>
           {diagnostic?.status === "approved" && <AITrustBadge status="approved" compact />}
           {diagnostic?.status === "draft" && <AITrustBadge status="draft" compact />}
           <form action={generateDiagnosticReport} style={{ marginInlineStart: "auto" }}>
             <input type="hidden" name="learnerId" value={id} />
-            <SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}><Spark size={13} /> {diagnostic ? "أعِد التوليد" : "ولّد التشخيص"}</SubmitButton>
+            <SubmitButton pendingText={t("overview.generating")} className={btn("soft")}><Spark size={13} /> {diagnostic ? t("overview.regenerate") : t("overview.generateDiagnostic")}</SubmitButton>
           </form>
         </div>
-        {!diagnostic && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>يُولَّد من نموذج التسجيل واختبار التحديد وتقرير الجلسة التعريفية والملاحظات الداخلية — نقطة انطلاقك.</p>}
+        {!diagnostic && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("overview.diagnosticHint")}</p>}
         {diagnostic?.status === "draft" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, background: "var(--surface-soft)", borderRadius: 10, padding: 10 }}>
             <form action={updateDiagnostic} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <input type="hidden" name="learnerId" value={id} />
               <textarea name="report" rows={8} defaultValue={diagnostic.report ?? ""} className={ctl} style={{ lineHeight: 1.7 }} />
-              <SubmitButton pendingText="…" className={btn("secondary")}>احفظ التعديلات</SubmitButton>
+              <SubmitButton pendingText="…" className={btn("secondary")}>{t("overview.saveEdits")}</SubmitButton>
             </form>
             <form action={approveDiagnostic}>
               <input type="hidden" name="learnerId" value={id} />
-              <SubmitButton pendingText="…" className={btn("success")}>اعتمِد التشخيص</SubmitButton>
+              <SubmitButton pendingText="…" className={btn("success")}>{t("overview.approveDiagnostic")}</SubmitButton>
             </form>
           </div>
         )}
@@ -427,31 +431,31 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       </Card>
 
       <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={secTitle}>الجلسة القادمة</div>
+        <div style={secTitle}>{t("overview.nextSessionTitle")}</div>
         {nextSession ? (
           <div style={{ fontSize: 13.5, color: "var(--text-body)" }}>
             <strong style={{ fontVariantNumeric: "tabular-nums" }}>{fmtUTC(nextSession.scheduled_at)}</strong>
-            {nextSession.lesson_title ? <> · 📖 {nextSession.lesson_title}</> : null}
+            {nextSession.lesson_title ? <> · {nextSession.lesson_title}</> : null}
           </div>
         ) : (
-          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا مواعيد قادمة — جدوِل جلسةً من تبويب «الجلسات».</p>
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("overview.noUpcoming")}</p>
         )}
       </Card>
       {alerts.length > 0 && (
         <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={secTitle}>تنبيهات</div>
+          <div style={secTitle}>{t("overview.alertsTitle")}</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {alerts.map((a, i) => <Badge key={i} tone={a.tone}>{a.label}</Badge>)}
           </div>
         </Card>
       )}
       <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={secTitle}>المهارات الأربع + الأساس اللغوي</div>
+        <div style={secTitle}>{t("overview.skillsTitle")}</div>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
           {petals.map((p) => (
-            <span key={p.name} style={{ fontSize: 11.5, color: "var(--text-muted)", background: "var(--surface-sunken)", borderRadius: 999, padding: "3px 10px" }}>{p.ar} {Math.round(p.value * 100)}%</span>
+            <span key={p.name} style={{ fontSize: 11.5, color: "var(--text-muted)", background: "var(--surface-sunken)", borderRadius: 999, padding: "3px 10px" }}>{p.label} {Math.round(p.value * 100)}%</span>
           ))}
-          <VocabCounter count={vocabCount} label={`${VOCAB_AR} — كلمة`} variant="chip" />
+          <VocabCounter count={vocabCount} label={t("overview.vocabLabel")} variant="chip" />
         </div>
       </Card>
     </div>
@@ -461,72 +465,70 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={secTitle}>الخطّة الدراسية</span>
+          <span style={secTitle}>{t("plan.title")}</span>
           {pl?.status !== "in_progress" && (
             <form action={startPlacement} style={{ marginInlineStart: "auto" }}>
               <input type="hidden" name="learnerId" value={id} />
-              <SubmitButton pendingText="…" className={btn("ghost")}>{pl?.status === "completed" ? "أعِد التحديد" : "ابدأ اختبار التحديد"}</SubmitButton>
+              <SubmitButton pendingText="…" className={btn("ghost")}>{pl?.status === "completed" ? t("plan.redoPlacement") : t("plan.startPlacement")}</SubmitButton>
             </form>
           )}
         </div>
-        {pl?.status === "completed" && <Badge tone="success">نتيجة التحديد: المستوى {pl.suggested_level}</Badge>}
+        {pl?.status === "completed" && <Badge tone="success">{t("plan.placementResult", { level: pl.suggested_level })}</Badge>}
         {plan ? (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              {plan.status === "draft" ? <Badge tone="warning">مسودّة</Badge> : <Badge tone="success">معتمَدة</Badge>}
+              {plan.status === "draft" ? <Badge tone="warning">{t("plan.draft")}</Badge> : <Badge tone="success">{t("plan.approved")}</Badge>}
               {plan.scope_label && <ScopeChip>{plan.scope_label}</ScopeChip>}
-              {plan.milestone_label && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>🎯 {plan.milestone_label}</span>}
+              {plan.milestone_label && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{plan.milestone_label}</span>}
             </div>
             <PlanBuilder
               planId={plan.id}
               learnerId={id}
               title={plan.title}
               items={planItems}
-              skills={SKILLS.map((s) => ({ value: s, label: SKILL_AR[s] }))}
+              skills={SKILLS.map((s) => ({ value: s, label: tc(`skills.${s}`) }))}
             />
             <form action={approvePlan}>
               <input type="hidden" name="planId" value={plan.id} />
               <SubmitButton pendingText="…" className={btn("success")}>
-                {plan.status === "draft" ? "اعتمِد الخطّة — تصبح أهدافاً قابلةً للتدريس" : "مزامنة المنهاج — أضِف الدروس الجديدة كأهداف"}
+                {plan.status === "draft" ? t("plan.approvePlan") : t("plan.syncPlan")}
               </SubmitButton>
             </form>
             <details style={{ borderTop: "1px solid var(--ink-100)", paddingTop: 8 }}>
-              <summary style={{ fontSize: 12, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>أو ولّد بالذكاء من فهرس كتاب المنهج (يستبدل الخطّة الحالية)</summary>
+              <summary style={{ fontSize: 12, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>{t("plan.regenSummary")}</summary>
               <p style={{ fontSize: 11.5, color: "var(--text-muted)", margin: "8px 0", lineHeight: 1.6 }}>
-                ارفع <strong>فهرس كتاب منهجٍ بمستوى CEFR</strong> (صورة/PDF/نصّ) ليستخرجه الذكاء بدقّةٍ بلا تأليف.{plan.status === "approved" && <> سيُستبدَل المنهاج الحاليّ — وتبقى الأهداف التي عليها تقدّمٌ محفوظة.</>}
+                {t("plan.regenHint")}{plan.status === "approved" && t("plan.regenHintApproved")}
               </p>
               <form action={startPlanFromIndex} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
                 <input type="hidden" name="learnerId" value={id} />
                 <input name="index" type="file" required accept="image/*,.pdf,.txt,.md,.csv" className={ctl} style={{ width: "auto", flex: 1, minWidth: 180 }} />
-                <SubmitButton pendingText="…" className={btn("soft")}><Spark size={14} /> ولّد من الفهرس</SubmitButton>
+                <SubmitButton pendingText="…" className={btn("soft")}><Spark size={14} /> {t("plan.generateFromIndex")}</SubmitButton>
               </form>
             </details>
           </>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <p style={{ fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.7 }}>
-              <strong>منهاج وَرد</strong> (CEFR · A1→B1). ارفع <strong>فهرس كتاب المنهج</strong> (صورة / PDF / نصّ) — يقرؤه الذكاء ويستخرج وحداته ودروسه <strong>بدقّةٍ بلا تأليف</strong>.
-            </p>
+            <p style={{ fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.7 }}>{t("plan.emptyIntro")}</p>
             <form action={startPlanFromIndex} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
               <input type="hidden" name="learnerId" value={id} />
               <input name="index" type="file" required accept="image/*,.pdf,.txt,.md,.csv" className={ctl} style={{ width: "auto", flex: 1, minWidth: 180 }} />
-              <SubmitButton pendingText="جارٍ القراءة والتوليد…" className={btn("soft")}><Spark size={14} /> ولّد من الفهرس</SubmitButton>
+              <SubmitButton pendingText={t("plan.reading")} className={btn("soft")}><Spark size={14} /> {t("plan.generateFromIndex")}</SubmitButton>
             </form>
             <details>
-              <summary style={{ fontSize: 12, color: "var(--text-muted)", cursor: "pointer" }}>أو ولّد من مستوى CEFR (بلا فهرس)</summary>
-              <p style={{ fontSize: 11.5, color: "var(--text-muted)", margin: "8px 0", lineHeight: 1.6 }}>يولّد الذكاء خطّةً متدرّجةً من مستوى التحديد ({pl?.suggested_level ?? "A1"}).</p>
+              <summary style={{ fontSize: 12, color: "var(--text-muted)", cursor: "pointer" }}>{t("plan.fromLevelSummary")}</summary>
+              <p style={{ fontSize: 11.5, color: "var(--text-muted)", margin: "8px 0", lineHeight: 1.6 }}>{t("plan.fromLevelHint", { level: pl?.suggested_level ?? "A1" })}</p>
               <form action={startPlan} style={{ marginTop: 4 }}>
                 <input type="hidden" name="learnerId" value={id} />
-                <SubmitButton pendingText="…" className={btn("ghost")}><Spark size={14} /> ولّد من المستوى</SubmitButton>
+                <SubmitButton pendingText="…" className={btn("ghost")}><Spark size={14} /> {t("plan.generateFromLevel")}</SubmitButton>
               </form>
             </details>
             <details>
-              <summary style={{ fontSize: 12, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>أو أنشئ خطّةً يدويةً بالكامل</summary>
-              <p style={{ fontSize: 11.5, color: "var(--text-muted)", margin: "8px 0", lineHeight: 1.6 }}>أنشئ الخطّة فارغةً ثمّ أضِف وحداتها ودروسها يدوياً بالتفصيل.</p>
+              <summary style={{ fontSize: 12, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>{t("plan.manualSummary")}</summary>
+              <p style={{ fontSize: 11.5, color: "var(--text-muted)", margin: "8px 0", lineHeight: 1.6 }}>{t("plan.manualHint")}</p>
               <form action={createManualPlan} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
                 <input type="hidden" name="learnerId" value={id} />
-                <input name="title" required placeholder="عنوان الخطّة/المنهاج" className={ctl} style={{ width: "auto", flex: 1, minWidth: 160 }} />
-                <SubmitButton pendingText="…" className={btn("secondary")}>أنشئ خطّةً يدوية</SubmitButton>
+                <input name="title" required placeholder={t("plan.manualTitlePlaceholder")} className={ctl} style={{ width: "auto", flex: 1, minWidth: 160 }} />
+                <SubmitButton pendingText="…" className={btn("secondary")}>{t("plan.createManual")}</SubmitButton>
               </form>
             </details>
           </div>
@@ -538,8 +540,8 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const Curriculum = (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <div style={secTitle}>مصادر التعلّم</div>
-        {(resources ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا مصادر بعد — ارفع ملفّاً (PDF / Word / PowerPoint / Excel).</p>}
+        <div style={secTitle}>{t("curriculum.title")}</div>
+        {(resources ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("curriculum.empty")}</p>}
         {(resources ?? []).map((r: any) => {
           const href = resourceUrls.get(r.id);
           return (
@@ -561,11 +563,11 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         <form action={addResource} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end", borderTop: "1px solid var(--ink-100)", paddingTop: 10 }}>
           <input type="hidden" name="learnerId" value={id} />
           <input name="file" type="file" required accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt" className={ctl} style={{ width: "auto", flex: 1, minWidth: 200 }} />
-          <input name="title" placeholder="عنوان (اختياري)" className={ctl} style={{ width: "auto" }} />
-          <input name="note" placeholder="ملاحظة (اختياري)" className={ctl} style={{ width: "auto" }} />
-          <SubmitButton pendingText="جارٍ الرفع…" className={btn("secondary")}>ارفع ملفاً</SubmitButton>
+          <input name="title" placeholder={t("curriculum.titlePlaceholder")} className={ctl} style={{ width: "auto" }} />
+          <input name="note" placeholder={t("curriculum.notePlaceholder")} className={ctl} style={{ width: "auto" }} />
+          <SubmitButton pendingText={t("curriculum.uploading")} className={btn("secondary")}>{t("curriculum.upload")}</SubmitButton>
         </form>
-        <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>PDF · Word · PowerPoint · Excel · نصّ — حتى 25 ميغابايت. خاصّةٌ ومعزولة.</p>
+        <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{t("curriculum.formats")}</p>
       </Card>
     </div>
   );
@@ -921,18 +923,18 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   );
 
   const tabs: StudentTab[] = [
-    { key: "overview", label: "عام", content: Overview },
-    { key: "curriculum", label: "المنهج", content: Curriculum },
-    { key: "plan", label: "الخطّة", content: Plan },
-    { key: "sessions", label: "الجلسات", badge: upcoming.length || undefined, content: Sessions },
-    { key: "homework", label: "الواجبات", content: Homework },
-    { key: "assessments", label: "الاختبارات", content: Assessments },
-    { key: "progress", label: "التقدّم", content: Progress },
+    { key: "overview", label: t("tabs.overview"), content: Overview },
+    { key: "curriculum", label: t("tabs.curriculum"), content: Curriculum },
+    { key: "plan", label: t("tabs.plan"), content: Plan },
+    { key: "sessions", label: t("tabs.sessions"), badge: upcoming.length || undefined, content: Sessions },
+    { key: "homework", label: t("tabs.homework"), content: Homework },
+    { key: "assessments", label: t("tabs.assessments"), content: Assessments },
+    { key: "progress", label: t("tabs.progress"), content: Progress },
   ];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <Link href="/studio/students" className={btn("ghost")} style={{ alignSelf: "flex-start" }}>→ كلّ الطلاب</Link>
+      <Link href="/studio/students" className={btn("ghost")} style={{ alignSelf: "flex-start" }}>{t("backToStudents")}</Link>
 
       {/* Header with live signals */}
       <Card style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -941,18 +943,18 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           <div style={{ flex: 1, minWidth: 140 }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-strong)" }}>{name}</div>
             <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
-              {pl?.status === "completed" ? <Badge tone="success">المستوى {pl.suggested_level}</Badge> : pl?.status === "in_progress" ? <Badge tone="warning">التحديد جارٍ</Badge> : <Badge tone="neutral">بلا تحديد</Badge>}
-              {plan && (plan.status === "approved" ? <Badge tone="success">خطّة معتمَدة</Badge> : <Badge tone="warning">خطّة مسودّة</Badge>)}
+              {pl?.status === "completed" ? <Badge tone="success">{t("level", { level: pl.suggested_level })}</Badge> : pl?.status === "in_progress" ? <Badge tone="warning">{t("placementInProgress")}</Badge> : <Badge tone="neutral">{t("noPlacement")}</Badge>}
+              {plan && (plan.status === "approved" ? <Badge tone="success">{t("planApproved")}</Badge> : <Badge tone="warning">{t("planDraft")}</Badge>)}
             </div>
           </div>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 22, fontWeight: 800, color: "var(--brand)", lineHeight: 1 }}>{overall}%</div>
-            <div style={{ fontSize: 11, color: "var(--text-muted)" }}>التقدّم العام</div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("overallProgress")}</div>
           </div>
         </div>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", borderTop: "1px solid var(--ink-100)", paddingTop: 10 }}>
           <span style={{ fontSize: 12.5, color: nextSession ? "var(--leaf-700)" : "var(--text-muted)" }}>
-            {nextSession ? `القادمة: ${fmtUTC(nextSession.scheduled_at)}` : "لا مواعيد قادمة"}
+            {nextSession ? t("nextLabel", { time: fmtUTC(nextSession.scheduled_at) }) : t("noUpcoming")}
           </span>
           {alerts.map((a, i) => <Badge key={i} tone={a.tone}>{a.label}</Badge>)}
         </div>

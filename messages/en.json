@@ -140,7 +140,7 @@
       "signingIn": "Signing in…",
       "signIn": "Sign in",
       "newGuardian": "New guardian?",
-      "enrol": "Enrol your child"
+      "enroll": "Enroll your child"
     },
     "today": {
       "stats": {
@@ -190,6 +190,92 @@
       "upcoming": "{n} upcoming",
       "noUpcoming": "No upcoming sessions",
       "details": "Details →"
+    },
+    "student": {
+      "backToStudents": "← All students",
+      "overallProgress": "Overall progress",
+      "nextLabel": "Next: {time}",
+      "noUpcoming": "No upcoming sessions",
+      "level": "Level {level}",
+      "placementInProgress": "Placement in progress",
+      "noPlacement": "No placement",
+      "planApproved": "Plan approved",
+      "planDraft": "Plan draft",
+      "tabs": {
+        "overview": "Overview",
+        "curriculum": "Curriculum",
+        "plan": "Plan",
+        "sessions": "Sessions",
+        "homework": "Homework",
+        "assessments": "Assessments",
+        "progress": "Progress"
+      },
+      "alerts": {
+        "noApprovedPlan": "No approved plan",
+        "sessionsNoReport": "{n} session(s) without a report",
+        "ungradedHomework": "{n} homework awaiting grading"
+      },
+      "overview": {
+        "diagnosisTitle": "Diagnostic report",
+        "generating": "Generating…",
+        "regenerate": "Regenerate",
+        "generateDiagnostic": "Generate diagnostic",
+        "diagnosticHint": "Generated from the enrollment form, placement test, intro-session report, and internal notes — your starting point.",
+        "saveEdits": "Save changes",
+        "approveDiagnostic": "Approve diagnostic",
+        "nextSessionTitle": "Next session",
+        "noUpcoming": "No upcoming sessions — schedule one from the Sessions tab.",
+        "alertsTitle": "Alerts",
+        "skillsTitle": "Four skills + Building Blocks",
+        "vocabLabel": "Building Blocks — words"
+      },
+      "plan": {
+        "title": "Study plan",
+        "redoPlacement": "Redo placement",
+        "startPlacement": "Start placement test",
+        "placementResult": "Placement result: Level {level}",
+        "draft": "Draft",
+        "approved": "Approved",
+        "approvePlan": "Approve plan — turns lessons into teachable objectives",
+        "syncPlan": "Sync curriculum — add new lessons as objectives",
+        "regenSummary": "Or generate with AI from a curriculum index (replaces the current plan)",
+        "regenHint": "Upload a CEFR curriculum index (image/PDF/text); AI extracts it precisely, without authoring.",
+        "regenHintApproved": " The current curriculum will be replaced — objectives that already carry progress are kept.",
+        "generateFromIndex": "Generate from index",
+        "emptyIntro": "Ward Curriculum (CEFR · A1→B1). Upload a curriculum index (image / PDF / text) — AI reads it and extracts the units and lessons precisely, without authoring.",
+        "reading": "Reading and generating…",
+        "fromLevelSummary": "Or generate from a CEFR level (no index)",
+        "fromLevelHint": "AI generates a graded plan from the placement level ({level}).",
+        "generateFromLevel": "Generate from level",
+        "manualSummary": "Or build a fully manual plan",
+        "manualHint": "Create the plan empty, then add its units and lessons by hand.",
+        "manualTitlePlaceholder": "Plan / curriculum title",
+        "createManual": "Create manual plan"
+      },
+      "curriculum": {
+        "title": "Learning resources",
+        "empty": "No resources yet — upload a file (PDF / Word / PowerPoint / Excel).",
+        "titlePlaceholder": "Title (optional)",
+        "notePlaceholder": "Note (optional)",
+        "upload": "Upload file",
+        "uploading": "Uploading…",
+        "formats": "PDF · Word · PowerPoint · Excel · Text — up to 25 MB. Private and isolated."
+      }
+    },
+    "planBuilder": {
+      "titlePlaceholder": "Plan / curriculum title",
+      "unitNamePlaceholder": "Unit name",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "deleteUnit": "Delete unit",
+      "lessonPlaceholder": "Lesson title / description",
+      "skillPlaceholder": "Skill…",
+      "levelPlaceholder": "Level",
+      "addLesson": "+ Add lesson",
+      "addUnit": "+ Add unit",
+      "save": "Save plan",
+      "saving": "Saving…",
+      "saved": "Saved"
     }
   },
   "guardian": {},

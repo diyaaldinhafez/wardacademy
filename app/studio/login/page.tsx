@@ -34,7 +34,7 @@ export default async function LoginPage() {
           <p className="mt-6 text-center text-sm text-ink-soft">
             {t("newGuardian")}{" "}
             <Link href="/enroll" className="font-semibold text-brand hover:underline">
-              {t("enrol")}
+              {t("enroll")}
             </Link>
           </p>
         </div>
