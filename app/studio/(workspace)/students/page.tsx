@@ -1,10 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { Card, Badge, Avatar } from "@/components/ward/ui";
 
 export default async function StudentsPage() {
   const supabase = await createClient();
+  const t = await getTranslations({ locale: "en", namespace: "studio.students" });
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -32,9 +34,9 @@ export default async function StudentsPage() {
   return (
     <section style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>
-        الطلاب <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({learners.length})</span>
+        {t("title")} <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({learners.length})</span>
       </h2>
-      {learners.length === 0 && <p style={{ fontSize: 14, color: "var(--text-muted)" }}>لا طلاب بعد — تُسنَد الحسابات من الإدارة.</p>}
+      {learners.length === 0 && <p style={{ fontSize: 14, color: "var(--text-muted)" }}>{t("empty")}</p>}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 260px), 1fr))", gap: 12 }}>
         {learners.map((l: any) => {
@@ -52,23 +54,23 @@ export default async function StudentsPage() {
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {pl?.status === "completed" ? (
-                    <Badge tone="success">المستوى {pl.suggested_level}</Badge>
+                    <Badge tone="success">{t("level", { level: pl.suggested_level })}</Badge>
                   ) : pl?.status === "in_progress" ? (
-                    <Badge tone="warning">التحديد جارٍ</Badge>
+                    <Badge tone="warning">{t("placementInProgress")}</Badge>
                   ) : (
-                    <Badge tone="neutral">بلا تحديد</Badge>
+                    <Badge tone="neutral">{t("noPlacement")}</Badge>
                   )}
                   {plan ? (
-                    plan.status === "approved" ? <Badge tone="success">خطّة معتمَدة</Badge> : <Badge tone="warning">خطّة مسودّة</Badge>
+                    plan.status === "approved" ? <Badge tone="success">{t("planApproved")}</Badge> : <Badge tone="warning">{t("planDraft")}</Badge>
                   ) : (
-                    <Badge tone="neutral">بلا خطّة</Badge>
+                    <Badge tone="neutral">{t("noPlan")}</Badge>
                   )}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "auto", paddingTop: 4 }}>
                   <span style={{ fontSize: 12.5, color: upcoming > 0 ? "var(--leaf-700)" : "var(--text-muted)" }}>
-                    {upcoming > 0 ? `${upcoming} موعد قادم` : "لا مواعيد قادمة"}
+                    {upcoming > 0 ? t("upcoming", { n: upcoming }) : t("noUpcoming")}
                   </span>
-                  <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--brand)" }}>التفاصيل ←</span>
+                  <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--brand)" }}>{t("details")}</span>
                 </div>
               </Card>
             </Link>

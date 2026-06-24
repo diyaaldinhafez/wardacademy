@@ -3,15 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { logout } from "@/app/studio/actions";
 import { Avatar } from "@/components/ward/ui";
 import FlowerMark from "@/components/FlowerMark";
 
 const NAV = [
-  { href: "/studio", label: "اليوم", d: "M3 11l9-8 9 8M5 9v11h14V9" },
-  { href: "/studio/students", label: "الطلاب", d: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21v-1a6 6 0 0112 0v1" },
-  { href: "/studio/availability", label: "تفرّغي", d: "M7 3v3m10-3v3M4 8h16M5 6h14a1 1 0 011 1v12a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1z" },
-];
+  { href: "/studio", key: "today", d: "M3 11l9-8 9 8M5 9v11h14V9" },
+  { href: "/studio/students", key: "students", d: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21v-1a6 6 0 0112 0v1" },
+  { href: "/studio/availability", key: "availability", d: "M7 3v3m10-3v3M4 8h16M5 6h14a1 1 0 011 1v12a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1z" },
+] as const;
 
 function NavIcon({ d, size = 17 }: { d: string; size?: number }) {
   return (
@@ -23,18 +24,20 @@ function NavIcon({ d, size = 17 }: { d: string; size?: number }) {
 
 export default function TeacherShell({ teacherName, today, children }: { teacherName: string; today: string; children: ReactNode }) {
   const pathname = usePathname();
+  const t = useTranslations("studio");
   const isActive = (href: string) => (href === "/studio" ? pathname === "/studio" : pathname.startsWith(href));
-  const title = NAV.find((n) => isActive(n.href))?.label ?? "استوديو المعلّمة";
+  const activeNav = NAV.find((n) => isActive(n.href));
+  const title = activeNav ? t(`nav.${activeNav.key}`) : t("nav.fallbackTitle");
 
   return (
-    <div className="app-shell" dir="rtl">
+    <div className="app-shell" dir="ltr">
       {/* Desktop sidebar */}
       <aside className="app-sidebar">
         <Link href="/studio" style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 8px 14px", textDecoration: "none" }}>
           <FlowerMark className="h-9 w-9 shrink-0" />
           <span style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontWeight: 700, fontSize: 15, color: "var(--ward-purple-800)" }}>أكاديمية وَرد</span>
-            <span style={{ fontSize: 11.5, color: "var(--text-muted)" }}>استوديو المعلّمة</span>
+            <span style={{ fontWeight: 700, fontSize: 15, color: "var(--ward-purple-800)" }}>{t("brand")}</span>
+            <span style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{t("studioName")}</span>
           </span>
         </Link>
         {NAV.map((it) => {
@@ -57,7 +60,7 @@ export default function TeacherShell({ teacherName, today, children }: { teacher
               }}
             >
               <NavIcon d={it.d} />
-              {it.label}
+              {t(`nav.${it.key}`)}
             </Link>
           );
         })}
@@ -69,7 +72,7 @@ export default function TeacherShell({ teacherName, today, children }: { teacher
         </div>
         <form action={logout}>
           <button className="ward-btn ward-btn--ghost ward-btn--sm ward-btn--full" style={{ justifyContent: "flex-start", color: "var(--text-muted)" }}>
-            تسجيل الخروج
+            {t("nav.logout")}
           </button>
         </form>
       </aside>
@@ -86,20 +89,20 @@ export default function TeacherShell({ teacherName, today, children }: { teacher
       </div>
 
       {/* Mobile bottom nav */}
-      <nav className="app-bottomnav" dir="rtl">
+      <nav className="app-bottomnav" dir="ltr">
         {NAV.map((it) => {
           const active = isActive(it.href);
           return (
             <Link key={it.href} href={it.href} className="app-bottomnav-item" style={{ color: active ? "var(--text-brand)" : "var(--text-muted)" }}>
               <NavIcon d={it.d} size={20} />
-              {it.label}
+              {t(`nav.${it.key}`)}
             </Link>
           );
         })}
         <form action={logout} style={{ flex: 1, display: "flex" }}>
           <button className="app-bottomnav-item" style={{ color: "var(--text-muted)" }}>
             <NavIcon d="M16 17l5-5-5-5M21 12H9M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" size={20} />
-            خروج
+            {t("nav.logout")}
           </button>
         </form>
       </nav>

@@ -9,7 +9,8 @@
     "actions": {
       "save": "Save",
       "cancel": "Cancel",
-      "back": "Back"
+      "back": "Back",
+      "logout": "Log out"
     },
     "skills": {
       "listening": "Listening",
@@ -120,7 +121,77 @@
       "homeworkNotFound": "We can't find that homework."
     }
   },
-  "studio": {},
+  "studio": {
+    "brand": "Ward Academy",
+    "studioName": "Teacher Studio",
+    "nav": {
+      "today": "Today",
+      "students": "Students",
+      "availability": "Availability",
+      "logout": "Log out",
+      "fallbackTitle": "Teacher Studio",
+      "teacherFallback": "Teacher"
+    },
+    "login": {
+      "title": "Ward Academy",
+      "subtitle": "Sign in",
+      "email": "Email",
+      "password": "Password",
+      "signingIn": "Signing in…",
+      "signIn": "Sign in",
+      "newGuardian": "New guardian?",
+      "enrol": "Enrol your child"
+    },
+    "today": {
+      "stats": {
+        "todaySessions": "Today's sessions",
+        "remainingToday": "Remaining today",
+        "pendingTasks": "Pending tasks",
+        "students": "Your students"
+      },
+      "heroOngoing": "Session in progress",
+      "heroNext": "Next session",
+      "minutes": "{n} min",
+      "lessonPrefix": "· {title}",
+      "prepareLesson": "Prepare lesson →",
+      "heroNone": "No upcoming sessions. Schedule them from a student's page.",
+      "rosterTitle": "Your students",
+      "rosterEmpty": "No students yet.",
+      "needsAttention": "Needs attention",
+      "noLevel": "No level",
+      "details": "Details",
+      "timelineTitle": "Today's sessions",
+      "timelineEmpty": "No sessions today.",
+      "ended": "Ended",
+      "live": "Live",
+      "tasksTitle": "Your tasks today",
+      "tasksBlurb": "Everything awaiting your action, in one place — nothing reaches the student before you approve it.",
+      "tasksEmpty": "All caught up.",
+      "tasksMore": "+ {n} more",
+      "rel": { "now": "Now", "inMinutes": "in {n} min", "inHours": "in {n} h" },
+      "task": {
+        "writeReport": "Write session report — {name}",
+        "approveReport": "Approve session report — {name}",
+        "gradeHomework": "Grade homework: {title} — {name}",
+        "approveAssessment": "Approve assessment: {title} — {name}",
+        "reviewItem": "Review a digital task — {name}",
+        "studentFallback": "student"
+      }
+    },
+    "students": {
+      "title": "Students",
+      "empty": "No students yet — accounts are assigned by admin.",
+      "level": "Level {level}",
+      "placementInProgress": "Placement in progress",
+      "noPlacement": "No placement",
+      "planApproved": "Plan approved",
+      "planDraft": "Plan draft",
+      "noPlan": "No plan",
+      "upcoming": "{n} upcoming",
+      "noUpcoming": "No upcoming sessions",
+      "details": "Details →"
+    }
+  },
   "guardian": {},
   "admin": {},
   "landing": {},
