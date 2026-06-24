@@ -6,9 +6,10 @@ import RuleForm from "@/components/admin/RuleForm";
 import AvailabilityMatrix from "@/components/availability/AvailabilityMatrix";
 import SubmitButton from "@/components/studio/SubmitButton";
 import { addIntroRule, deleteIntroRule, regenerateIntroSlots } from "@/app/admin/actions";
-import { labelOf } from "@/lib/enrollOptions";
-import { WEEKDAY_AR, sessionsPerRule } from "@/lib/availability";
-import { PIPELINE, computePipeline } from "@/lib/leads";
+import { getTranslations } from "next-intl/server";
+import { labelOfEn } from "@/lib/enrollOptions";
+import { WEEKDAY_EN, sessionsPerRule } from "@/lib/availability";
+import { PIPELINE, PIPELINE_EN, ACTION_LABEL_EN, computePipeline } from "@/lib/leads";
 import { fmtUTC } from "@/lib/datetime";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -20,6 +21,8 @@ export default async function RegistrationsPage({
 }) {
   const { status = "", q = "" } = await searchParams;
   const supabase = await createClient();
+  const t = await getTranslations({ locale: "en", namespace: "admin.registrations" });
+  const ta = await getTranslations({ locale: "en", namespace: "availability" });
 
   const { data: leadsRaw } = await supabase
     .from("leads")
@@ -55,7 +58,7 @@ export default async function RegistrationsPage({
     return true;
   });
 
-  const tabs = [...PIPELINE, { key: "archived", label: "المؤرشفة" }];
+  const tabs = [...PIPELINE.map((p) => ({ key: p.key, label: PIPELINE_EN[p.key] ?? p.label })), { key: "archived", label: t("archivedTab") }];
   const tabHref = (key: string) => `/admin/registrations${key ? `?status=${key}` : ""}`;
 
   return (
@@ -64,25 +67,25 @@ export default async function RegistrationsPage({
       <Card style={{ display: "flex", flexDirection: "column", gap: 0 }}>
         <details>
           <summary style={{ cursor: "pointer", fontSize: 14.5, fontWeight: 700, color: "var(--text-strong)", listStyle: "none", display: "flex", alignItems: "center", gap: 8 }}>
-            📅 مواعيد الجلسات التعريفية
-            <span style={{ fontSize: 12, fontWeight: 400, color: "var(--text-muted)" }}>(منفصلةٌ عن تفرّغ المعلّم — يحجزها الزائر في القمع)</span>
+            {t("introSlotsTitle")}
+            <span style={{ fontSize: 12, fontWeight: 400, color: "var(--text-muted)" }}>{t("introSlotsHint")}</span>
           </summary>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
-            {(introRules ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا مواعيد بعد — أضِف نافذةً أدناه.</p>}
+            {(introRules ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("introSlotsEmpty")}</p>}
             {(introRules ?? []).map((r: any) => (
               <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid var(--ink-100)", paddingBottom: 8 }}>
-                <Badge tone="brand">{WEEKDAY_AR[r.weekday]}</Badge>
+                <Badge tone="brand">{WEEKDAY_EN[r.weekday]}</Badge>
                 <span style={{ fontSize: 14, color: "var(--text-body)", fontVariantNumeric: "tabular-nums" }}>{String(r.start_time).slice(0, 5)} – {String(r.end_time).slice(0, 5)}</span>
-                <Badge tone="success">≈ {sessionsPerRule(r.start_time, r.end_time, r.slot_minutes, introBrk)} موعد/أسبوع</Badge>
+                <Badge tone="success">{t("slotsPerWeek", { n: sessionsPerRule(r.start_time, r.end_time, r.slot_minutes, introBrk) })}</Badge>
                 <form action={deleteIntroRule} style={{ marginInlineStart: "auto" }}>
                   <input type="hidden" name="ruleId" value={r.id} />
-                  <SubmitButton className="ward-btn ward-btn--danger ward-btn--sm">حذف</SubmitButton>
+                  <SubmitButton className="ward-btn ward-btn--danger ward-btn--sm">{ta("delete")}</SubmitButton>
                 </form>
               </div>
             ))}
             <RuleForm breakMinutes={introBrk} action={addIntroRule} />
             <form action={regenerateIntroSlots}>
-              <SubmitButton pendingText="…" className="ward-btn ward-btn--ghost ward-btn--sm">حدِّث مواعيد الحجز</SubmitButton>
+              <SubmitButton pendingText="…" className="ward-btn ward-btn--ghost ward-btn--sm">{t("refreshSlots")}</SubmitButton>
             </form>
             <AvailabilityMatrix rules={(introRules ?? []) as any} />
           </div>
@@ -114,11 +117,11 @@ export default async function RegistrationsPage({
       {/* Search */}
       <form method="get" action="/admin/registrations" style={{ display: "flex", gap: 8 }}>
         {status && <input type="hidden" name="status" value={status} />}
-        <input name="q" defaultValue={q} placeholder="ابحث بالاسم أو الجوال…" className="ward-field__control" style={{ maxWidth: 320 }} />
-        <button type="submit" className="ward-btn ward-btn--secondary ward-btn--md">بحث</button>
+        <input name="q" defaultValue={q} placeholder={t("searchPh")} className="ward-field__control" style={{ maxWidth: 320 }} />
+        <button type="submit" className="ward-btn ward-btn--secondary ward-btn--md">{t("search")}</button>
       </form>
 
-      {leads.length === 0 && <p style={{ fontSize: 14, color: "var(--text-muted)" }}>لا طلبات مطابِقة.</p>}
+      {leads.length === 0 && <p style={{ fontSize: 14, color: "var(--text-muted)" }}>{t("noMatch")}</p>}
 
       {/* List */}
       {leads.length > 0 && (
@@ -137,7 +140,7 @@ export default async function RegistrationsPage({
                 <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                   <Link
                     href={`/admin/registrations/${l.id}`}
-                    title="عرض كلّ بيانات الطلب"
+                    title={t("viewLeadTitle")}
                     style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 160, textDecoration: "none" }}
                   >
                     <Avatar name={l.student_name ?? "?"} size={40} />
@@ -145,11 +148,11 @@ export default async function RegistrationsPage({
                       <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>
                         {l.student_name}{" "}
                         <span style={{ fontWeight: 400, fontSize: 13, color: "var(--text-muted)" }}>
-                          · {l.student_age ? `${l.student_age} سنة` : "—"} · {labelOf("level", l.student_level)}
+                          · {l.student_age ? t("yearsOld", { n: l.student_age }) : "—"} · {labelOfEn("level", l.student_level)}
                         </span>
                       </div>
                       <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
-                        {l.guardian_name} {booked ? `· موعد: ${fmtUTC(booked)}` : "· بلا حجز"}
+                        {l.guardian_name} {booked ? t("leadAppt", { time: fmtUTC(booked) }) : t("leadNoBooking")}
                       </div>
                     </div>
                   </Link>
@@ -157,7 +160,7 @@ export default async function RegistrationsPage({
                     href={`/admin/registrations/${l.id}`}
                     className={`ward-btn ${nextAction ? "ward-btn--warm" : "ward-btn--ghost"} ward-btn--sm`}
                   >
-                    {nextAction ? `${nextAction.label} ←` : "عرض"}
+                    {nextAction ? `${ACTION_LABEL_EN[nextAction.key]} →` : t("view")}
                   </Link>
                 </div>
                 <PipelineStepper steps={steps} currentIndex={currentIndex} size="sm" />

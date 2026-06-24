@@ -153,3 +153,18 @@ export const LABELS: Record<string, Record<string, string>> = {
 };
 export const labelOf = (group: keyof typeof LABELS, value?: string | null) =>
   value ? LABELS[group]?.[value] ?? value : "—";
+
+// English labels for the admin view (admin is English by internal decision).
+// The enrolment form itself stays Arabic (parent-facing, surface 5).
+export const LABELS_EN: Record<string, Record<string, string>> = {
+  schoolType: { public: "Public school", private: "Private school", homeschool: "Homeschool" },
+  goal: { general: "General English", curriculum: "School-curriculum support", conversation: "Conversation & fluency", foundation: "Beginner foundation", exam: "Exam/certificate prep" },
+  level: { beginner: "Beginner", basic: "Basic", intermediate: "Intermediate", advanced: "Advanced" },
+  rating: { weak: "Weak", fair: "Fair", good: "Good", excellent: "Excellent" },
+  priorStudy: { none: "No, school only", courses: "Yes, courses", tutor: "Yes, private tutor", apps: "Yes, apps/self-study" },
+  englishUse: { home_school: "Home & school daily", school_only: "School only", sometimes: "Sometimes (media, games, friends)", rarely: "Rarely — daily language isn't English" },
+  relation: { father: "Father", mother: "Mother", guardian: "Guardian", other: "Other" },
+  referral: { facebook: "Facebook", instagram: "Instagram", friend: "Friend/acquaintance", search: "Google search", other: "Other source" },
+};
+export const labelOfEn = (group: keyof typeof LABELS_EN, value?: string | null) =>
+  value ? LABELS_EN[group]?.[value] ?? value : "—";

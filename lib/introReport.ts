@@ -38,6 +38,13 @@ export const INTRO_LABELS: Record<string, Record<string, string>> = {
   focus: toMap(FOCUS),
   decision: toMap(DECISION),
 };
+// English labels for the admin operator form (the AI report it feeds stays parent-facing).
+export const INTRO_LABELS_EN: Record<string, Record<string, string>> = {
+  engagement: { shy_then_warm: "Shy at first, then engaged", engaged: "Engaged and eager", calm_focused: "Calm and focused", needs_encouragement: "Needs encouragement" },
+  strengths: { pronunciation: "Pronunciation", listening: "Listening", vocabulary: "Vocabulary", confidence: "Confidence", comprehension: "Comprehension", enthusiasm: "Enthusiasm" },
+  focus: { listening: "Listening", speaking: "Speaking", reading: "Reading", writing: "Writing" },
+  decision: { enroll: "Decided to enroll", considering: "Considering", declined: "Not interested now" },
+};
 export const introLabel = (group: keyof typeof INTRO_LABELS, value?: string | null) =>
   value ? INTRO_LABELS[group]?.[value] ?? value : "";
 export const introLabels = (group: keyof typeof INTRO_LABELS, values?: string[] | null) =>

@@ -10,6 +10,15 @@ export const LEAD_STATUS_AR: Record<string, string> = {
   converted: "مُحوّل",
   archived: "مؤرشف",
 };
+// English (admin is English by internal decision).
+export const LEAD_STATUS_EN: Record<string, string> = {
+  new: "New",
+  booked: "Booked",
+  testing: "Testing",
+  tested: "Tested",
+  converted: "Converted",
+  archived: "Archived",
+};
 
 export const LEAD_STATUS_TONE: Record<string, Tone> = {
   new: "apricot",
@@ -59,33 +68,50 @@ export type PipelineInput = {
   converted: boolean;
 };
 
-function actionFor(i: number, input: PipelineInput): { label: string; tone: Tone } {
+function actionFor(i: number, input: PipelineInput): { key: string; tone: Tone } {
   switch (i) {
     case 1:
-      return { label: "أرسِل رابط الحجز", tone: "apricot" };
+      return { key: "sendBookingLink", tone: "apricot" };
     case 2:
-      if (!input.testStatus) return { label: "ولّد الاختبار", tone: "brand" };
-      if (input.testStatus === "draft") return { label: "اعتمد الاختبار", tone: "warning" };
-      return { label: "بانتظار حلّ الطالب", tone: "neutral" };
+      if (!input.testStatus) return { key: "generateTest", tone: "brand" };
+      if (input.testStatus === "draft") return { key: "approveTest", tone: "warning" };
+      return { key: "awaitingStudent", tone: "neutral" };
     case 3:
-      if (input.introStatus === "draft") return { label: "أرسِل تقرير الجلسة", tone: "warning" };
-      return { label: "سجّل تقرير الجلسة", tone: "brand" };
+      if (input.introStatus === "draft") return { key: "sendReport", tone: "warning" };
+      return { key: "logReport", tone: "brand" };
     case 4:
-      if (input.paymentStatus === "link_sent") return { label: "بانتظار الدفع", tone: "neutral" };
-      return { label: "أرسِل رابط الدفع", tone: "apricot" };
+      if (input.paymentStatus === "link_sent") return { key: "awaitingPayment", tone: "neutral" };
+      return { key: "sendPaymentLink", tone: "apricot" };
     case 5:
-      return { label: "جهّز الحسابات", tone: "success" };
+      return { key: "provisionAccounts", tone: "success" };
     default:
-      return { label: "عرض", tone: "neutral" };
+      return { key: "view", tone: "neutral" };
   }
 }
+
+// English labels (admin) for the next-action chip + the status filter tabs.
+export const ACTION_LABEL_EN: Record<string, string> = {
+  sendBookingLink: "Send booking link",
+  generateTest: "Generate test",
+  approveTest: "Approve test",
+  awaitingStudent: "Awaiting student",
+  sendReport: "Send session report",
+  logReport: "Log session report",
+  awaitingPayment: "Awaiting payment",
+  sendPaymentLink: "Send payment link",
+  provisionAccounts: "Provision accounts",
+  view: "View",
+};
+export const PIPELINE_EN: Record<string, string> = {
+  "": "All", new: "New", booked: "Booked", testing: "Testing", tested: "Tested", converted: "Converted",
+};
 
 /** Compute the pipeline: each step's done state (contiguous), the current step,
  * and the single next action. One place feeds the list, the detail, and the buttons. */
 export function computePipeline(input: PipelineInput): {
   steps: Step[];
   currentIndex: number;
-  nextAction: { label: string; tone: Tone } | null;
+  nextAction: { key: string; tone: Tone } | null;
 } {
   const raw = [
     true, // register — the lead exists

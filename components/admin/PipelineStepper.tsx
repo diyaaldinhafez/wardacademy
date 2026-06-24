@@ -1,9 +1,10 @@
 import { Fragment } from "react";
-import type { Step } from "@/lib/leads";
+import { getTranslations } from "next-intl/server";
+import { type Step, PIPELINE_LABEL_EN } from "@/lib/leads";
 
 /** Visual registration pipeline: connected dots with three states
- * (done / current / upcoming). RTL-safe (flex order), no positioning tricks. */
-export default function PipelineStepper({
+ * (done / current / upcoming). LTR (flex order), no positioning tricks. */
+export default async function PipelineStepper({
   steps,
   currentIndex,
   size = "md",
@@ -12,17 +13,19 @@ export default function PipelineStepper({
   currentIndex: number;
   size?: "sm" | "md";
 }) {
+  const t = await getTranslations({ locale: "en", namespace: "admin.pipeline" });
   const dot = size === "sm" ? 12 : 16;
   const labelSize = size === "sm" ? 10.5 : 12.5;
   const lineTop = dot / 2 - 1;
-  const caption = currentIndex < steps.length ? steps[currentIndex].label : "مكتمل";
+  const stepLabel = (s: Step) => PIPELINE_LABEL_EN[s.key] ?? s.label;
+  const caption = currentIndex < steps.length ? stepLabel(steps[currentIndex]) : t("complete");
 
   return (
     <div style={{ width: "100%" }}>
       <div className="only-mobile" style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
-        المرحلة الحالية: <b style={{ color: currentIndex < steps.length ? "var(--text-strong)" : "var(--leaf-700)" }}>{caption}</b>
+        {t("currentStage")} <b style={{ color: currentIndex < steps.length ? "var(--text-strong)" : "var(--leaf-700)" }}>{caption}</b>
       </div>
-      <div role="list" aria-label="مراحل التسجيل" style={{ display: "flex", alignItems: "flex-start", width: "100%" }}>
+      <div role="list" aria-label={t("stagesAria")} style={{ display: "flex", alignItems: "flex-start", width: "100%" }}>
       {steps.map((s, i) => {
         const state = s.done ? "done" : i === currentIndex ? "current" : "upcoming";
         const bg = state === "done" ? "var(--leaf-500)" : state === "current" ? "#fff" : "var(--ink-200)";
@@ -39,7 +42,7 @@ export default function PipelineStepper({
             )}
             <div
               role="listitem"
-              aria-label={`${s.label}: ${state === "done" ? "مكتملة" : state === "current" ? "الحالية" : "قادمة"}`}
+              aria-label={`${stepLabel(s)}: ${state === "done" ? t("done") : state === "current" ? t("current") : t("upcoming")}`}
               style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, flexShrink: 0 }}
             >
               <span
@@ -61,7 +64,7 @@ export default function PipelineStepper({
                 )}
               </span>
               <span className="step-label" style={{ fontSize: labelSize, fontWeight: labelWeight, color: labelColor, whiteSpace: "nowrap" }}>
-                {s.label}
+                {stepLabel(s)}
               </span>
             </div>
           </Fragment>
