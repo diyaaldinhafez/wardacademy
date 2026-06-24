@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { getTranslations } from "next-intl/server";
 import { FORMAT_LABELS } from "@/lib/items";
 import { Badge } from "@/components/ward/ui";
 
@@ -11,7 +12,8 @@ function formatAnswer(answer: unknown, options?: string[]): string {
 }
 
 /** A single AI/teacher item rendered in the Ward kit style (question card). */
-export default function ItemCard({ it, index, right }: { it: any; index?: number; right?: ReactNode }) {
+export default async function ItemCard({ it, index, right }: { it: any; index?: number; right?: ReactNode }) {
+  const t = await getTranslations({ locale: "en", namespace: "studio.student.item" });
   const content = (it.content ?? {}) as { options?: string[] };
   const keys = (Array.isArray(it.item_keys) ? it.item_keys[0] : it.item_keys) ?? {};
   const answer = keys.answer;
@@ -58,17 +60,17 @@ export default function ItemCard({ it, index, right }: { it: any; index?: number
       )}
       {answer !== undefined && answer !== null && (!Array.isArray(content.options) || content.options.length === 0) && (
         <p style={{ fontSize: 13 }}>
-          <span style={{ fontWeight: 700, color: "var(--leaf-700)" }}>الإجابة:</span> {formatAnswer(answer, content.options)}
+          <span style={{ fontWeight: 700, color: "var(--leaf-700)" }}>{t("answer")}</span> {formatAnswer(answer, content.options)}
         </p>
       )}
       {rubric && (
         <p style={{ fontSize: 13, color: "var(--text-muted)", whiteSpace: "pre-line" }}>
-          <span style={{ fontWeight: 600 }}>سلّم التصحيح:</span> {rubric}
+          <span style={{ fontWeight: 600 }}>{t("rubric")}</span> {rubric}
         </p>
       )}
       {explanation && (
         <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
-          <span style={{ fontWeight: 600 }}>السبب:</span> {explanation}
+          <span style={{ fontWeight: 600 }}>{t("why")}</span> {explanation}
         </p>
       )}
     </div>

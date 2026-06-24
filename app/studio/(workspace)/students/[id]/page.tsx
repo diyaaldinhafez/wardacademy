@@ -19,12 +19,12 @@ import PlanBuilder from "@/components/studio/PlanBuilder";
 import ItemCard from "@/components/studio/ItemCard";
 import VideoCall from "@/components/VideoCall";
 import { Card, Badge, Avatar, AITrustBadge, Spark } from "@/components/ward/ui";
-import { SKILLS, SKILL_AR, VOCAB_AR } from "@/lib/skills";
+import { SKILLS } from "@/lib/skills";
 import { getTranslations } from "next-intl/server";
 import { UnitBloom, FlowerProgress, ScopeChip, VocabCounter } from "@/components/bloom/Bloom";
 import { fetchStudentBloom } from "@/lib/progress/bloom";
 import { FORMAT_LABELS, ITEM_FORMATS, DIFFICULTIES } from "@/lib/items";
-import { WEEKDAY_AR } from "@/lib/availability";
+import { WEEKDAY_EN } from "@/lib/availability";
 import { fmtUTC } from "@/lib/datetime";
 
 const one = (o: any) => (Array.isArray(o) ? o[0] : o);
@@ -45,10 +45,10 @@ function fileKind(name?: string | null, mime?: string | null): string {
 }
 
 function subStatus(sub: any) {
-  if (!sub) return { tone: "neutral" as const, label: "لم يُسلَّم" };
-  if (!sub.graded) return { tone: "warning" as const, label: "بانتظار التصحيح" };
-  if (!sub.counts_toward_mastery) return { tone: "brand" as const, label: "أُنجز" };
-  return sub.is_correct ? { tone: "success" as const, label: "صحيح" } : { tone: "danger" as const, label: "يحتاج مراجعة" };
+  if (!sub) return { tone: "neutral" as const, key: "notSubmitted" };
+  if (!sub.graded) return { tone: "warning" as const, key: "awaitingGrading" };
+  if (!sub.counts_toward_mastery) return { tone: "brand" as const, key: "done" };
+  return sub.is_correct ? { tone: "success" as const, key: "correct" } : { tone: "danger" as const, key: "needsReview" };
 }
 
 export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -65,6 +65,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   // The teacher studio is English by internal decision — force `en` for UI text.
   const t = await getTranslations({ locale: "en", namespace: "studio.student" });
   const tc = await getTranslations({ locale: "en", namespace: "common" });
+  const skillLabel = (sk: string) => (["listening", "speaking", "reading", "writing"].includes(sk) ? tc(`skills.${sk}`) : sk === "vocabulary" ? tc("vocab.label") : sk);
 
   const { data: pl } = await supabase.from("placement_tests").select("status, suggested_level, created_at").eq("learner_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle();
   const { data: plan } = await supabase.from("study_plans").select("id, title, level, items, status, track, scope_label, milestone_label").eq("learner_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle();
@@ -76,7 +77,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const petals = bloom.skills.map((s) => ({ name: s.skill, label: tc(`skills.${s.skill}`), value: s.fraction }));
   const overall = bloom.skills.length ? Math.round((bloom.skills.reduce((a, s) => a + s.fraction, 0) / bloom.skills.length) * 100) : 0;
   const skillStats = bloom.skills;
-  const lagging = bloom.skills.filter((s) => s.total > 0 && s.fraction < 0.5).map((s) => SKILL_AR[s.skill]);
+  const lagging = bloom.skills.filter((s) => s.total > 0 && s.fraction < 0.5).map((s) => skillLabel(s.skill));
   const startedUnits = bloom.startedUnits;
   // Catalog units drive AI unit-test generation (auto evidence feeds the new model).
   const { data: curriculumUnits } = await supabase
@@ -191,7 +192,6 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     if (h.session_id) { const arr = manualBySession.get(h.session_id) ?? []; arr.push(h); manualBySession.set(h.session_id, arr); }
     else looseManual.push(h);
   }
-  const HW_KIND_AR: Record<string, string> = { prompt: "صورة الواجب", worksheet: "ورقة عمل", submission: "حلّ الطالب" };
 
   // Alerts
   const pastNoReport = past.filter((s: any) => !one(s.session_reports)).length;
@@ -211,7 +211,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
         <span style={{ color: "var(--text-body)", flex: 1 }}>{it.prompt}</span>
         <Badge tone="neutral">{FORMAT_LABELS[it.format as keyof typeof FORMAT_LABELS] ?? it.format}</Badge>
-        <Badge tone={st.tone}>{st.label}</Badge>
+        <Badge tone={st.tone}>{t(`status.${st.key}`)}</Badge>
       </div>
     );
   };
@@ -222,10 +222,10 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         <input type="hidden" name="learnerId" value={id} />
         <input type="hidden" name="sessionId" value={sessionId} />
         <select name="itemId" required defaultValue="" className={sel} style={{ width: "auto", minHeight: 34, maxWidth: 220, fontSize: 12.5 }}>
-          <option value="" disabled>أسنِد واجباً رقمياً…</option>
+          <option value="" disabled>{t("homework.assignPlaceholder")}</option>
           {(approvedItems ?? []).map((it: any) => <option key={it.id} value={it.id}>{it.prompt.slice(0, 40)}</option>)}
         </select>
-        <SubmitButton pendingText="…" className={btn("ghost")}>أضِف</SubmitButton>
+        <SubmitButton pendingText="…" className={btn("ghost")}>{t("homework.add")}</SubmitButton>
       </form>
     );
 
@@ -234,11 +234,11 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     const tFiles = (h.homework_files ?? []).filter((f: any) => f.kind !== "submission");
     const subFiles = (h.homework_files ?? []).filter((f: any) => f.kind === "submission");
     const tone = h.status === "graded" ? "success" : h.status === "submitted" ? "warning" : "neutral";
-    const label = h.status === "graded" ? `مُصحَّح${h.score != null ? `: ${h.score}${h.max_score != null ? `/${h.max_score}` : ""}` : ""}` : h.status === "submitted" ? "بانتظار التصحيح" : "بانتظار حلّ الطالب";
+    const label = h.status === "graded" ? `${t("manualHw.graded")}${h.score != null ? `: ${h.score}${h.max_score != null ? `/${h.max_score}` : ""}` : ""}` : h.status === "submitted" ? t("manualHw.awaitingGrading") : t("manualHw.awaitingStudent");
     return (
       <div style={{ borderRadius: 10, background: "var(--surface-soft)", padding: 10, display: "flex", flexDirection: "column", gap: 6 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <Badge tone="brand">يدويّ</Badge>
+          <Badge tone="brand">{t("manualHw.tag")}</Badge>
           <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-strong)", flex: 1 }}>{h.title}</span>
           <Badge tone={tone}>{label}</Badge>
           <form action={removeManualHomework}><input type="hidden" name="manualHomeworkId" value={h.id} /><input type="hidden" name="learnerId" value={id} /><SubmitButton className={btn("ghost")}>✕</SubmitButton></form>
@@ -249,7 +249,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             const href = hwFileUrls.get(f.id);
             return href ? (
               <a key={f.id} href={href} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: f.kind === "submission" ? "var(--leaf-700)" : "var(--brand)", textDecoration: "none", border: "1px solid var(--border-soft)", borderRadius: 8, padding: "3px 8px" }}>
-                {HW_KIND_AR[f.kind]} ↓
+                {t(`hwKind.${f.kind}`)} ↓
               </a>
             ) : null;
           })}
@@ -258,48 +258,51 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           <form action={gradeManualHomework} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
             <input type="hidden" name="manualHomeworkId" value={h.id} />
             <input type="hidden" name="learnerId" value={id} />
-            <input name="score" type="number" placeholder="الدرجة" className={ctl} style={{ width: 90 }} />
-            <input name="maxScore" type="number" placeholder="من" className={ctl} style={{ width: 80 }} />
-            <input name="feedback" placeholder="ملاحظة" className={ctl} style={{ width: "auto", flex: 1, minWidth: 120 }} />
-            <SubmitButton pendingText="…" className={btn("success")}>صحّح</SubmitButton>
+            <input name="score" type="number" placeholder={t("manualHw.scorePlaceholder")} className={ctl} style={{ width: 90 }} />
+            <input name="maxScore" type="number" placeholder={t("manualHw.outOfPlaceholder")} className={ctl} style={{ width: 80 }} />
+            <input name="feedback" placeholder={t("manualHw.feedbackPlaceholder")} className={ctl} style={{ width: "auto", flex: 1, minWidth: 120 }} />
+            <SubmitButton pendingText="…" className={btn("success")}>{t("manualHw.grade")}</SubmitButton>
           </form>
         )}
-        {h.status === "graded" && h.feedback && <p style={{ fontSize: 12.5, color: "var(--text-muted)" }}>ملاحظة: {h.feedback}</p>}
+        {h.status === "graded" && h.feedback && <p style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{t("manualHw.notePrefix")} {h.feedback}</p>}
       </div>
     );
   };
 
   const ManualHwCreate = ({ sessionId }: { sessionId: string | null }) => (
     <details>
-      <summary style={{ fontSize: 12.5, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>+ واجبٌ يدويّ (من الكتاب)</summary>
+      <summary style={{ fontSize: 12.5, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>{t("homework.manualSummary")}</summary>
       <form action={createManualHomework} style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
         <input type="hidden" name="learnerId" value={id} />
         {sessionId && <input type="hidden" name="sessionId" value={sessionId} />}
-        <input name="title" required placeholder="عنوان الواجب" className={ctl} />
-        <input name="instructions" placeholder="تعليمات (اختياري)" className={ctl} />
-        <label style={{ fontSize: 11.5, color: "var(--text-muted)" }}>صورة الواجب من الكتاب (مطلوبة)</label>
+        <input name="title" required placeholder={t("homework.manualTitlePlaceholder")} className={ctl} />
+        <input name="instructions" placeholder={t("homework.manualInstructionsPlaceholder")} className={ctl} />
+        <label style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{t("homework.manualPromptLabel")}</label>
         <input name="prompt" type="file" required accept="image/*,.pdf" className={ctl} />
-        <label style={{ fontSize: 11.5, color: "var(--text-muted)" }}>أوراق عمل (اختياري، متعدّدة)</label>
+        <label style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{t("homework.manualWorksheetsLabel")}</label>
         <input name="worksheets" type="file" multiple accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" className={ctl} />
-        <SubmitButton pendingText="جارٍ الرفع…" className={btn("secondary")}>أنشئ الواجب اليدويّ</SubmitButton>
+        <SubmitButton pendingText={t("homework.manualUploading")} className={btn("secondary")}>{t("homework.manualCreate")}</SubmitButton>
       </form>
     </details>
   );
 
   // Post-session report: teacher fills ready choices + an open note → AI writes it.
-  const REPORT_FIELDS: { name: string; label: string; required?: boolean; opts: string[] }[] = [
-    { name: "engagement", label: "تفاعل الطالب وحضوره", required: true, opts: ["متفاعلٌ ومتحمّس", "جيّد", "هادئ", "يحتاج تحفيزاً"] },
-    { name: "comprehension", label: "فهم الدرس", required: true, opts: ["تجاوز التوقّعات", "حقّق هدف الدرس", "حقّقه جزئياً", "يحتاج إعادة"] },
-    { name: "behavior", label: "المشاركة والسلوك", opts: ["متعاونٌ ومنظّم", "جيّد", "يحتاج متابعة"] },
-    { name: "focusNext", label: "تركيز الجلسة القادمة", opts: ["مواصلة المنهج", "مراجعة الدرس", "مزيد تدريبٍ على المهارة"] },
-  ];
+  const REPORT_FIELDS = (["engagement", "comprehension", "behavior", "focusNext"] as const).map((nameKey) => ({
+    name: nameKey,
+    required: nameKey === "engagement" || nameKey === "comprehension",
+    label: t(`reportFields.${nameKey}.label`),
+    opts: t.raw(`reportFields.${nameKey}.opts`) as string[],
+  }));
+  // Parent-facing WhatsApp template — English-first default; the bilingual (Arabic)
+  // layer comes in the comms surface (plan surface 6). Interpolated values
+  // (report.summary/strengths/improve) are the AI-authored content, left as-is.
   const reportWaLink = (s: any, report: any) => {
     if (!guardianPhone) return null;
     const text =
-      `*تقرير جلسة ${name}*\n${fmtUTC(s.scheduled_at)}${s.lesson_title ? ` — ${s.lesson_title}` : ""}\n\n${report.summary}` +
-      (report.strengths ? `\n\n✨ نقاط القوّة: ${report.strengths}` : "") +
-      (report.improve ? `\n🎯 الخطوة القادمة: ${report.improve}` : "") +
-      `\n\nأكاديمية وَرد`;
+      `*${name} — ${t("report.title")}*\n${fmtUTC(s.scheduled_at)}${s.lesson_title ? ` — ${s.lesson_title}` : ""}\n\n${report.summary}` +
+      (report.strengths ? `\n\n${t("report.strengthsPlaceholder")}: ${report.strengths}` : "") +
+      (report.improve ? `\n${t("report.nextStepPlaceholder")}: ${report.improve}` : "") +
+      `\n\n${tc("appName")}`;
     return `https://wa.me/${guardianPhone}?text=${encodeURIComponent(text)}`;
   };
 
@@ -310,31 +313,31 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       <div style={{ borderRadius: 12, border: "1px solid var(--border-soft)", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-strong)", fontVariantNumeric: "tabular-nums" }}>{fmtUTC(s.scheduled_at)}</span>
-          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>· {s.duration_minutes}د</span>
-          {showReport && report?.status === "approved" && <Badge tone="success">تقريرٌ مُرسَل</Badge>}
+          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>· {t("sched.minutes", { n: s.duration_minutes })}</span>
+          {showReport && report?.status === "approved" && <Badge tone="success">{t("report.sent")}</Badge>}
         </div>
-        {s.lesson_title && <div style={{ fontSize: 13, color: "var(--text-body)" }}>📖 الدرس: <strong>{s.lesson_title}</strong></div>}
+        {s.lesson_title && <div style={{ fontSize: 13, color: "var(--text-body)" }}>{t("report.lessonLabel")} <strong>{s.lesson_title}</strong></div>}
         {showJoin && s.status === "scheduled" && <VideoCall sessionId={s.id} />}
 
         {showReport && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--ink-100)", paddingTop: 8 }}>
-            <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-strong)" }}>تقرير الجلسة</span>
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-strong)" }}>{t("report.title")}</span>
 
             {!report && (
               <form action={draftReportWithAI} style={{ display: "flex", flexDirection: "column", gap: 8, background: "var(--surface-soft)", borderRadius: 10, padding: 10 }}>
                 <input type="hidden" name="sessionId" value={s.id} />
-                <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>عبّئي اختيارات الجلسة، ويكتب الذكاء تقريراً موجزاً لوليّ الأمر تراجعينه قبل الإرسال.</p>
+                <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{t("report.draftHint")}</p>
                 {REPORT_FIELDS.map((f) => (
                   <label key={f.name} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
                     <span style={{ width: 130, flexShrink: 0, color: "var(--text-body)" }}>{f.label}</span>
                     <select name={f.name} required={f.required} defaultValue="" className={sel} style={{ flex: 1, minHeight: 36, fontSize: 12.5 }}>
-                      <option value="" disabled>اختَر…</option>
+                      <option value="" disabled>{t("report.select")}</option>
                       {f.opts.map((o) => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </label>
                 ))}
-                <textarea name="teacherNote" rows={2} className={ctl} placeholder="ملاحظةٌ من الجلسة (سؤال مفتوح، اختياري)" />
-                <SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}><Spark size={13} /> ولّد التقرير بالذكاء</SubmitButton>
+                <textarea name="teacherNote" rows={2} className={ctl} placeholder={t("report.notePlaceholder")} />
+                <SubmitButton pendingText={t("report.generating")} className={btn("soft")}><Spark size={13} /> {t("report.generate")}</SubmitButton>
               </form>
             )}
 
@@ -343,14 +346,14 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                 <AITrustBadge status="draft" />
                 <form action={updateReport} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <input type="hidden" name="reportId" value={report.id} />
-                  <textarea name="summary" required rows={3} defaultValue={report.summary ?? ""} className={ctl} placeholder="الملخّص" />
-                  <input name="strengths" defaultValue={report.strengths ?? ""} className={ctl} placeholder="نقاط القوّة" />
-                  <input name="improve" defaultValue={report.improve ?? ""} className={ctl} placeholder="الخطوة القادمة" />
-                  <SubmitButton pendingText="…" className={btn("secondary")}>احفظ التعديلات</SubmitButton>
+                  <textarea name="summary" required rows={3} defaultValue={report.summary ?? ""} className={ctl} placeholder={t("report.summaryPlaceholder")} />
+                  <input name="strengths" defaultValue={report.strengths ?? ""} className={ctl} placeholder={t("report.strengthsPlaceholder")} />
+                  <input name="improve" defaultValue={report.improve ?? ""} className={ctl} placeholder={t("report.nextStepPlaceholder")} />
+                  <SubmitButton pendingText="…" className={btn("secondary")}>{t("report.saveEdits")}</SubmitButton>
                 </form>
                 <form action={approveReport}>
                   <input type="hidden" name="reportId" value={report.id} />
-                  <SubmitButton pendingText="…" className={btn("success")}>اعتمِد التقرير</SubmitButton>
+                  <SubmitButton pendingText="…" className={btn("success")}>{t("report.approve")}</SubmitButton>
                 </form>
               </div>
             )}
@@ -359,16 +362,16 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
               <div style={{ display: "flex", flexDirection: "column", gap: 8, background: "var(--surface-soft)", borderRadius: 10, padding: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                   <AITrustBadge status="approved" compact />
-                  <span style={{ fontSize: 12, color: "var(--leaf-700)" }}>مُعتمَد وظاهرٌ للعائلة</span>
+                  <span style={{ fontSize: 12, color: "var(--leaf-700)" }}>{t("report.approvedVisible")}</span>
                   {waLink ? (
-                    <a href={waLink} target="_blank" rel="noreferrer" className={btn("success")} style={{ marginInlineStart: "auto", textDecoration: "none" }}>📲 شارك عبر واتساب</a>
+                    <a href={waLink} target="_blank" rel="noreferrer" className={btn("success")} style={{ marginInlineStart: "auto", textDecoration: "none" }}>{t("report.shareWhatsapp")}</a>
                   ) : (
-                    <span style={{ marginInlineStart: "auto", fontSize: 11.5, color: "var(--text-muted)" }}>لا رقم واتساب لوليّ الأمر</span>
+                    <span style={{ marginInlineStart: "auto", fontSize: 11.5, color: "var(--text-muted)" }}>{t("report.noWhatsapp")}</span>
                   )}
                 </div>
                 <p style={{ fontSize: 12.5, color: "var(--text-body)", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{report.summary}</p>
-                {report.strengths && <p style={{ fontSize: 12, color: "var(--text-muted)" }}>✨ {report.strengths}</p>}
-                {report.improve && <p style={{ fontSize: 12, color: "var(--text-muted)" }}>🎯 {report.improve}</p>}
+                {report.strengths && <p style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("report.strengthsPlaceholder")}: {report.strengths}</p>}
+                {report.improve && <p style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("report.nextStepPlaceholder")}: {report.improve}</p>}
               </div>
             )}
           </div>
@@ -385,10 +388,10 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       <div style={{ borderRadius: 12, border: "1px solid var(--border-soft)", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-strong)", fontVariantNumeric: "tabular-nums" }}>{fmtUTC(s.scheduled_at)}</span>
-          {s.lesson_title && <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>📖 {s.lesson_title}</span>}
+          {s.lesson_title && <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{s.lesson_title}</span>}
           <Badge tone={s.status === "completed" ? "success" : s.status === "scheduled" ? "brand" : "neutral"}>{s.status}</Badge>
         </div>
-        {hw.length === 0 && mhw.length === 0 && <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>لا واجب لهذه الجلسة.</span>}
+        {hw.length === 0 && mhw.length === 0 && <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{t("homework.noHwForSession")}</span>}
         {hw.map((a: any) => <HomeworkRow key={a.id} a={a} />)}
         {mhw.map((h: any) => <ManualHwItem key={h.id} h={h} />)}
         <AssignToSession sessionId={s.id} />
@@ -575,48 +578,48 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const restUpcoming = upcoming.slice(1);
   const Sessions = (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      {/* HERO: the next session, front and centre — one-click join */}
+      {/* HERO: the next session, front and center — one-click join */}
       {nextSession ? (
         <Card style={{ display: "flex", flexDirection: "column", gap: 10, background: "linear-gradient(135deg, var(--brand-50, #f1ecff), var(--surface-card))", border: "1.5px solid var(--brand-200, #d8ccff)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--brand)" }}>🎥 جلستك القادمة</span>
+            <span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--brand)" }}>{t("sessions.heroNext")}</span>
             <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-strong)", fontVariantNumeric: "tabular-nums" }}>{fmtUTC(nextSession.scheduled_at)}</span>
-            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>· {nextSession.duration_minutes}د</span>
-            {nextSession.lesson_title && <Badge tone="neutral">📖 {nextSession.lesson_title}</Badge>}
+            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>· {t("sched.minutes", { n: nextSession.duration_minutes })}</span>
+            {nextSession.lesson_title && <Badge tone="neutral">{nextSession.lesson_title}</Badge>}
           </div>
           <VideoCall sessionId={nextSession.id} />
         </Card>
       ) : (
-        <Card><p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا جلسة قادمة — جدوِلي المواعيد من «إدارة المواعيد والجدولة» أدناه.</p></Card>
+        <Card><p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("sessions.heroNone")}</p></Card>
       )}
 
       {restUpcoming.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: "var(--leaf-700)" }}>قادمةٌ أخرى ({restUpcoming.length})</p>
+          <p style={{ fontSize: 13, fontWeight: 700, color: "var(--leaf-700)" }}>{t("sessions.otherUpcoming", { n: restUpcoming.length })}</p>
           {restUpcoming.map((s: any) => <SessionCard key={s.id} s={s} />)}
         </div>
       )}
       {past.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-muted)" }}>السابقة — اكتبي تقريرها ({past.length})</p>
+          <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-muted)" }}>{t("sessions.pastWriteReport", { n: past.length })}</p>
           {past.map((s: any) => <SessionCard key={s.id} s={s} showReport />)}
         </div>
       )}
-      {(sessions ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا جلسات بعد — جدوِلي من «إدارة المواعيد والجدولة» أدناه.</p>}
+      {(sessions ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("sessions.empty")}</p>}
 
       {/* Scheduling tools — used occasionally, so tucked away at the bottom */}
       <details style={{ borderRadius: 14, border: "1px solid var(--border-soft)", background: "var(--surface-card)", padding: "10px 14px" }}>
-        <summary style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-strong)", cursor: "pointer" }}>إدارة المواعيد والجدولة</summary>
+        <summary style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-strong)", cursor: "pointer" }}>{t("sessions.schedTitle")}</summary>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
           {/* Recurring weekly lesson slots — constrained to the teacher's availability windows */}
           <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={secTitle}>مواعيد الجلسات الأسبوعية المتكرّرة</div>
+            <div style={secTitle}>{t("sessions.weeklyTitle")}</div>
             {(availRules ?? []).length === 0 ? (
-              <p style={{ fontSize: 13, color: "var(--text-muted)" }}>حدّدي تفرّغك أولاً من صفحة «تفرّغي»، ثمّ اختاري المواعيد من ضمنه.</p>
+              <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("sessions.weeklyNoAvail")}</p>
             ) : (
               <>
-                <p style={{ fontSize: 12, color: "var(--text-muted)" }}>اختاري المواعيد من ضمن تفرّغك (المُختار باللون البنفسجيّ — اضغطيه للحذف):</p>
-                {WEEKDAY_AR.map((label, wd) => {
+                <p style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("sessions.weeklyHint")}</p>
+                {WEEKDAY_EN.map((label, wd) => {
                   const options = availByWeekday.get(wd) ?? [];
                   if (options.length === 0) return null;
                   return (
@@ -646,9 +649,9 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", borderTop: "1px solid var(--ink-100)", paddingTop: 8 }}>
                   <form action={generateLessonSessions}>
                     <input type="hidden" name="learnerId" value={id} />
-                    <SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}>ولّد جلسات الخطّة</SubmitButton>
+                    <SubmitButton pendingText="…" className={btn("soft")}>{t("sessions.generateSessions")}</SubmitButton>
                   </form>
-                  <span style={{ fontSize: 12, color: "var(--text-muted)" }}>يجدول دروس الخطّة على المواعيد المختارة بالتسلسل، ويربط كلّ جلسةٍ بدرسها.</span>
+                  <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("sessions.generateSessionsHint")}</span>
                 </div>
               </>
             )}
@@ -656,9 +659,9 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
           {/* One-off extra session */}
           <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={secTitle}>جلسةٌ إضافية (مفردة)</div>
+            <div style={secTitle}>{t("sessions.extraTitle")}</div>
             <SessionScheduleForm learnerId={id} planItems={planItems.map((it: any, i: number) => ({ index: i, label: it.description }))} />
-            <p style={{ fontSize: 12, color: "var(--text-muted)" }}>يُدخَل بتوقيتك المحلّي ويُعرَض بـ UTC.</p>
+            <p style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("sessions.extraHint")}</p>
           </Card>
         </div>
       </details>
@@ -670,16 +673,16 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       {/* Create a digital homework with AI → approve → assign to a session below */}
       <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={secTitle}>إنشاء واجبٍ رقميٍّ بالذكاء</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}><Spark size={13} /> مسودّةٌ تُراجِعها قبل الإرسال</span>
+          <span style={secTitle}>{t("homework.createTitle")}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}><Spark size={13} /> {t("homework.createBadge")}</span>
         </div>
         {(objectives ?? []).length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>اعتمِد خطّةً دراسيةً أولاً (من تبويب «الخطّة») لتصبح أهدافاً تُولَّد منها الواجبات.</p>
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("homework.needPlan")}</p>
         ) : (
           <form action={generateDraft} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
             <input type="hidden" name="learnerId" value={id} />
             <select name="objectiveId" required defaultValue="" className={sel} style={{ width: "auto", minHeight: 40, flex: 1, minWidth: 160, maxWidth: 280 }}>
-              <option value="" disabled>الهدف…</option>
+              <option value="" disabled>{t("homework.objectivePlaceholder")}</option>
               {(objectives ?? []).map((o: any) => <option key={o.id} value={o.id}>{o.level ? `${o.level} · ` : ""}{o.description}</option>)}
             </select>
             <select name="format" defaultValue="multiple_choice" className={sel} style={{ width: "auto", minHeight: 40 }}>
@@ -688,7 +691,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             <select name="difficulty" defaultValue="easy" className={sel} style={{ width: "auto", minHeight: 40 }}>
               {DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
-            <SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}>ولّد مسودّة</SubmitButton>
+            <SubmitButton pendingText="…" className={btn("soft")}>{t("homework.generateDraft")}</SubmitButton>
           </form>
         )}
       </Card>
@@ -696,7 +699,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       {(draftItems ?? []).length > 0 && (
         <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={secTitle}>مسودّاتٌ بانتظار اعتمادك</span>
+            <span style={secTitle}>{t("homework.draftsTitle")}</span>
             <AITrustBadge status="draft" compact />
             <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{(draftItems ?? []).length}</span>
           </div>
@@ -706,20 +709,20 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
               it={it}
               right={
                 <div style={{ display: "flex", gap: 8 }}>
-                  <form action={approveItem}><input type="hidden" name="itemId" value={it.id} /><SubmitButton pendingText="…" className={btn("success")}>اعتمِد</SubmitButton></form>
-                  <form action={rejectItem}><input type="hidden" name="itemId" value={it.id} /><SubmitButton pendingText="…" className={btn("ghost")}>ارفض</SubmitButton></form>
+                  <form action={approveItem}><input type="hidden" name="itemId" value={it.id} /><SubmitButton pendingText="…" className={btn("success")}>{t("homework.approve")}</SubmitButton></form>
+                  <form action={rejectItem}><input type="hidden" name="itemId" value={it.id} /><SubmitButton pendingText="…" className={btn("ghost")}>{t("homework.reject")}</SubmitButton></form>
                 </div>
               }
             />
           ))}
-          <p style={{ fontSize: 12, color: "var(--text-muted)" }}>بعد الاعتماد أسنِدها لجلسةٍ من بطاقات «واجبات الجلسات» أدناه.</p>
+          <p style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("homework.draftsHint")}</p>
         </Card>
       )}
 
       <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <div style={secTitle}>واجبات الجلسات</div>
+        <div style={secTitle}>{t("homework.sessionHwTitle")}</div>
         {(sessions ?? []).length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا جلسات بعد — أضِف مواعيد من تبويب «الجلسات».</p>
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("homework.noSessions")}</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {upcoming.map((s: any) => <HwSessionCard key={s.id} s={s} />)}
@@ -730,7 +733,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
       {(looseAssigns.length > 0 || looseManual.length > 0) && (
         <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={secTitle}>واجباتٌ غير مرتبطةٍ بجلسة</div>
+          <div style={secTitle}>{t("homework.looseTitle")}</div>
           {looseAssigns.map((a: any) => <HomeworkRow key={a.id} a={a} />)}
           {looseManual.map((h: any) => <ManualHwItem key={h.id} h={h} />)}
         </Card>
@@ -741,8 +744,8 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const assessmentWaLink = (a: any, result: Record<string, { correct: number; total: number }>) => {
     if (!guardianPhone) return null;
     const pct = a.max_score ? Math.round((a.score / a.max_score) * 100) : 0;
-    const skillLines = Object.entries(result).map(([sk, v]) => `• ${SKILL_AR[sk as keyof typeof SKILL_AR] ?? sk}: ${v.correct}/${v.total}`).join("\n");
-    const text = `*نتيجة ${a.title}*\n${name}\n\nالنتيجة: ${a.score}/${a.max_score} (${pct}%)\n${skillLines}\n\nأكاديمية وَرد`;
+    const skillLines = Object.entries(result).map(([sk, v]) => `• ${skillLabel(sk)}: ${v.correct}/${v.total}`).join("\n");
+    const text = `*${a.title}*\n${name}\n\n${a.score}/${a.max_score} (${pct}%)\n${skillLines}\n\n${tc("appName")}`;
     return `https://wa.me/${guardianPhone}?text=${encodeURIComponent(text)}`;
   };
 
@@ -750,28 +753,28 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={secTitle}>ولّد اختبار وحدة بالذكاء</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}><Spark size={13} /> من أهداف الوحدة</span>
+          <span style={secTitle}>{t("assessments.genTitle")}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}><Spark size={13} /> {t("assessments.genBadge")}</span>
         </div>
         {(curriculumUnits ?? []).length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>المنهج غير محمَّل بعد.</p>
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("assessments.noCurriculum")}</p>
         ) : (
           <form action={generateAssessmentTest} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
             <input type="hidden" name="learnerId" value={id} />
             <select name="curriculumUnitId" required defaultValue="" className={sel} style={{ width: "auto", flex: 1, minWidth: 160, minHeight: 40 }}>
-              <option value="" disabled>اختاري وحدة المنهج…</option>
+              <option value="" disabled>{t("assessments.unitPlaceholder")}</option>
               {(curriculumUnits ?? []).map((u: any) => <option key={u.unit_id} value={u.unit_id}>{u.level} · {u.title_ar}</option>)}
             </select>
             <select name="count" defaultValue="8" className={sel} style={{ width: "auto", minHeight: 40 }}>
-              {[6, 8, 10, 12].map((n) => <option key={n} value={n}>{n} أسئلة</option>)}
+              {[6, 8, 10, 12].map((n) => <option key={n} value={n}>{t("assessments.questionsCount", { n })}</option>)}
             </select>
-            <SubmitButton pendingText="جارٍ التوليد…" className={btn("soft")}><Spark size={14} /> ولّد الاختبار</SubmitButton>
+            <SubmitButton pendingText="…" className={btn("soft")}><Spark size={14} /> {t("assessments.generate")}</SubmitButton>
           </form>
         )}
-        <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>يُولِّد أسئلةً من أهداف وحدة المنهج → تراجعينها وتعتمدينها → يؤدّيها الطالب ويُصحَّح آلياً، فتُحرّك نتيجتُه قيمَ أهداف الوحدة (مفتاح النسبة).</p>
+        <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{t("assessments.genHint")}</p>
       </Card>
 
-      {(assessments ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا اختبارات بعد.</p>}
+      {(assessments ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("assessments.empty")}</p>}
       {(assessments ?? []).map((a: any) => {
         const qs = aqByAssessment.get(a.id) ?? [];
         const result = (a.result ?? null) as Record<string, { correct: number; total: number }> | null;
@@ -781,19 +784,19 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           <Card key={a.id} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <span style={{ fontWeight: 700, color: "var(--text-strong)", flex: 1 }}>{a.title}</span>
-              {a.status === "draft" && <Badge tone="warning">مسودّة — راجعي</Badge>}
-              {a.status === "ready" && <Badge tone="brand">متاحٌ للطالب</Badge>}
-              {a.status === "completed" && <Badge tone="success">مكتمل: {a.score}/{a.max_score} ({pct}%)</Badge>}
-              {a.status === "planned" && <Badge tone="neutral">مُخطَّط</Badge>}
+              {a.status === "draft" && <Badge tone="warning">{t("assessments.draftBadge")}</Badge>}
+              {a.status === "ready" && <Badge tone="brand">{t("assessments.readyBadge")}</Badge>}
+              {a.status === "completed" && <Badge tone="success">{t("assessments.completedBadge", { score: a.score, max: a.max_score, pct })}</Badge>}
+              {a.status === "planned" && <Badge tone="neutral">{t("assessments.plannedBadge")}</Badge>}
               <form action={removeAssessment}><input type="hidden" name="assessmentId" value={a.id} /><input type="hidden" name="learnerId" value={id} /><SubmitButton className={btn("ghost")}>✕</SubmitButton></form>
             </div>
 
             {a.status === "draft" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <p style={{ fontSize: 12, color: "var(--text-muted)" }}>راجعي الأسئلة ({qs.length}) — الإجابة الصحيحة مُعلّمة بـ ✓:</p>
+                <p style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("assessments.reviewQuestions", { n: qs.length })}</p>
                 {qs.map((q: any, i: number) => (
                   <div key={q.id} style={{ borderRadius: 10, background: "var(--surface-soft)", padding: 10 }}>
-                    <p style={{ fontSize: 12.5, color: "var(--text-strong)", display: "flex", gap: 6, flexWrap: "wrap" }}><span style={{ fontWeight: 700 }}>{i + 1}.</span><span dir="ltr" style={{ flex: 1 }}>{q.prompt}</span><Badge tone="neutral">{SKILL_AR[q.skill as keyof typeof SKILL_AR] ?? q.skill}</Badge></p>
+                    <p style={{ fontSize: 12.5, color: "var(--text-strong)", display: "flex", gap: 6, flexWrap: "wrap" }}><span style={{ fontWeight: 700 }}>{i + 1}.</span><span dir="ltr" style={{ flex: 1 }}>{q.prompt}</span><Badge tone="neutral">{skillLabel(q.skill)}</Badge></p>
                     <ul dir="ltr" style={{ listStyle: "none", margin: "4px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 2 }}>
                       {((q.content?.options ?? []) as string[]).map((o, oi) => {
                         const correct = o === q.answer;
@@ -805,12 +808,12 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                 <form action={approveAssessment}>
                   <input type="hidden" name="assessmentId" value={a.id} />
                   <input type="hidden" name="learnerId" value={id} />
-                  <SubmitButton pendingText="…" className={btn("success")}>اعتمِدي — يصبح متاحاً للطالب</SubmitButton>
+                  <SubmitButton pendingText="…" className={btn("success")}>{t("assessments.approve")}</SubmitButton>
                 </form>
               </div>
             )}
 
-            {a.status === "ready" && <p style={{ fontSize: 12.5, color: "var(--text-muted)" }}>بانتظار أداء الطالب من حسابه؛ ستظهر النتيجة هنا تلقائياً.</p>}
+            {a.status === "ready" && <p style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{t("assessments.waitingStudent")}</p>}
 
             {a.status === "completed" && result && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -820,7 +823,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                     const lag = v.total > 0 && v.correct / v.total < 0.5;
                     return (
                       <div key={sk} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-strong)", width: 80, flexShrink: 0 }}>{SKILL_AR[sk as keyof typeof SKILL_AR] ?? sk}</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-strong)", width: 80, flexShrink: 0 }}>{skillLabel(sk)}</span>
                         <div style={{ flex: 1, height: 7, borderRadius: 999, background: "var(--surface-sunken)", overflow: "hidden" }}>
                           <div style={{ height: "100%", width: `${p}%`, borderRadius: 999, background: lag ? "var(--apricot-400)" : "var(--brand)" }} />
                         </div>
@@ -830,9 +833,9 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                   })}
                 </div>
                 {waLink ? (
-                  <a href={waLink} target="_blank" rel="noreferrer" className={btn("success")} style={{ alignSelf: "flex-start", textDecoration: "none" }}>📲 شارك النتيجة عبر واتساب</a>
+                  <a href={waLink} target="_blank" rel="noreferrer" className={btn("success")} style={{ alignSelf: "flex-start", textDecoration: "none" }}>{t("assessments.shareWhatsapp")}</a>
                 ) : (
-                  <span style={{ fontSize: 11.5, color: "var(--text-muted)" }}>لا رقم واتساب لوليّ الأمر للمشاركة.</span>
+                  <span style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{t("assessments.noWhatsapp")}</span>
                 )}
               </div>
             )}
@@ -847,24 +850,24 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       {(plan?.scope_label || plan?.milestone_label) && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           {plan?.scope_label && <ScopeChip>{plan.scope_label}</ScopeChip>}
-          {plan?.milestone_label && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>🎯 {plan.milestone_label}</span>}
+          {plan?.milestone_label && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{plan.milestone_label}</span>}
         </div>
       )}
       {/* Four-skill mastery (honest meters) + the separate vocabulary counter */}
       <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-            <FlowerProgress size={92} skills={skillStats.map((s) => ({ label: SKILL_AR[s.skill], value: s.fraction, detail: `${s.value.toFixed(1)}/10` }))} />
-            <VocabCounter count={vocabCount} label={`${VOCAB_AR} — كلمة`} variant="chip" />
+            <FlowerProgress size={92} skills={skillStats.map((s) => ({ label: skillLabel(s.skill), value: s.fraction, detail: `${s.value.toFixed(1)}/10` }))} />
+            <VocabCounter count={vocabCount} label={t("progress.vocabLabel")} variant="chip" />
           </div>
           <div style={{ flex: 1, minWidth: 200, display: "flex", flexDirection: "column", gap: 6 }}>
-            <div style={secTitle}>المهارات الأربع — متوسّط عبر الوحدات المبدوءة</div>
+            <div style={secTitle}>{t("progress.skillsTitle")}</div>
             {skillStats.map((s) => {
               const pct = Math.round(s.fraction * 100);
               const lag = s.total > 0 && s.fraction < 0.5;
               return (
                 <div key={s.skill} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-strong)", width: 72, flexShrink: 0 }}>{SKILL_AR[s.skill]}</span>
+                  <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-strong)", width: 72, flexShrink: 0 }}>{skillLabel(s.skill)}</span>
                   <div style={{ flex: 1, height: 8, borderRadius: 999, background: "var(--surface-sunken)", overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${pct}%`, borderRadius: 999, background: s.total === 0 ? "transparent" : lag ? "var(--apricot-400)" : "var(--brand)" }} />
                   </div>
@@ -874,19 +877,19 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             })}
           </div>
         </div>
-        <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>البتلة = متوسّط درجات أهداف المهارة عبر الوحدات المبدوءة (الهدف غير المُقيَّم = بذرة). التحدّث يحسمه المعلّم. «الأساس اللغوي» مسارٌ منفصل.</p>
+        <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{t("progress.skillsNote")}</p>
       </Card>
 
       {lagging.length > 0 && (
         <Card variant="soft" style={{ borderColor: "var(--apricot-300)", background: "var(--apricot-100, #ffeedc)" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--apricot-600, #c97a2b)", marginBottom: 4 }}>أين أتدخّل؟</div>
-          <div style={{ fontSize: 12.5, color: "var(--text-body)", lineHeight: 1.7 }}>الأضعف الآن: <strong>{lagging.join("، ")}</strong> — ركّزي الجلسة القادمة عليها.</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--apricot-600, #c97a2b)", marginBottom: 4 }}>{t("progress.whereToHelp")}</div>
+          <div style={{ fontSize: 12.5, color: "var(--text-body)", lineHeight: 1.7 }}>{t("progress.weakest")} <strong>{lagging.join(", ")}</strong>{t("progress.weakestHint")}</div>
         </Card>
       )}
 
       {/* Unit blooms + per-objective teacher assessment (feeds the decaying average) */}
       {startedUnits.length === 0 ? (
-        <Card><p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا تقييماتٍ بعد — قيّم أوّل هدفٍ من وحدةٍ ليبدأ تفتّحها.</p></Card>
+        <Card><p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("progress.noAssessments")}</p></Card>
       ) : (
         startedUnits.map((u) => (
           <Card key={u.unit_id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -894,25 +897,25 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
               <UnitBloom value={u.value} size={34} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)" }}>{u.title_ar}</div>
-                <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{u.level} · وردة الوحدة {u.value.toFixed(1)}/10 · قُيّم {u.assessedCount}/{u.total}</div>
+                <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{u.level} · {t("progress.unitBloom", { value: u.value.toFixed(1), n: u.assessedCount, total: u.total })}</div>
               </div>
             </div>
             {u.objectives.map((o, i) => (
               <div key={o.objective_id} style={{ display: "flex", alignItems: "center", gap: 10, borderTop: i === 0 ? "none" : "1px solid var(--ink-100)", paddingTop: i === 0 ? 0 : 6 }}>
                 <UnitBloom stage={o.state} size={26} />
                 <span style={{ fontSize: 12.5, color: o.assessed ? "var(--text-body)" : "var(--text-muted)", flex: 1 }}>{o.descriptor_ar}</span>
-                <Badge tone="neutral">{SKILL_AR[o.skill]}</Badge>
+                <Badge tone="neutral">{skillLabel(o.skill)}</Badge>
                 <form action={recordObjectiveAssessment} style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <input type="hidden" name="learnerId" value={id} />
                   <input type="hidden" name="objectiveId" value={o.objective_id} />
                   <select name="state" defaultValue={o.assessed ? o.state : ""} required className={sel} style={{ width: "auto", minHeight: 30, fontSize: 12 }}>
-                    <option value="" disabled>قيّم…</option>
-                    <option value="seed">بذرة</option>
-                    <option value="bud">برعم</option>
-                    <option value="balloon">بالون</option>
-                    <option value="bloom">وردة</option>
+                    <option value="" disabled>{t("progress.rate")}</option>
+                    <option value="seed">{t("progress.stateSeed")}</option>
+                    <option value="bud">{t("progress.stateBud")}</option>
+                    <option value="balloon">{t("progress.stateBalloon")}</option>
+                    <option value="bloom">{t("progress.stateBloom")}</option>
                   </select>
-                  <SubmitButton pendingText="…" className={btn("ghost")}>حفظ</SubmitButton>
+                  <SubmitButton pendingText="…" className={btn("ghost")}>{t("progress.save")}</SubmitButton>
                 </form>
               </div>
             ))}
