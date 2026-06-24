@@ -8,17 +8,31 @@ const opt =
 const radio = "h-4 w-4 accent-[#7F55D9]";
 const field = "rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm outline-none focus:border-brand-400";
 
+// Labels are passed in (forced `en` from the page) — the child surface is
+// English-pure, so this component never reads the global locale.
+export type AnswerLabels = {
+  trueLabel: string;
+  falseLabel: string;
+  placeholder: string;
+  audioHint: string;
+  audioDone: string;
+  send: string;
+  sending: string;
+};
+
 export default function AnswerForm({
   itemId,
   format,
   options,
+  labels,
 }: {
   itemId: string;
   format: string;
   options?: string[];
+  labels: AnswerLabels;
 }) {
   return (
-    <form action={submitAnswer} className="mt-3 flex flex-col gap-2">
+    <form action={submitAnswer} className="mt-3 flex flex-col gap-2" dir="ltr">
       <input type="hidden" name="itemId" value={itemId} />
 
       {format === "multiple_choice" && (
@@ -34,8 +48,8 @@ export default function AnswerForm({
       {format === "true_false" && (
         <div className="flex gap-2">
           {[
-            ["true", "صح"],
-            ["false", "خطأ"],
+            ["true", labels.trueLabel],
+            ["false", labels.falseLabel],
           ].map(([v, label]) => (
             <label key={v} className={`${opt} flex-1`}>
               <input type="radio" name="answer" value={v} required className={radio} /> {label}
@@ -44,24 +58,24 @@ export default function AnswerForm({
         </div>
       )}
 
-      {format === "fill_blank" && <input name="answer" required placeholder="إجابتك" dir="ltr" className={field} />}
+      {format === "fill_blank" && <input name="answer" required placeholder={labels.placeholder} dir="ltr" className={field} />}
 
       {(format === "open" || format === "matching") && (
-        <textarea name="answer" required rows={3} placeholder="إجابتك" dir="ltr" className={field} />
+        <textarea name="answer" required rows={3} placeholder={labels.placeholder} dir="ltr" className={field} />
       )}
 
       {format === "audio" && (
         <>
-          <p className="text-sm text-ink-soft">انطق العبارة بصوتٍ واضح، ثمّ علّمها كمُتدرَّب عليها.</p>
+          <p className="text-sm text-ink-soft">{labels.audioHint}</p>
           <input type="hidden" name="answer" value="" />
         </>
       )}
 
       <SubmitButton
-        pendingText="جارٍ الإرسال…"
+        pendingText={labels.sending}
         className="mt-1 inline-flex h-10 items-center justify-center self-start rounded-full bg-brand px-5 text-sm font-semibold text-white shadow-ward-1 hover:bg-brand-600 disabled:opacity-60"
       >
-        {format === "audio" ? "تدرّبت عليها" : "إرسال الإجابة"}
+        {format === "audio" ? labels.audioDone : labels.send}
       </SubmitButton>
     </form>
   );

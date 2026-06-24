@@ -2,10 +2,14 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { valueForPercent } from "@/lib/progress/evidence";
 import { stageForValue, SKILLS } from "@/lib/skills";
+
+// The child surface is English-pure — error messages are always English.
+const learnErrors = () => getTranslations({ locale: "en", namespace: "learn.errors" });
 
 const norm = (s: string) => s.trim().toLowerCase();
 
@@ -120,7 +124,7 @@ export async function submitAssessment(formData: FormData) {
 
   // Ownership: a learner can only see their own assessment (RLS).
   const { data: a } = await supabase.from("assessments").select("id, status, learner_id, tenant_id, curriculum_unit_id").eq("id", assessmentId).single();
-  if (!a || a.learner_id !== user.id || a.status !== "ready") throw new Error("الاختبار غير متاح.");
+  if (!a || a.learner_id !== user.id || a.status !== "ready") throw new Error((await learnErrors())("testUnavailable"));
 
   const admin = createAdminClient();
   const { data: questions } = await admin.from("assessment_questions").select("id, skill, answer").eq("assessment_id", assessmentId).order("position");
@@ -183,12 +187,13 @@ export async function submitManualHomework(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/studio/login");
-  if (!file || file.size === 0) throw new Error("ارفع صورة حلّك.");
-  if (file.size > 25 * 1024 * 1024) throw new Error("حجم الصورة أكبر من 25 ميغابايت.");
+  const te = await learnErrors();
+  if (!file || file.size === 0) throw new Error(te("uploadImage"));
+  if (file.size > 25 * 1024 * 1024) throw new Error(te("fileTooBig"));
 
   // RLS guarantees the learner only sees their own homework.
   const { data: hw } = await supabase.from("manual_homework").select("id, tenant_id, learner_id").eq("id", id).maybeSingle();
-  if (!hw || hw.learner_id !== user.id) throw new Error("واجبٌ غير موجود.");
+  if (!hw || hw.learner_id !== user.id) throw new Error(te("homeworkNotFound"));
 
   const admin = createAdminClient();
   const safe = file.name.replace(/[^\w.\-]+/g, "_").slice(-80);

@@ -10,6 +10,16 @@
       "save": "Save",
       "cancel": "Cancel",
       "back": "Back"
+    },
+    "skills": {
+      "listening": "Listening",
+      "speaking": "Speaking",
+      "reading": "Reading",
+      "writing": "Writing"
+    },
+    "vocab": {
+      "label": "Building Blocks",
+      "wordsKnown": "words you know"
     }
   },
   "demo": {
@@ -18,7 +28,98 @@
     "localeLabel": "Active locale",
     "switchHint": "Use the switcher to flip EN / ع — this text re-renders from the message catalog."
   },
-  "learn": {},
+  "learn": {
+    "header": { "title": "My Garden" },
+    "assessment": {
+      "heading": "🎯 Test: {unit}",
+      "intro": "Answer the questions and show what you know. You can do it! 🌟",
+      "submit": "Send my test",
+      "sending": "Sending…"
+    },
+    "placement": {
+      "heading": "Let's find your level",
+      "intro": "Answer the questions so we can find your level.",
+      "submit": "Send",
+      "sending": "Sending…",
+      "result": "Your level:"
+    },
+    "unit": {
+      "heading": "My unit",
+      "stage": {
+        "bloom": "You did it! This unit is all done 🎉",
+        "balloon": "Your balloon is filling up — keep going!",
+        "bud": "Your bud is growing — keep going!",
+        "seed": "Let's start this unit!"
+      },
+      "goalsProgress": "{done} / {total} goals · {value}/10"
+    },
+    "path": {
+      "heading": "My garden path",
+      "status": { "mastered": "Done", "current": "You are here", "upcoming": "Next" },
+      "now": "Now"
+    },
+    "flower": {
+      "heading": "My flower",
+      "blurb": "Four petals — four skills. They grow as you learn. Each number is your real score.",
+      "vocabLabel": "Building Blocks — words you know"
+    },
+    "plan": { "heading": "My plan" },
+    "sessions": {
+      "heading": "My lessons",
+      "empty": "No lessons yet.",
+      "minutes": "{n} min",
+      "join": "Join",
+      "report": {
+        "title": "Lesson report",
+        "strengths": "What you did well:",
+        "improve": "What to practice:"
+      }
+    },
+    "results": { "heading": "My test results 🎯" },
+    "homework": {
+      "heading": "My homework",
+      "empty": "No homework yet. Your teacher will add some soon.",
+      "approved": "✓ from your teacher",
+      "sent": "Sent ✓",
+      "correct": "Correct ✓",
+      "tryAgain": "Not yet — try again",
+      "formats": {
+        "multiple_choice": "Multiple choice",
+        "fill_blank": "Fill the blank",
+        "true_false": "True / False",
+        "matching": "Match",
+        "open": "Open answer",
+        "audio": "Voice"
+      }
+    },
+    "bookHomework": {
+      "heading": "My book homework",
+      "tag": "From the book",
+      "checked": "Checked",
+      "waitingCheck": "Sent ✓ — waiting to be checked",
+      "waitingYou": "Waiting for you",
+      "view": "See homework ↓",
+      "myAnswer": "My answer ↓",
+      "teacherNote": "Teacher's note:",
+      "uploading": "Uploading…",
+      "upload": "Upload my answer"
+    },
+    "answer": {
+      "true": "True",
+      "false": "False",
+      "placeholder": "Your answer",
+      "audioHint": "Say it out loud, then mark it as practiced.",
+      "audioDone": "I practiced it",
+      "send": "Send answer",
+      "sending": "Sending…"
+    },
+    "errors": {
+      "testUnavailable": "This test isn't ready.",
+      "uploadImage": "Please add a photo of your answer.",
+      "fileTooBig": "That photo is too big (max 25 MB).",
+      "homeworkNotFound": "We can't find that homework."
+    }
+  },
   "studio": {},
   "guardian": {},
   "admin": {},

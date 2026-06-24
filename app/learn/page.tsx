@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
-import { SKILL_AR, VOCAB_AR, type BloomStage } from "@/lib/skills";
+import { type BloomStage } from "@/lib/skills";
 import { FlowerProgress, UnitBloom as BloomUnit, ScopeChip, VocabCounter } from "@/components/bloom/Bloom";
 import { fetchStudentBloom } from "@/lib/progress/bloom";
 import { submitPlacement, submitManualHomework, submitAssessment } from "./actions";
@@ -12,17 +13,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { fmtUTC } from "@/lib/datetime";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-const objOf = (row: any) => (Array.isArray(row?.objectives) ? row.objectives[0] : row?.objectives) ?? {};
-const AR_FORMAT: Record<string, string> = {
-  multiple_choice: "اختيار من متعدّد",
-  fill_blank: "أكمل الفراغ",
-  true_false: "صح / خطأ",
-  matching: "توصيل",
-  open: "إجابة مفتوحة",
-  audio: "تسجيل صوتي",
-};
+// NOTE: the child surface is English-PURE — UI text is forced to `en` regardless
+// of the global LOCALE cookie. Educational content (question prompts/options, the
+// catalog unit titles `title_ar`, plan/report/homework text written by the
+// teacher) is NOT translated here — it comes from the curriculum/catalog/teacher.
 const card = "rounded-2xl border border-brand-100 bg-white p-4 shadow-ward-1";
 const h2 = "mb-3 text-lg font-bold text-ink";
+const FORMATS = ["multiple_choice", "fill_blank", "true_false", "matching", "open", "audio"];
 
 export default async function LearnPage() {
   const supabase = await createClient();
@@ -30,6 +27,22 @@ export default async function LearnPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/studio/login");
+
+  // English-pure child surface: force the `en` locale for all UI text.
+  const t = await getTranslations({ locale: "en", namespace: "learn" });
+  const tc = await getTranslations({ locale: "en", namespace: "common" });
+  const skillLabel = (sk: string) =>
+    ["listening", "speaking", "reading", "writing"].includes(sk) ? tc(`skills.${sk}`) : sk === "vocabulary" ? tc("vocab.label") : sk;
+  const fmtLabel = (f: string) => (FORMATS.includes(f) ? t(`homework.formats.${f}`) : f);
+  const answerLabels = {
+    trueLabel: t("answer.true"),
+    falseLabel: t("answer.false"),
+    placeholder: t("answer.placeholder"),
+    audioHint: t("answer.audioHint"),
+    audioDone: t("answer.audioDone"),
+    send: t("answer.send"),
+    sending: t("answer.sending"),
+  };
 
   const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
   const { data: items } = await supabase
@@ -118,26 +131,27 @@ export default async function LearnPage() {
   // Unit hero + skill flower + garden path — all from the one shared roll-up.
   const vocabCount = 0; // vocabulary is a separate track (not in curriculum_objectives yet)
   const currentUnit = bloom.startedUnits.find((u) => u.stage !== "bloom") ?? bloom.startedUnits[0] ?? null;
-  const STATUS_AR: Record<string, string> = { mastered: "تفتّحت", current: "أنت هنا", upcoming: "قادمة" };
   const gardenUnits = bloom.startedUnits.map((u) => ({
-    unit: u.title_ar,
+    unit: u.title_ar, // educational content (catalog unit title) — left as-is until title_en exists
     status: (u.stage === "bloom" ? "mastered" : "current") as "mastered" | "current" | "upcoming",
     stage: u.stage as BloomStage,
   }));
 
   return (
-    <main className="mx-auto max-w-2xl px-5 py-10">
-      <WorkspaceHeader title="حديقتي" subtitle={profile?.full_name ?? user.email ?? ""} />
+    <main lang="en" dir="ltr" className="mx-auto max-w-2xl px-5 py-10">
+      <WorkspaceHeader title={t("header.title")} subtitle={profile?.full_name ?? user.email ?? ""} />
 
       {/* A ready unit assessment (takes over until taken) */}
       {readyAssessment && (
         <section className={`mb-10 ${card}`}>
-          <h2 className="mb-1 text-lg font-bold text-ink">🎯 اختبار: {readyAssessment.unit}</h2>
-          <p className="mb-4 text-sm text-ink-soft">أجِب عن الأسئلة لتُظهر ما تعلّمته — أنت تستطيع! 🌟</p>
+          {/* {unit} is the catalog unit title (educational content) */}
+          <h2 className="mb-1 text-lg font-bold text-ink">{t("assessment.heading", { unit: readyAssessment.unit })}</h2>
+          <p className="mb-4 text-sm text-ink-soft">{t("assessment.intro")}</p>
           <form action={submitAssessment} className="flex flex-col gap-4">
             <input type="hidden" name="assessmentId" value={readyAssessment.id} />
             {assessmentQuestions.map((q: any, idx: number) => (
               <div key={q.id}>
+                {/* q.prompt + options: educational content (English, from the question bank) */}
                 <p className="font-medium text-ink" dir="ltr">{idx + 1}. {q.prompt}</p>
                 <div className="mt-1 flex flex-col gap-1.5" dir="ltr">
                   {((q.content?.options ?? []) as string[]).map((o, i) => (
@@ -148,8 +162,8 @@ export default async function LearnPage() {
                 </div>
               </div>
             ))}
-            <SubmitButton pendingText="جارٍ التسليم…" className="inline-flex h-11 items-center justify-center self-start rounded-full bg-brand px-6 text-sm font-semibold text-white shadow-ward-1 hover:bg-brand-600 disabled:opacity-60">
-              سلّم الاختبار
+            <SubmitButton pendingText={t("assessment.sending")} className="inline-flex h-11 items-center justify-center self-start rounded-full bg-brand px-6 text-sm font-semibold text-white shadow-ward-1 hover:bg-brand-600 disabled:opacity-60">
+              {t("assessment.submit")}
             </SubmitButton>
           </form>
         </section>
@@ -158,12 +172,13 @@ export default async function LearnPage() {
       {/* Placement (takes over when active) */}
       {placement?.status === "in_progress" && (
         <section className={`mb-10 ${card}`}>
-          <h2 className="mb-1 text-lg font-bold text-ink">اختبار تحديد المستوى</h2>
-          <p className="mb-4 text-sm text-ink-soft">أجِب عن الأسئلة لنعرف مستواك.</p>
+          <h2 className="mb-1 text-lg font-bold text-ink">{t("placement.heading")}</h2>
+          <p className="mb-4 text-sm text-ink-soft">{t("placement.intro")}</p>
           <form action={submitPlacement} className="flex flex-col gap-4">
             <input type="hidden" name="testId" value={placement.id} />
             {placementQuestions.map((q: any, idx: number) => (
               <div key={q.id}>
+                {/* q.prompt + options: educational content (English, from the question bank) */}
                 <p className="font-medium text-ink" dir="ltr">{idx + 1}. {q.prompt}</p>
                 <div className="mt-1 flex flex-col gap-1.5" dir="ltr">
                   {((q.content?.options ?? []) as string[]).map((o, i) => (
@@ -174,32 +189,33 @@ export default async function LearnPage() {
                 </div>
               </div>
             ))}
-            <SubmitButton pendingText="جارٍ الإرسال…" className="inline-flex h-11 items-center justify-center self-start rounded-full bg-brand px-6 text-sm font-semibold text-white shadow-ward-1 hover:bg-brand-600 disabled:opacity-60">
-              إرسال الاختبار
+            <SubmitButton pendingText={t("placement.sending")} className="inline-flex h-11 items-center justify-center self-start rounded-full bg-brand px-6 text-sm font-semibold text-white shadow-ward-1 hover:bg-brand-600 disabled:opacity-60">
+              {t("placement.submit")}
             </SubmitButton>
           </form>
         </section>
       )}
       {placement?.status === "completed" && placement.suggested_level && (
         <section className="mb-8 rounded-2xl border border-leaf/30 bg-leaf/5 p-4 text-sm text-ink">
-          مستواك: <span className="font-bold text-leaf">{placement.suggested_level}</span>
+          {t("placement.result")} <span className="font-bold text-leaf">{placement.suggested_level}</span>
         </section>
       )}
 
       {/* Daily hero: the current unit bud -> balloon -> bloom */}
       {currentUnit && (
         <section className="mb-8">
-          <h2 className={h2}>وحدتي الحالية</h2>
+          <h2 className={h2}>{t("unit.heading")}</h2>
           <div className="flex items-center gap-4 rounded-2xl p-5 text-white shadow-ward-2" style={{ background: "var(--grad-bloom, linear-gradient(135deg,#9F7DE7,#6840BD))" }}>
             <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full" style={{ background: "rgba(41,23,78,0.26)" }}>
               <BloomUnit stage={currentUnit.stage} size={60} pop={currentUnit.stage === "bloom"} />
             </div>
             <div className="min-w-0 flex-1">
+              {/* unit title: educational content (catalog) */}
               <p className="text-base font-extrabold leading-tight">{currentUnit.title_ar}</p>
-              <p className="mt-1 text-sm" style={{ color: "var(--ward-purple-100)" }}>
-                {currentUnit.stage === "bloom" ? "تفتّحت! أتقنتَ هذه الوحدة 🎉" : currentUnit.stage === "balloon" ? "بالونك ينتفخ — أكمِل لتتفتّح" : currentUnit.stage === "bud" ? "برعمك ينمو — واصِل" : "ابدأ هذه الوحدة"}
+              <p className="mt-1 text-sm" style={{ color: "var(--ward-purple-100)" }}>{t(`unit.stage.${currentUnit.stage}`)}</p>
+              <p className="mt-1 text-xs font-bold" style={{ color: "var(--ward-purple-100)", fontVariantNumeric: "tabular-nums" }}>
+                {t("unit.goalsProgress", { done: currentUnit.assessedCount, total: currentUnit.total, value: currentUnit.value.toFixed(1) })}
               </p>
-              <p className="mt-1 text-xs font-bold" style={{ color: "var(--ward-purple-100)", fontVariantNumeric: "tabular-nums" }}>{currentUnit.assessedCount} / {currentUnit.total} هدفاً · {currentUnit.value.toFixed(1)}/10</p>
             </div>
           </div>
         </section>
@@ -208,7 +224,7 @@ export default async function LearnPage() {
       {/* The garden path: the plan's units as a journey */}
       {gardenUnits.length > 0 && (
         <section className="mb-8">
-          <h2 className={h2}>مسار حديقتي</h2>
+          <h2 className={h2}>{t("path.heading")}</h2>
           <div className={card}>
             <ul className="flex flex-col">
               {gardenUnits.map((g, i) => (
@@ -217,10 +233,11 @@ export default async function LearnPage() {
                     <BloomUnit stage={g.stage} size={34} />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-bold" dir="ltr" style={{ color: g.status === "upcoming" ? "var(--text-muted)" : "var(--text-strong)" }}>{g.unit}</p>
-                    <p className="text-xs text-ink-soft">{STATUS_AR[g.status]}</p>
+                    {/* unit title: educational content (catalog) */}
+                    <p className="text-sm font-bold" style={{ color: g.status === "upcoming" ? "var(--text-muted)" : "var(--text-strong)" }}>{g.unit}</p>
+                    <p className="text-xs text-ink-soft">{t(`path.status.${g.status}`)}</p>
                   </div>
-                  {g.status === "current" ? <span className="rounded-full px-2 py-0.5 text-xs font-bold" style={{ background: "var(--apricot-100, #ffeedc)", color: "var(--apricot-600, #c97a2b)" }}>الآن</span> : g.status === "mastered" ? <span className="text-leaf">✓</span> : null}
+                  {g.status === "current" ? <span className="rounded-full px-2 py-0.5 text-xs font-bold" style={{ background: "var(--apricot-100, #ffeedc)", color: "var(--apricot-600, #c97a2b)" }}>{t("path.now")}</span> : g.status === "mastered" ? <span className="text-leaf">✓</span> : null}
                 </li>
               ))}
             </ul>
@@ -231,18 +248,16 @@ export default async function LearnPage() {
       {/* The skill flower (slower snapshot) */}
       <section className="mb-8">
         <div className="mb-3 flex items-center gap-2">
-          <h2 className="text-lg font-bold text-ink">وردتي</h2>
+          <h2 className="text-lg font-bold text-ink">{t("flower.heading")}</h2>
           {studyPlan?.scope_label && <ScopeChip>{studyPlan.scope_label}</ScopeChip>}
         </div>
         <div className={card}>
           <div className="flex items-center gap-4">
-            <FlowerProgress size={104} skills={bloom.skills.map((s) => ({ label: SKILL_AR[s.skill], value: s.fraction, detail: `${s.value.toFixed(1)}/10` }))} />
-            <p className="flex-1 text-sm text-ink-soft" style={{ lineHeight: 1.8 }}>
-              أربع بتلات — أربع مهارات، تنمو كلّما تفتّحت أهدافها عبر وحداتك. الأرقام صادقة: متوسّط درجاتك في كلّ مهارة.
-            </p>
+            <FlowerProgress size={104} skills={bloom.skills.map((s) => ({ label: skillLabel(s.skill), value: s.fraction, detail: `${s.value.toFixed(1)}/10` }))} />
+            <p className="flex-1 text-sm text-ink-soft" style={{ lineHeight: 1.8 }}>{t("flower.blurb")}</p>
           </div>
           <div className="mt-3 flex items-center justify-between gap-3 border-t border-brand-100 pt-3">
-            <VocabCounter count={vocabCount} label={`${VOCAB_AR} — كلمة متقَنة`} variant="stat" />
+            <VocabCounter count={vocabCount} label={t("flower.vocabLabel")} variant="stat" />
           </div>
         </div>
       </section>
@@ -250,10 +265,11 @@ export default async function LearnPage() {
       {/* Study plan */}
       {studyPlan && (
         <section className="mb-8">
-          <h2 className={h2}>خطّتي</h2>
+          <h2 className={h2}>{t("plan.heading")}</h2>
           <div className={card}>
+            {/* plan title + lesson descriptions: educational content (teacher-authored) */}
             <p className="font-bold text-ink">{studyPlan.title}</p>
-            <ol className="mt-2 list-decimal pr-5 text-sm text-ink-soft">
+            <ol className="mt-2 list-decimal pl-5 text-sm text-ink-soft">
               {((studyPlan.items as any[]) ?? []).map((it, i) => (
                 <li key={i}>{it.level ? `${it.level} · ` : ""}{it.description}</li>
               ))}
@@ -264,21 +280,22 @@ export default async function LearnPage() {
 
       {/* Sessions */}
       <section className="mb-8">
-        <h2 className={h2}>جلساتي</h2>
-        {(sessions ?? []).length === 0 && <p className="text-sm text-ink-soft">لا جلسات مجدولة بعد.</p>}
+        <h2 className={h2}>{t("sessions.heading")}</h2>
+        {(sessions ?? []).length === 0 && <p className="text-sm text-ink-soft">{t("sessions.empty")}</p>}
         <ul className="flex flex-col gap-2">
           {(sessions ?? []).map((s: any) => {
             const r = reportBySession.get(s.id);
             return (
               <li key={s.id} className={card}>
-                <p className="text-sm font-medium text-ink">{fmtUTC(s.scheduled_at)} · {s.duration_minutes} دقيقة</p>
-                <div className="mt-2"><VideoCall sessionId={s.id} label="ادخل الجلسة" /></div>
+                <p className="text-sm font-medium text-ink">{fmtUTC(s.scheduled_at)} · {t("sessions.minutes", { n: s.duration_minutes })}</p>
+                <div className="mt-2"><VideoCall sessionId={s.id} label={t("sessions.join")} /></div>
                 {r && (
                   <div className="mt-2 rounded-xl bg-brand-50 p-3 text-sm">
-                    <p className="font-bold text-brand-700">تقرير الجلسة</p>
+                    <p className="font-bold text-brand-700">{t("sessions.report.title")}</p>
+                    {/* report text: teacher/AI content */}
                     <p className="text-ink">{r.summary}</p>
-                    {r.strengths && <p className="text-ink-soft"><span className="font-medium">نقاط القوة:</span> {r.strengths}</p>}
-                    {r.improve && <p className="text-ink-soft"><span className="font-medium">للتحسين:</span> {r.improve}</p>}
+                    {r.strengths && <p className="text-ink-soft"><span className="font-medium">{t("sessions.report.strengths")}</span> {r.strengths}</p>}
+                    {r.improve && <p className="text-ink-soft"><span className="font-medium">{t("sessions.report.improve")}</span> {r.improve}</p>}
                   </div>
                 )}
               </li>
@@ -290,7 +307,7 @@ export default async function LearnPage() {
       {/* Assessment results */}
       {(doneAssessments ?? []).length > 0 && (
         <section className="mt-8">
-          <h2 className={h2}>نتائج اختباراتي 🎯</h2>
+          <h2 className={h2}>{t("results.heading")}</h2>
           <ul className="flex flex-col gap-3">
             {(doneAssessments ?? []).map((a: any) => {
               const result = (a.result ?? {}) as Record<string, { correct: number; total: number }>;
@@ -298,6 +315,7 @@ export default async function LearnPage() {
               return (
                 <li key={a.id} className={card}>
                   <div className="flex items-center justify-between gap-2">
+                    {/* unit/test title: educational content */}
                     <p className="font-bold text-ink">{a.unit ?? a.title}</p>
                     <span className="flex-shrink-0 rounded-full bg-leaf/10 px-2.5 py-0.5 text-sm font-bold text-leaf">{a.score}/{a.max_score} · {pct}%</span>
                   </div>
@@ -306,7 +324,7 @@ export default async function LearnPage() {
                       const p = v.total ? Math.round((v.correct / v.total) * 100) : 0;
                       return (
                         <li key={sk} className="flex items-center gap-2 text-sm">
-                          <span className="w-20 flex-shrink-0 text-ink">{SKILL_AR[sk as keyof typeof SKILL_AR] ?? sk}</span>
+                          <span className="w-20 flex-shrink-0 text-ink">{skillLabel(sk)}</span>
                           <div className="h-2 flex-1 overflow-hidden rounded-full bg-brand-50"><div className="h-full rounded-full bg-brand" style={{ width: `${p}%` }} /></div>
                           <span className="w-10 text-end font-bold text-brand-700" style={{ fontVariantNumeric: "tabular-nums" }}>{v.correct}/{v.total}</span>
                         </li>
@@ -322,8 +340,8 @@ export default async function LearnPage() {
 
       {/* Homework */}
       <section>
-        <h2 className={h2}>واجباتي</h2>
-        {(items ?? []).length === 0 && <p className="text-sm text-ink-soft">لا واجبات بعد. سيضيف معلّمك قريباً.</p>}
+        <h2 className={h2}>{t("homework.heading")}</h2>
+        {(items ?? []).length === 0 && <p className="text-sm text-ink-soft">{t("homework.empty")}</p>}
         <ul className="flex flex-col gap-3">
           {(items ?? []).map((it: any) => {
             const last = lastByItem.get(it.id);
@@ -331,22 +349,23 @@ export default async function LearnPage() {
             return (
               <li key={it.id} className={card}>
                 <div className="mb-1 flex items-center gap-2 text-xs">
-                  <span className="rounded-full bg-brand-50 px-2 py-0.5 font-medium text-brand-700">{AR_FORMAT[it.format] ?? it.format}</span>
-                  <span className="inline-flex items-center gap-1 text-leaf">✓ معتمَد من معلّمك</span>
+                  <span className="rounded-full bg-brand-50 px-2 py-0.5 font-medium text-brand-700">{fmtLabel(it.format)}</span>
+                  <span className="inline-flex items-center gap-1 text-leaf">{t("homework.approved")}</span>
                 </div>
+                {/* item prompt: educational content (English, from the item bank) */}
                 <p className="whitespace-pre-line font-medium text-ink" dir="ltr">{it.prompt}</p>
                 {last && (
                   <p className="mt-2 text-sm">
                     {!last.graded ? (
-                      <span className="text-ink-soft">أُرسل ✓</span>
+                      <span className="text-ink-soft">{t("homework.sent")}</span>
                     ) : last.is_correct ? (
-                      <span className="font-bold text-leaf">إجابةٌ صحيحة ✓</span>
+                      <span className="font-bold text-leaf">{t("homework.correct")}</span>
                     ) : (
-                      <span className="font-bold text-rose-600">ليست صحيحة — حاوِل ثانيةً</span>
+                      <span className="font-bold text-rose-600">{t("homework.tryAgain")}</span>
                     )}
                   </p>
                 )}
-                <AnswerForm itemId={it.id} format={it.format} options={options} />
+                <AnswerForm itemId={it.id} format={it.format} options={options} labels={answerLabels} />
               </li>
             );
           })}
@@ -356,7 +375,7 @@ export default async function LearnPage() {
       {/* Manual homework (from the paper textbook) */}
       {(manualHw ?? []).length > 0 && (
         <section className="mt-8">
-          <h2 className={h2}>واجباتي من الكتاب</h2>
+          <h2 className={h2}>{t("bookHomework.heading")}</h2>
           <ul className="flex flex-col gap-3">
             {(manualHw ?? []).map((h: any) => {
               const tFiles = (h.homework_files ?? []).filter((f: any) => f.kind !== "submission");
@@ -364,34 +383,35 @@ export default async function LearnPage() {
               return (
                 <li key={h.id} className={card}>
                   <div className="mb-1 flex items-center gap-2 text-xs">
-                    <span className="rounded-full bg-brand-50 px-2 py-0.5 font-medium text-brand-700">من الكتاب</span>
+                    <span className="rounded-full bg-brand-50 px-2 py-0.5 font-medium text-brand-700">{t("bookHomework.tag")}</span>
                     {h.status === "graded" ? (
-                      <span className="font-bold text-leaf">مُصحَّح{h.score != null ? `: ${h.score}${h.max_score != null ? `/${h.max_score}` : ""}` : ""} ✓</span>
+                      <span className="font-bold text-leaf">{t("bookHomework.checked")}{h.score != null ? `: ${h.score}${h.max_score != null ? `/${h.max_score}` : ""}` : ""} ✓</span>
                     ) : h.status === "submitted" ? (
-                      <span className="text-ink-soft">أُرسل ✓ — بانتظار التصحيح</span>
+                      <span className="text-ink-soft">{t("bookHomework.waitingCheck")}</span>
                     ) : (
-                      <span className="text-rose-600">بانتظار حلّك</span>
+                      <span className="text-rose-600">{t("bookHomework.waitingYou")}</span>
                     )}
                   </div>
+                  {/* homework title + instructions + feedback: teacher-authored content */}
                   <p className="font-bold text-ink">{h.title}</p>
                   {h.instructions && <p className="text-sm text-ink-soft">{h.instructions}</p>}
                   <div className="mt-2 flex flex-wrap gap-2">
                     {tFiles.map((f: any) => {
                       const href = hwUrls.get(f.id);
-                      return href ? <a key={f.id} href={href} target="_blank" rel="noreferrer" className="rounded-lg border border-brand-100 px-2.5 py-1 text-xs font-medium text-brand-700">عرض الواجب ↓</a> : null;
+                      return href ? <a key={f.id} href={href} target="_blank" rel="noreferrer" className="rounded-lg border border-brand-100 px-2.5 py-1 text-xs font-medium text-brand-700">{t("bookHomework.view")}</a> : null;
                     })}
                     {myFiles.map((f: any) => {
                       const href = hwUrls.get(f.id);
-                      return href ? <a key={f.id} href={href} target="_blank" rel="noreferrer" className="rounded-lg border border-leaf/40 px-2.5 py-1 text-xs font-medium text-leaf">حلّي ↓</a> : null;
+                      return href ? <a key={f.id} href={href} target="_blank" rel="noreferrer" className="rounded-lg border border-leaf/40 px-2.5 py-1 text-xs font-medium text-leaf">{t("bookHomework.myAnswer")}</a> : null;
                     })}
                   </div>
-                  {h.status === "graded" && h.feedback && <p className="mt-2 text-sm text-ink-soft"><span className="font-medium">ملاحظة المعلّمة:</span> {h.feedback}</p>}
+                  {h.status === "graded" && h.feedback && <p className="mt-2 text-sm text-ink-soft"><span className="font-medium">{t("bookHomework.teacherNote")}</span> {h.feedback}</p>}
                   {h.status === "assigned" && (
                     <form action={submitManualHomework} className="mt-3 flex flex-wrap items-center gap-2">
                       <input type="hidden" name="manualHomeworkId" value={h.id} />
                       <input type="file" name="file" required accept="image/*" className="text-sm" />
-                      <SubmitButton pendingText="جارٍ الرفع…" className="inline-flex h-9 items-center justify-center rounded-full bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60">
-                        ارفع صورة حلّي
+                      <SubmitButton pendingText={t("bookHomework.uploading")} className="inline-flex h-9 items-center justify-center rounded-full bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60">
+                        {t("bookHomework.upload")}
                       </SubmitButton>
                     </form>
                   )}
