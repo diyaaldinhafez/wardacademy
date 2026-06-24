@@ -9,7 +9,18 @@
     "actions": {
       "save": "حفظ",
       "cancel": "إلغاء",
-      "back": "رجوع"
+      "back": "رجوع",
+      "logout": "تسجيل الخروج"
+    },
+    "skills": {
+      "listening": "الاستماع",
+      "speaking": "المحادثة",
+      "reading": "القراءة",
+      "writing": "الكتابة"
+    },
+    "vocab": {
+      "label": "الأساس اللغوي",
+      "wordsKnown": "كلماتٌ يعرفها"
     }
   },
   "demo": {
@@ -17,5 +28,35 @@
     "greeting": "مرحباً من أكاديمية وَرد — طبقةُ التدويل تعمل.",
     "localeLabel": "اللغة الفعّالة",
     "switchHint": "استخدم المبدّل لقلب EN / ع — يُعاد عرض هذا النصّ من ملفّ الرسائل."
+  },
+  "guardian": {
+    "title": "أبناؤك",
+    "addChildTitle": "أضِف طفلاً",
+    "namePh": "اسم الطفل",
+    "passwordPh": "اضبط كلمة مرور",
+    "add": "إضافة",
+    "adding": "جارٍ الإضافة…",
+    "addNote": "يحصل طفلك على دخولٍ بسيطٍ خاصٍّ به — بريده يظهر في الأسفل.",
+    "noChildren": "لا أبناء مرتبطون بعد.",
+    "childFallback": "طفلك",
+    "consentGranted": "الموافقة ممنوحة",
+    "consentPending": "الموافقة معلّقة",
+    "giveConsent": "امنح الموافقة",
+    "savingConsent": "جارٍ الحفظ…",
+    "loginLabel": "الدخول:",
+    "levelLabel": "المستوى: {level}",
+    "planLabel": "الخطّة: {title}",
+    "unitFallback": "الدروس",
+    "noActivity": "لا نشاط بعد — يبدأ تقرير التفتّح مع أوّل نتيجةٍ نراها.",
+    "stageBloom": "تتفتّح — أداءٌ رائع",
+    "stageBalloon": "تنمو بثبات",
+    "stageBud": "في بدايتها",
+    "stageSeed": "لم تبدأ بعد",
+    "bloomSummary": "وردة {name} في {units, plural, other {# وحدةً}} بدأها، وتابعنا {objectives} مهارةً حتى الآن. أرقامٌ صادقةٌ بلا تجميل.",
+    "petalsNote": "أربع بتلاتٍ = أربع مهارات. ووردة الوحدة متوسّط كلّ ما فيها. «{vocab}» يُعَدّ وحده. والتحدّث يقدّره المعلّم.",
+    "testResults": "نتائج الاختبارات",
+    "sessionNotes": "ملاحظات الجلسات",
+    "strengths": "نقاط القوّة:",
+    "nextStep": "الخطوة القادمة:"
   }
 }

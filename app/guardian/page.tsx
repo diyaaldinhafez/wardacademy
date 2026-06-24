@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { addChild, grantConsent } from "./actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import WorkspaceHeader from "@/components/studio/WorkspaceHeader";
+import LocaleSwitcher from "@/components/LocaleSwitcher";
 import { FlowerProgress, ScopeChip, UnitBloom } from "@/components/bloom/Bloom";
-import { SKILL_AR, VOCAB_AR } from "@/lib/skills";
 import { fetchStudentBlooms } from "@/lib/progress/bloom";
 import { fmtUTC } from "@/lib/datetime";
 
@@ -12,9 +13,17 @@ import { fmtUTC } from "@/lib/datetime";
 const first = (x: any) => (Array.isArray(x) ? x[0] : x) ?? {};
 const card = "rounded-2xl border border-brand-100 bg-white p-4 shadow-ward-1";
 const field = "rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm outline-none focus:border-brand-400";
+const SKILL_KEYS = ["listening", "speaking", "reading", "writing"];
 
 export default async function GuardianPage() {
   const supabase = await createClient();
+  const tg = await getTranslations("guardian");
+  const tSkill = await getTranslations("common.skills");
+  const tVocab = await getTranslations("common.vocab");
+  // Petal/track labels follow the active locale (UI labels, not authored content).
+  const skillLabel = (sk: string) =>
+    sk === "vocabulary" ? tVocab("label") : SKILL_KEYS.includes(sk) ? tSkill(sk) : sk;
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -67,28 +76,28 @@ export default async function GuardianPage() {
 
   return (
     <main className="mx-auto max-w-2xl px-5 py-10">
-      <WorkspaceHeader title="أبناؤك" subtitle={profile?.full_name ?? user.email ?? ""} />
+      <WorkspaceHeader title={tg("title")} subtitle={profile?.full_name ?? user.email ?? ""} rightSlot={<LocaleSwitcher />} />
 
       <section className={`mb-8 ${card}`}>
-        <h2 className="mb-2 text-sm font-bold text-brand-700">أضِف طفلاً</h2>
+        <h2 className="mb-2 text-sm font-bold text-brand-700">{tg("addChildTitle")}</h2>
         <form action={addChild} className="flex flex-wrap items-end gap-2">
-          <input name="childName" required placeholder="اسم الطفل" className={field} />
-          <input name="childPassword" required minLength={6} type="text" placeholder="اضبط كلمة مرور" dir="ltr" className={field} />
+          <input name="childName" required placeholder={tg("namePh")} className={field} />
+          <input name="childPassword" required minLength={6} type="text" placeholder={tg("passwordPh")} dir="ltr" className={field} />
           <SubmitButton
-            pendingText="جارٍ الإضافة…"
+            pendingText={tg("adding")}
             className="inline-flex h-10 items-center justify-center rounded-full bg-brand px-5 text-sm font-semibold text-white shadow-ward-1 hover:bg-brand-600 disabled:opacity-60"
           >
-            إضافة
+            {tg("add")}
           </SubmitButton>
         </form>
-        <p className="mt-2 text-xs text-ink-soft">يُنشأ لطفلك دخولٌ بسيطٌ خاصّ به؛ بريده يظهر في الأسفل.</p>
+        <p className="mt-2 text-xs text-ink-soft">{tg("addNote")}</p>
       </section>
 
-      {(children ?? []).length === 0 && <p className="text-sm text-ink-soft">لا أبناء مرتبطون بعد.</p>}
+      {(children ?? []).length === 0 && <p className="text-sm text-ink-soft">{tg("noChildren")}</p>}
 
       <ul className="flex flex-col gap-4">
         {(children ?? []).map((c: any) => {
-          const name = first(c.profiles).full_name ?? "الطفل";
+          const name = first(c.profiles).full_name ?? tg("childFallback");
           const bloom = bloomByLearner.get(c.learner_id);
           const pl = placementByLearner.get(c.learner_id);
           const plan = planByLearner.get(c.learner_id);
@@ -101,44 +110,44 @@ export default async function GuardianPage() {
                     c.consent_granted ? "bg-leaf/10 text-leaf" : "bg-amber/20 text-brand-900"
                   }`}
                 >
-                  {c.consent_granted ? "الموافقة ممنوحة" : "الموافقة معلّقة"}
+                  {c.consent_granted ? tg("consentGranted") : tg("consentPending")}
                 </span>
               </div>
               <p className="mb-2 text-xs text-ink-soft" dir="ltr">
-                الدخول: {first(c.profiles).login_email ?? "—"}
+                {tg("loginLabel")} {first(c.profiles).login_email ?? "—"}
               </p>
               {pl?.status === "completed" && (
                 <p className="mb-2 text-xs">
-                  <span className="rounded-full bg-brand-50 px-2 py-0.5 font-medium text-brand-700">المستوى: {pl.suggested_level}</span>
+                  <span className="rounded-full bg-brand-50 px-2 py-0.5 font-medium text-brand-700">{tg("levelLabel", { level: pl.suggested_level })}</span>
                 </p>
               )}
               {!c.consent_granted && (
                 <form action={grantConsent} className="mb-3">
                   <input type="hidden" name="learnerId" value={c.learner_id} />
                   <SubmitButton
-                    pendingText="جارٍ الحفظ…"
+                    pendingText={tg("savingConsent")}
                     className="inline-flex h-9 items-center justify-center rounded-full bg-leaf px-4 text-sm font-semibold text-white shadow-ward-1 hover:brightness-95 disabled:opacity-60"
                   >
-                    امنح الموافقة
+                    {tg("giveConsent")}
                   </SubmitButton>
                 </form>
               )}
               {plan && (() => {
                 const units: { unit: string; lessons: any[] }[] = [];
                 for (const it of ((plan.items as any[]) ?? [])) {
-                  const u = (it.unit as string) || "الدروس";
+                  const u = (it.unit as string) || tg("unitFallback");
                   let g = units[units.length - 1];
                   if (!g || g.unit !== u) { g = { unit: u, lessons: [] }; units.push(g); }
                   g.lessons.push(it);
                 }
                 return (
                   <div className="mb-3 rounded-xl border border-brand-100 bg-brand-50/50 p-3">
-                    <p className="mb-1 text-xs font-bold text-brand-700">الخطّة: {plan.title}</p>
+                    <p className="mb-1 text-xs font-bold text-brand-700">{tg("planLabel", { title: plan.title })}</p>
                     <div className="flex flex-col gap-2">
                       {units.map((g, gi) => (
                         <div key={gi}>
                           <p className="text-xs font-bold text-brand-700">{g.unit}</p>
-                          <ol className="mt-0.5 list-decimal pr-4 text-xs text-ink-soft">
+                          <ol className="mt-0.5 list-decimal pe-4 text-xs text-ink-soft">
                             {g.lessons.map((it: any, i: number) => <li key={i}>{it.description}</li>)}
                           </ol>
                         </div>
@@ -148,25 +157,25 @@ export default async function GuardianPage() {
                 );
               })()}
               {!bloom || bloom.assessedObjectives === 0 ? (
-                <p className="text-sm text-ink-soft">لا نشاط بعد — سيبدأ تقرير التفتّح بمجرّد أوّل تقييم.</p>
+                <p className="text-sm text-ink-soft">{tg("noActivity")}</p>
               ) : (() => {
-                const readOf = (st: string) => st === "bloom" ? "تتفتّح — أداءٌ قويّ" : st === "balloon" ? "تنمو بثبات" : st === "bud" ? "في بدايتها" : "لم تبدأ بعد";
+                const readOf = (st: string) => st === "bloom" ? tg("stageBloom") : st === "balloon" ? tg("stageBalloon") : st === "bud" ? tg("stageBud") : tg("stageSeed");
                 return (
                   <div className="rounded-2xl border border-brand-100 bg-white p-3">
                     <div className="flex items-center gap-4">
-                      <FlowerProgress size={96} skills={bloom.skills.map((s) => ({ label: SKILL_AR[s.skill], value: s.fraction, detail: `${s.assessed}/${s.total}` }))} />
+                      <FlowerProgress size={96} skills={bloom.skills.map((s) => ({ label: skillLabel(s.skill), value: s.fraction, detail: `${s.assessed}/${s.total}` }))} />
                       <div className="flex-1">
                         {plan?.scope_label && <div className="mb-1"><ScopeChip>{plan.scope_label}</ScopeChip></div>}
                         <p className="text-sm text-ink" style={{ lineHeight: 1.8 }}>
-                          وردة {name} عبر <b>{bloom.startedUnits.length}</b> وحدة بدأها — قُيّم <b>{bloom.assessedObjectives}</b> هدفاً. أرقامٌ حقيقيةٌ بلا تجميل.
-                          {plan?.milestone_label ? <span className="text-ink-soft"> 🎯 {plan.milestone_label}.</span> : null}
+                          {tg("bloomSummary", { name, units: bloom.startedUnits.length, objectives: bloom.assessedObjectives })}
+                          {plan?.milestone_label ? <span className="text-ink-soft"> {plan.milestone_label}.</span> : null}
                         </p>
                       </div>
                     </div>
                     <ul className="mt-2 flex flex-col">
                       {bloom.skills.map((s) => (
                         <li key={s.skill} className="flex items-center gap-2 py-1.5 text-sm" style={{ borderTop: "1px solid var(--ink-100)" }}>
-                          <span className="flex-1 font-medium text-ink">{SKILL_AR[s.skill]}</span>
+                          <span className="flex-1 font-medium text-ink">{skillLabel(s.skill)}</span>
                           <span className="text-ink-soft">{readOf(s.stage)}</span>
                           <span className="font-bold text-brand-700" style={{ fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{s.value.toFixed(1)} / 10</span>
                         </li>
@@ -179,13 +188,13 @@ export default async function GuardianPage() {
                         ))}
                       </div>
                     )}
-                    <p className="mt-2 text-xs text-ink-soft">أربع بتلات = أربع مهارات. وردة الوحدة = متوسّط كلّ أهدافها. «{VOCAB_AR}» عدّادٌ مستقلّ. التحدّث يُقيّمه المعلّم.</p>
+                    <p className="mt-2 text-xs text-ink-soft">{tg("petalsNote", { vocab: tVocab("label") })}</p>
                   </div>
                 );
               })()}
               {(assessByLearner.get(c.learner_id) ?? []).length > 0 && (
                 <div className="mt-3 border-t border-brand-100 pt-3">
-                  <p className="mb-1 text-xs font-bold text-ink-soft">نتائج الاختبارات</p>
+                  <p className="mb-1 text-xs font-bold text-ink-soft">{tg("testResults")}</p>
                   <ul className="flex flex-col gap-2">
                     {(assessByLearner.get(c.learner_id) ?? []).map((a: any, ai: number) => {
                       const result = (a.result ?? {}) as Record<string, { correct: number; total: number }>;
@@ -198,7 +207,7 @@ export default async function GuardianPage() {
                           </div>
                           <div className="mt-1 flex flex-wrap gap-1.5">
                             {Object.entries(result).map(([sk, v]) => (
-                              <span key={sk} className="rounded-full bg-white px-2 py-0.5 text-xs text-ink-soft">{SKILL_AR[sk as keyof typeof SKILL_AR] ?? sk}: <b className="text-brand-700">{v.correct}/{v.total}</b></span>
+                              <span key={sk} className="rounded-full bg-white px-2 py-0.5 text-xs text-ink-soft">{skillLabel(sk)}: <b className="text-brand-700">{v.correct}/{v.total}</b></span>
                             ))}
                           </div>
                         </li>
@@ -212,7 +221,7 @@ export default async function GuardianPage() {
                 if (withReport.length === 0) return null;
                 return (
                   <div className="mt-3 border-t border-brand-100 pt-3">
-                    <p className="mb-1 text-xs font-bold text-ink-soft">تقارير الجلسات</p>
+                    <p className="mb-1 text-xs font-bold text-ink-soft">{tg("sessionNotes")}</p>
                     <ul className="flex flex-col gap-2">
                       {withReport.map((s: any) => {
                         const r = reportBySession.get(s.id);
@@ -220,8 +229,8 @@ export default async function GuardianPage() {
                           <li key={s.id} className="rounded-xl bg-brand-50/60 p-2.5 text-sm">
                             <p className="text-xs font-medium text-ink-soft">{fmtUTC(s.scheduled_at)}{s.lesson_title ? ` · ${s.lesson_title}` : ""}</p>
                             <p className="mt-0.5 text-ink">{r.summary}</p>
-                            {r.strengths && <p className="text-ink-soft"><span className="font-medium">نقاط القوّة:</span> {r.strengths}</p>}
-                            {r.improve && <p className="text-ink-soft"><span className="font-medium">الخطوة القادمة:</span> {r.improve}</p>}
+                            {r.strengths && <p className="text-ink-soft"><span className="font-medium">{tg("strengths")}</span> {r.strengths}</p>}
+                            {r.improve && <p className="text-ink-soft"><span className="font-medium">{tg("nextStep")}</span> {r.improve}</p>}
                           </li>
                         );
                       })}
