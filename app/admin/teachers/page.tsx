@@ -1,10 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { Card, Badge, Avatar } from "@/components/ward/ui";
 
 export default async function TeachersPage() {
   const supabase = await createClient();
+  const t = await getTranslations({ locale: "en", namespace: "admin.teachers" });
   const { data: people } = await supabase.from("profiles").select("id, full_name, roles, assigned_instructor_id");
   const all = (people ?? []) as any[];
   const teachers = all.filter((p) => ((p.roles as string[]) ?? []).includes("instructor"));
@@ -19,25 +21,25 @@ export default async function TeachersPage() {
 
   return (
     <>
-      <p style={{ fontSize: 14, color: "var(--text-muted)" }}>المعلّمون وبياناتهم. (تُضاف معلّماتٌ إضافيات في نسخةٍ لاحقة.)</p>
-      {teachers.length === 0 && <p style={{ fontSize: 14, color: "var(--text-muted)" }}>لا معلّمين بعد.</p>}
+      <p style={{ fontSize: 14, color: "var(--text-muted)" }}>{t("listIntro")}</p>
+      {teachers.length === 0 && <p style={{ fontSize: 14, color: "var(--text-muted)" }}>{t("listEmpty")}</p>}
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {teachers.map((t) => {
-          const tp = profByTeacher.get(t.id);
+        {teachers.map((teacher) => {
+          const tp = profByTeacher.get(teacher.id);
           const inactive = tp?.status === "inactive";
           return (
-            <Card key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-              <Link href={`/admin/teachers/${t.id}`} style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 160, textDecoration: "none" }}>
-                <Avatar name={t.full_name ?? "?"} size={40} />
+            <Card key={teacher.id} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <Link href={`/admin/teachers/${teacher.id}`} style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 160, textDecoration: "none" }}>
+                <Avatar name={teacher.full_name ?? "?"} size={40} />
                 <div>
-                  <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>{t.full_name ?? t.id}</div>
+                  <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>{teacher.full_name ?? teacher.id}</div>
                   <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
-                    {studentsByTeacher.get(t.id) ?? 0} طالب{tp?.specialties ? ` · ${tp.specialties}` : ""}
+                    {t("studentsCount", { n: studentsByTeacher.get(teacher.id) ?? 0 })}{tp?.specialties ? ` · ${tp.specialties}` : ""}
                   </div>
                 </div>
               </Link>
-              <Badge tone={inactive ? "neutral" : "success"}>{inactive ? "متوقّفة" : "نشطة"}</Badge>
-              <Link href={`/admin/teachers/${t.id}`} className="ward-btn ward-btn--ghost ward-btn--sm">إدارة</Link>
+              <Badge tone={inactive ? "neutral" : "success"}>{inactive ? t("inactive") : t("active")}</Badge>
+              <Link href={`/admin/teachers/${teacher.id}`} className="ward-btn ward-btn--ghost ward-btn--sm">{t("manage")}</Link>
             </Card>
           );
         })}

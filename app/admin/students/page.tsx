@@ -1,13 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { Card, Badge, Avatar } from "@/components/ward/ui";
 
-const ENR_AR: Record<string, string> = { active: "نشط", paused: "مُعلَّق", cancelled: "مُنتهٍ" };
 const ENR_TONE: Record<string, any> = { active: "success", paused: "warning", cancelled: "neutral" };
 
 export default async function StudentsPage() {
   const supabase = await createClient();
+  const t = await getTranslations({ locale: "en", namespace: "admin.students" });
+  const enrLabel = (s: string) => (s === "active" ? t("enrActive") : s === "paused" ? t("enrPaused") : t("enrCancelled"));
   const { data: tenant } = await supabase.from("tenants").select("currency").maybeSingle();
   const currency = tenant?.currency ?? "SAR";
 
@@ -31,8 +33,8 @@ export default async function StudentsPage() {
 
   return (
     <>
-      <p style={{ fontSize: 14, color: "var(--text-muted)" }}>الطلاب النشطون واشتراكاتهم الشهرية.</p>
-      {learners.length === 0 && <p style={{ fontSize: 14, color: "var(--text-muted)" }}>لا طلاب بعد.</p>}
+      <p style={{ fontSize: 14, color: "var(--text-muted)" }}>{t("listIntro")}</p>
+      {learners.length === 0 && <p style={{ fontSize: 14, color: "var(--text-muted)" }}>{t("listEmpty")}</p>}
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {learners.map((l: any) => {
           const enr = enrByLearner.get(l.id);
@@ -47,16 +49,16 @@ export default async function StudentsPage() {
                 <div>
                   <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>{l.full_name ?? l.id}</div>
                   <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
-                    {enr ? `${enr.monthly_fee} ${currency} / شهرياً` : "بلا اشتراك بعد"}
+                    {enr ? t("perMonth", { fee: enr.monthly_fee, currency }) : t("noSubYet")}
                   </div>
                 </div>
               </Link>
-              {enr ? <Badge tone={ENR_TONE[enr.status] ?? "neutral"}>{ENR_AR[enr.status] ?? enr.status}</Badge> : <Badge tone="apricot">بلا اشتراك</Badge>}
+              {enr ? <Badge tone={ENR_TONE[enr.status] ?? "neutral"}>{enrLabel(enr.status)}</Badge> : <Badge tone="apricot">{t("noSub")}</Badge>}
               <Badge tone={inv === "paid" ? "success" : inv === "pending" ? "warning" : "neutral"}>
-                {inv === "paid" ? "دفعة الشهر ✓" : inv === "pending" ? "دفعة الشهر بانتظار" : "لا فاتورة هذا الشهر"}
+                {inv === "paid" ? t("monthPaid") : inv === "pending" ? t("monthPending") : t("noInvoiceThisMonth")}
               </Badge>
-              {(overdueByLearner.get(l.id) || enr?.status === "paused") && <Badge tone="danger">⚠ مُعرَّض</Badge>}
-              <Link href={`/admin/students/${l.id}`} className="ward-btn ward-btn--ghost ward-btn--sm">إدارة</Link>
+              {(overdueByLearner.get(l.id) || enr?.status === "paused") && <Badge tone="danger">{t("atRisk")}</Badge>}
+              <Link href={`/admin/students/${l.id}`} className="ward-btn ward-btn--ghost ward-btn--sm">{t("manage")}</Link>
             </Card>
           );
         })}
