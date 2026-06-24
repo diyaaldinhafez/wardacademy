@@ -144,7 +144,7 @@ export async function provisionAccounts(
 
   const { data: lead } = await supabase
     .from("leads")
-    .select("id, tenant_id, guardian_name, guardian_email, student_name, status")
+    .select("id, tenant_id, guardian_name, guardian_email, student_name, status, guardian_locale")
     .eq("id", leadId)
     .single();
   if (!lead) return { error: await adminErr("leadNotFound") };
@@ -192,7 +192,7 @@ export async function provisionAccounts(
   const studentLink = await inviteLink(sEmail);
 
   try {
-    await sendAccountInvite({ to: lead.guardian_email, name: lead.guardian_name, role: "guardian", link: guardianLink });
+    await sendAccountInvite({ to: lead.guardian_email, name: lead.guardian_name, role: "guardian", link: guardianLink, locale: lead.guardian_locale });
   } catch (e) {
     console.error("[provisionAccounts] invite email failed:", e);
   }
@@ -412,7 +412,7 @@ export async function sendIntroReportAction(formData: FormData) {
 
   const { data: report } = await supabase.from("intro_reports").select("ai_report, status").eq("lead_id", leadId).maybeSingle();
   if (!report?.ai_report) throw new Error(await adminErr("generateReportFirst"));
-  const { data: lead } = await supabase.from("leads").select("guardian_name, guardian_email, student_name").eq("id", leadId).single();
+  const { data: lead } = await supabase.from("leads").select("guardian_name, guardian_email, student_name, guardian_locale").eq("id", leadId).single();
   if (!lead) throw new Error(await adminErr("leadNotFound"));
 
   const res = await sendIntroReport({
@@ -420,6 +420,7 @@ export async function sendIntroReportAction(formData: FormData) {
     guardianName: lead.guardian_name,
     studentName: lead.student_name,
     body: report.ai_report,
+    locale: lead.guardian_locale,
   });
   if (!res.ok && !res.skipped) throw new Error(res.error ?? (await adminErr("sendFailed")));
 

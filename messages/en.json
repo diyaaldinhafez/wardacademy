@@ -734,6 +734,34 @@
       "notAvailable": "The test isn't available yet."
     }
   },
+  "comms": {
+    "brand": "Ward Academy",
+    "footer": "Ward Academy · joyful English learning",
+    "email": {
+      "booking": {
+        "subject": "Trial session confirmed — Ward Academy",
+        "heading": "Your free trial session is confirmed",
+        "greeting": "Hi {name},",
+        "body": "The free trial session for {student} is confirmed:",
+        "note": "We'll send the placement test before the session on WhatsApp. To change the time, just get in touch.",
+        "closing": "See you soon!"
+      },
+      "intro": {
+        "subject": "{student}'s intro-session report — Ward Academy",
+        "heading": "{student}'s intro session",
+        "greeting": "Dear {name},"
+      },
+      "invite": {
+        "subject": "Your account is ready — Ward Academy",
+        "heading": "Your Ward Academy account is ready",
+        "greeting": "Hi {name},",
+        "bodyGuardian": "Your guardian account on Ward Academy is set up. Tap the button to set your password and sign in:",
+        "bodyStudent": "Your child's student account on Ward Academy is set up. Tap the button to set the password and sign in:",
+        "button": "Set password and sign in",
+        "fallbackNote": "If the button doesn't work, copy this link:"
+      }
+    }
+  },
   "guardian": {
     "title": "Your children",
     "addChildTitle": "Add a child",

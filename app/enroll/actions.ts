@@ -1,6 +1,6 @@
 "use server";
 
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendBookingConfirmation } from "@/lib/email";
 import { ENROLL_SKILLS } from "@/lib/enrollOptions";
@@ -22,6 +22,8 @@ export async function submitLead(_prev: LeadState | undefined, formData: FormDat
   const guardian_country = get("guardianCountry");
   const guardian_nationality = get("guardianNationality");
   const guardian_relation = get("guardianRelation");
+  // The language the parent filled /enroll in — their comms language going forward.
+  const guardian_locale = await getLocale();
   const referral_source = get("referralSource");
   const consent = formData.get("consent") === "1";
   const student_name = get("studentName");
@@ -63,6 +65,7 @@ export async function submitLead(_prev: LeadState | undefined, formData: FormDat
       guardian_country: guardian_country || null,
       guardian_nationality: guardian_nationality || null,
       guardian_relation: guardian_relation || null,
+      guardian_locale: guardian_locale || null,
       referral_source: referral_source || null,
       consent_accepted: consent,
       consent_at: consent ? new Date().toISOString() : null,
@@ -104,7 +107,7 @@ async function claimAndConfirm(admin: any, leadId: string, slotId: string): Prom
   try {
     const { data: lead } = await admin
       .from("leads")
-      .select("tenant_id, guardian_name, guardian_email, student_name")
+      .select("tenant_id, guardian_name, guardian_email, student_name, guardian_locale")
       .eq("id", leadId)
       .single();
     if (lead) {
@@ -115,6 +118,7 @@ async function claimAndConfirm(admin: any, leadId: string, slotId: string): Prom
         studentName: lead.student_name,
         whenUTC: slot.starts_at,
         timezone: tenant?.timezone ?? "Asia/Riyadh",
+        locale: lead.guardian_locale,
       });
     }
   } catch (e) {
