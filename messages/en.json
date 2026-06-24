@@ -1,0 +1,27 @@
+{
+  "common": {
+    "appName": "Ward Academy",
+    "language": {
+      "label": "Language",
+      "english": "EN",
+      "arabic": "ع"
+    },
+    "actions": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "back": "Back"
+    }
+  },
+  "demo": {
+    "title": "i18n infrastructure is live",
+    "greeting": "Hello from Ward Academy — the i18n layer works.",
+    "localeLabel": "Active locale",
+    "switchHint": "Use the switcher to flip EN / ع — this text re-renders from the message catalog."
+  },
+  "learn": {},
+  "studio": {},
+  "guardian": {},
+  "admin": {},
+  "landing": {},
+  "enroll": {}
+}

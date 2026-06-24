@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Nunito, Baloo_2, IBM_Plex_Sans_Arabic } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 import "./ward.css";
 import LanguageProvider from "@/components/LanguageProvider";
@@ -51,11 +53,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // next-intl: the active locale (LOCALE cookie, default en) + its messages, so
+  // Server AND Client Components can translate. Additive — the html lang/dir and
+  // the legacy LanguageProvider are unchanged here; per-surface migration takes
+  // over dir as each surface moves to next-intl.
+  const locale = await getLocale();
+  const messages = await getMessages();
   return (
     // Arabic is the default; LanguageProvider updates lang/dir at runtime.
     <html
@@ -65,7 +73,9 @@ export default function RootLayout({
       className={`${nunito.variable} ${baloo.variable} ${plexArabic.variable} h-full antialiased`}
     >
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-cream text-ink">
-        <LanguageProvider>{children}</LanguageProvider>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <LanguageProvider>{children}</LanguageProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );
