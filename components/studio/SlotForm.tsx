@@ -18,15 +18,15 @@ export default function SlotForm({ action }: { action: (formData: FormData) => v
       />
       <input type="hidden" name="startsAt" value={utc} />
       <select name="duration" defaultValue="30" className="rounded-lg border border-brand-200 px-2 py-1.5 text-sm">
-        <option value="30">30 دقيقة</option>
-        <option value="45">45 دقيقة</option>
-        <option value="60">60 دقيقة</option>
+        <option value="30">30 min</option>
+        <option value="45">45 min</option>
+        <option value="60">60 min</option>
       </select>
       <SubmitButton
-        pendingText="جارٍ الإضافة…"
+        pendingText="Adding…"
         className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60"
       >
-        أضِف موعداً
+        Add slot
       </SubmitButton>
     </form>
   );

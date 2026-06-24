@@ -1,7 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { assertInstructor } from "@/lib/auth";
+
+const err = async (key: string) => (await getTranslations({ locale: "en", namespace: "studio.errors" }))(key);
 
 // The teacher's availability defines when she teaches REGULAR lessons. It is read
 // directly when scheduling a student's recurring sessions — it does NOT generate
@@ -14,8 +17,8 @@ export async function tAddRule(formData: FormData) {
   const startTime = String(formData.get("startTime") ?? "");
   const endTime = String(formData.get("endTime") ?? "");
   const slotMinutes = Number(formData.get("slotMinutes") ?? 30);
-  if (Number.isNaN(weekday) || !startTime || !endTime) throw new Error("أكمِل بيانات القاعدة.");
-  if (endTime <= startTime) throw new Error("وقت النهاية يجب أن يكون بعد البداية.");
+  if (Number.isNaN(weekday) || !startTime || !endTime) throw new Error(await err("completeRuleData"));
+  if (endTime <= startTime) throw new Error(await err("endAfterStart"));
   const { supabase, user, profile } = await assertInstructor();
   const { error } = await supabase.from("availability_rules").insert({
     tenant_id: profile.tenant_id,

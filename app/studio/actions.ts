@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { DateTime } from "luxon";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -19,6 +20,9 @@ import { homePathForRoles } from "@/lib/roles";
 import { type BloomStage } from "@/lib/skills";
 import { valueForState } from "@/lib/progress/evidence";
 import type { ItemFormat, Difficulty } from "@/lib/items";
+
+// The teacher studio is English by internal decision — system messages are English.
+const studioErr = async (key: string) => (await getTranslations({ locale: "en", namespace: "studio.errors" }))(key);
 
 export async function login(_prev: { error?: string } | undefined, formData: FormData) {
   const email = String(formData.get("email") ?? "");
@@ -255,7 +259,7 @@ export async function draftReportWithAI(formData: FormData) {
   const { data: learner } = await supabase.from("profiles").select("full_name").eq("id", session.learner_id).single();
 
   const draft = await generateSessionReportDraft({
-    learnerName: learner?.full_name ?? "الطالب",
+    learnerName: learner?.full_name ?? "the student",
     lessonTitle: session.lesson_title,
     engagement: String(formData.get("engagement") ?? "").trim() || undefined,
     comprehension: String(formData.get("comprehension") ?? "").trim() || undefined,
@@ -366,8 +370,8 @@ export async function startPlan(formData: FormData) {
     items: plan.items.map((it) => ({ ...it, id: crypto.randomUUID() })),
     status: "draft",
     track: "cefr",
-    scope_label: `منهاج وَرد · المستوى ${level}`,
-    milestone_label: `تقييم المستوى عند إتمام ${level}`,
+    scope_label: `Ward Curriculum · Level ${level}`,
+    milestone_label: `Level assessment on completing ${level}`,
     created_by: user.id,
   });
   if (error) throw new Error(error.message);
@@ -388,7 +392,7 @@ export async function approvePlan(formData: FormData) {
   const { supabase, user } = await instructorCtx();
 
   const { data: plan } = await supabase.from("study_plans").select("tenant_id, items, status, track").eq("id", planId).single();
-  if (!plan) throw new Error("الخطّة غير موجودة.");
+  if (!plan) throw new Error(await studioErr("planNotFound"));
 
   type PlanItem = { id?: string; description?: string; level?: string | null; skill?: string | null; unit?: string | null };
   const items = ((plan.items as PlanItem[]) ?? []).filter((it) => it && it.id && String(it.description ?? "").trim());
@@ -434,7 +438,7 @@ export async function savePlan(formData: FormData) {
   const learnerId = String(formData.get("learnerId") ?? "");
   const title = String(formData.get("title") ?? "").trim();
   let parsed: unknown;
-  try { parsed = JSON.parse(String(formData.get("items") ?? "[]")); } catch { throw new Error("بيانات الخطّة غير صالحة."); }
+  try { parsed = JSON.parse(String(formData.get("items") ?? "[]")); } catch { throw new Error(await studioErr("invalidPlanData")); }
   const arr = Array.isArray(parsed) ? (parsed as Array<Record<string, unknown>>) : [];
   const items = arr
     .map((it) => {
@@ -444,7 +448,7 @@ export async function savePlan(formData: FormData) {
         description: String(it.description ?? "").trim(),
         level: it.level ? String(it.level).trim() : null,
         skill: PLAN_SKILLS.includes(skill) ? skill : null,
-        unit: String(it.unit ?? "").trim() || "وحدة",
+        unit: String(it.unit ?? "").trim() || "Unit",
       };
     })
     .filter((it) => it.description);
@@ -482,7 +486,7 @@ export async function recordObjectiveAssessment(formData: FormData) {
   const learnerId = String(formData.get("learnerId") ?? "");
   const objectiveId = String(formData.get("objectiveId") ?? "");
   const state = String(formData.get("state") ?? "") as BloomStage;
-  if (!learnerId || !objectiveId || !["seed", "bud", "balloon", "bloom"].includes(state)) throw new Error("بيانات التقييم ناقصة.");
+  if (!learnerId || !objectiveId || !["seed", "bud", "balloon", "bloom"].includes(state)) throw new Error(await studioErr("assessmentDataMissing"));
   const { supabase, user, tenantId } = await instructorCtx();
   const { error } = await supabase.from("objective_assessments").insert({
     tenant_id: tenantId,
@@ -516,9 +520,9 @@ export async function addResource(formData: FormData) {
   const learnerId = String(formData.get("learnerId") ?? "");
   const note = String(formData.get("note") ?? "").trim() || null;
   const file = formData.get("file") as File | null;
-  if (!learnerId) throw new Error("طالبٌ غير محدّد.");
-  if (!file || file.size === 0) throw new Error("اختر ملفاً للرفع.");
-  if (file.size > RESOURCE_MAX_BYTES) throw new Error("حجم الملفّ أكبر من 25 ميغابايت.");
+  if (!learnerId) throw new Error(await studioErr("noStudent"));
+  if (!file || file.size === 0) throw new Error(await studioErr("chooseFile"));
+  if (file.size > RESOURCE_MAX_BYTES) throw new Error(await studioErr("fileTooBig25"));
 
   const { user, tenantId } = await instructorCtx();
   const admin = createAdminClient();
@@ -557,7 +561,7 @@ export async function createAssessment(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const scope = String(formData.get("scope") ?? "unit");
   const scheduledFor = String(formData.get("scheduledFor") ?? "").trim() || null;
-  if (!learnerId || !title) throw new Error("أدخِل عنوان الاختبار.");
+  if (!learnerId || !title) throw new Error(await studioErr("enterTestTitle"));
   const { supabase, user, tenantId } = await instructorCtx();
   const { error } = await supabase.from("assessments").insert({
     tenant_id: tenantId,
@@ -606,21 +610,21 @@ export async function generateAssessmentTest(formData: FormData) {
   const learnerId = String(formData.get("learnerId") ?? "");
   const curriculumUnitId = String(formData.get("curriculumUnitId") ?? "").trim();
   const count = Math.min(Math.max(Number(formData.get("count") ?? 8) || 8, 4), 15);
-  if (!learnerId || !curriculumUnitId) throw new Error("اختاري الوحدة.");
+  if (!learnerId || !curriculumUnitId) throw new Error(await studioErr("chooseUnit"));
   const { supabase, user, tenantId } = await instructorCtx();
 
   // Catalog-driven: the test is built from a curriculum unit's objectives, and is
   // tagged with curriculum_unit_id so its result feeds objective_assessments(auto).
   const { data: cUnit } = await supabase.from("curriculum_units").select("unit_id, title_ar, level").eq("unit_id", curriculumUnitId).single();
-  if (!cUnit) throw new Error("وحدةٌ غير معروفة في المنهج.");
+  if (!cUnit) throw new Error(await studioErr("unknownUnit"));
   const { data: cObjectives } = await supabase
     .from("curriculum_objectives").select("descriptor_ar, skill, cefr_level").eq("unit_id", curriculumUnitId).order("seq");
-  if (!cObjectives?.length) throw new Error("لا أهداف في هذه الوحدة.");
+  if (!cObjectives?.length) throw new Error(await studioErr("noObjectivesInUnit"));
   const unit = cUnit.title_ar as string;
 
   const { data: learner } = await supabase.from("profiles").select("full_name").eq("id", learnerId).single();
   const questions = await generateAssessment({
-    learnerName: learner?.full_name ?? "الطالب",
+    learnerName: learner?.full_name ?? "the student",
     unit,
     objectives: (cObjectives as Array<{ descriptor_ar: string; skill?: string | null; cefr_level?: string | null }>).map((o) => ({ description: o.descriptor_ar, skill: o.skill, level: o.cefr_level })),
     count,
@@ -628,10 +632,10 @@ export async function generateAssessmentTest(formData: FormData) {
 
   const { data: assessment, error } = await supabase
     .from("assessments")
-    .insert({ tenant_id: tenantId, learner_id: learnerId, title: `اختبار وحدة: ${unit}`, scope: "unit", unit, curriculum_unit_id: curriculumUnitId, status: "draft", created_by: user.id })
+    .insert({ tenant_id: tenantId, learner_id: learnerId, title: `Unit test: ${unit}`, scope: "unit", unit, curriculum_unit_id: curriculumUnitId, status: "draft", created_by: user.id })
     .select("id")
     .single();
-  if (error || !assessment) throw new Error(error?.message ?? "تعذّر إنشاء الاختبار.");
+  if (error || !assessment) throw new Error(error?.message ?? (await studioErr("createTestFailed")));
 
   const rows = questions.map((q, i) => ({
     assessment_id: assessment.id,
@@ -672,13 +676,13 @@ export async function addLessonSlot(formData: FormData) {
   const weekday = Number(formData.get("weekday"));
   const time = String(formData.get("time") ?? "").trim();
   const duration = Number(formData.get("duration") ?? 45);
-  if (!learnerId || Number.isNaN(weekday) || !time) throw new Error("بيانات الموعد ناقصة.");
+  if (!learnerId || Number.isNaN(weekday) || !time) throw new Error(await studioErr("slotDataMissing"));
 
   const { supabase, user, tenantId } = await instructorCtx();
   const { data: rules } = await supabase.from("availability_rules").select("start_time, end_time").eq("instructor_id", user.id).eq("weekday", weekday).eq("active", true);
   const tMin = toMinTime(time);
   const insideAvailability = (rules ?? []).some((r: { start_time: string; end_time: string }) => tMin >= toMinTime(r.start_time) && tMin + duration <= toMinTime(r.end_time));
-  if (!insideAvailability) throw new Error("هذا الموعد خارج تفرّغك المُحدَّد في «تفرّغي».");
+  if (!insideAvailability) throw new Error(await studioErr("slotOutsideAvailability"));
 
   const admin = createAdminClient();
   const { error } = await admin.from("lesson_schedules").upsert(
@@ -707,16 +711,16 @@ export async function generateLessonSessions(formData: FormData) {
   const { supabase, user, tenantId } = await instructorCtx();
 
   const { data: slots } = await supabase.from("lesson_schedules").select("weekday, time_of_day, duration_minutes").eq("learner_id", learnerId).eq("active", true);
-  if (!slots || slots.length === 0) throw new Error("أضِف موعداً أسبوعياً واحداً على الأقلّ من ضمن تفرّغك.");
+  if (!slots || slots.length === 0) throw new Error(await studioErr("addOneSlot"));
 
   const { data: plan } = await supabase.from("study_plans").select("items, status").eq("learner_id", learnerId).order("created_at", { ascending: false }).limit(1).maybeSingle();
-  if (!plan || plan.status !== "approved") throw new Error("اعتمِد خطّةً دراسيةً أولاً.");
+  if (!plan || plan.status !== "approved") throw new Error(await studioErr("approvePlanFirst"));
   const lessons = (plan.items as { description: string }[]) ?? [];
 
   const { data: existing } = await supabase.from("sessions").select("plan_item_index").eq("learner_id", learnerId);
   const assigned = new Set<number>((existing ?? []).map((s: { plan_item_index: number | null }) => s.plan_item_index).filter((n): n is number => n != null));
   const remaining = lessons.map((it, i) => ({ it, i })).filter(({ i }) => !assigned.has(i));
-  if (remaining.length === 0) throw new Error("كلّ دروس الخطّة مجدولةٌ بالفعل.");
+  if (remaining.length === 0) throw new Error(await studioErr("allLessonsScheduled"));
 
   const { data: tenant } = await supabase.from("tenants").select("timezone").eq("id", tenantId).maybeSingle();
   const tz = tenant?.timezone ?? "Asia/Riyadh";
@@ -769,16 +773,16 @@ export async function createManualHomework(formData: FormData) {
   const instructions = String(formData.get("instructions") ?? "").trim() || null;
   const prompt = formData.get("prompt") as File | null;
   const worksheets = formData.getAll("worksheets").filter((f): f is File => f instanceof File && f.size > 0);
-  if (!learnerId || !title) throw new Error("أدخِل عنوان الواجب.");
-  if (!prompt || prompt.size === 0) throw new Error("أرفِق صورة الواجب من الكتاب.");
-  if (prompt.size > RESOURCE_MAX_BYTES) throw new Error("حجم الصورة أكبر من 25 ميغابايت.");
+  if (!learnerId || !title) throw new Error(await studioErr("enterHomeworkTitle"));
+  if (!prompt || prompt.size === 0) throw new Error(await studioErr("attachHomeworkImage"));
+  if (prompt.size > RESOURCE_MAX_BYTES) throw new Error(await studioErr("fileTooBig25"));
 
   const { user, tenantId } = await instructorCtx();
   const admin = createAdminClient();
   const { data: hw, error } = await admin.from("manual_homework").insert({
     tenant_id: tenantId, learner_id: learnerId, instructor_id: user.id, session_id: sessionId, title, instructions, status: "assigned",
   }).select("id").single();
-  if (error || !hw) throw new Error(error?.message ?? "تعذّر إنشاء الواجب.");
+  if (error || !hw) throw new Error(error?.message ?? (await studioErr("createHomeworkFailed")));
 
   const files: { kind: string; f: File }[] = [{ kind: "prompt", f: prompt }, ...worksheets.map((f) => ({ kind: "worksheet", f }))];
   for (const { kind, f } of files) {
@@ -846,7 +850,7 @@ export async function generateDiagnosticReport(formData: FormData) {
   }
 
   const report = await generateDiagnostic({
-    studentName: lead?.student_name ?? learner?.full_name ?? "الطالب",
+    studentName: lead?.student_name ?? learner?.full_name ?? "the student",
     age: lead?.student_age ?? null,
     goal: lead?.learning_goal ?? null,
     priorStudy: lead?.prior_study ?? null,
@@ -889,9 +893,9 @@ export async function approveDiagnostic(formData: FormData) {
 export async function startPlanFromIndex(formData: FormData) {
   const learnerId = String(formData.get("learnerId") ?? "");
   const file = formData.get("index") as File | null;
-  if (!learnerId) throw new Error("طالبٌ غير محدّد.");
-  if (!file || file.size === 0) throw new Error("ارفع صورة الفهرس أو ملفّه.");
-  if (file.size > 15 * 1024 * 1024) throw new Error("حجم الملفّ أكبر من 15 ميغابايت.");
+  if (!learnerId) throw new Error(await studioErr("noStudent"));
+  if (!file || file.size === 0) throw new Error(await studioErr("uploadIndexFile"));
+  if (file.size > 15 * 1024 * 1024) throw new Error(await studioErr("fileTooBig15"));
 
   const { supabase, user, tenantId } = await instructorCtx();
 
@@ -905,7 +909,7 @@ export async function startPlanFromIndex(formData: FormData) {
   } else if (mime.startsWith("text/") || /\.(txt|md|csv)$/i.test(file.name)) {
     source = { kind: "text", text: await file.text() };
   } else {
-    throw new Error("صيغةٌ غير مدعومة — استخدم صورة (JPG/PNG) أو PDF أو ملفّاً نصّياً.");
+    throw new Error(await studioErr("unsupportedFormat"));
   }
 
   const plan = await generatePlanFromIndex({ source });
@@ -922,8 +926,8 @@ export async function startPlanFromIndex(formData: FormData) {
     items: plan.items.map((it) => ({ ...it, id: crypto.randomUUID() })),
     status: "draft",
     track: "cefr",
-    scope_label: `منهاج وَرد · المستوى ${level}`,
-    milestone_label: "تقييمٌ عند إتمام المنهاج",
+    scope_label: `Ward Curriculum · Level ${level}`,
+    milestone_label: "Assessment on completing the curriculum",
     created_by: user.id,
   });
   if (error) throw new Error(error.message);
@@ -935,14 +939,14 @@ export async function startPlanFromIndex(formData: FormData) {
 export async function createManualPlan(formData: FormData) {
   const learnerId = String(formData.get("learnerId") ?? "");
   const title = String(formData.get("title") ?? "").trim();
-  if (!learnerId || !title) throw new Error("أدخِل عنوان الخطّة.");
+  if (!learnerId || !title) throw new Error(await studioErr("enterPlanTitle"));
   const { supabase, user, tenantId } = await instructorCtx();
   const { data: placement } = await supabase.from("placement_tests").select("suggested_level").eq("learner_id", learnerId).eq("status", "completed").order("completed_at", { ascending: false }).limit(1).maybeSingle();
   const level = placement?.suggested_level ?? "—";
   await clearLearnerPlans(supabase, learnerId);
   const { error } = await supabase.from("study_plans").insert({
     tenant_id: tenantId, learner_id: learnerId, title, level, items: [], status: "draft",
-    track: "cefr", scope_label: level === "—" ? title : `منهاج وَرد · المستوى ${level}`, milestone_label: "تقييمٌ عند إتمام المنهاج", created_by: user.id,
+    track: "cefr", scope_label: level === "—" ? title : `Ward Curriculum · Level ${level}`, milestone_label: "Assessment on completing the curriculum", created_by: user.id,
   });
   if (error) throw new Error(error.message);
   revalidatePath(`/studio/students/${learnerId}`);
