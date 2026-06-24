@@ -834,6 +834,10 @@
     "minutes": "{n} min",
     "bookForName": "Book {name}'s trial session",
     "bookConfirmBody": "We've emailed you a confirmation. See you in the session!",
+    "bookMetaTitle": "Book your session — Ward Academy",
+    "alreadyBookedTitle": "You already have a booked session",
+    "alreadyBookedNote": "To change the time, get in touch.",
+    "childFallback": "your child",
     "errors": {
       "sendFailed": "Couldn't submit. Please try again.",
       "fillRequired": "Please fill in your name, email, and your child's name.",
@@ -844,6 +848,25 @@
       "pickSlot": "Please choose an available time.",
       "badLink": "This booking link isn't valid.",
       "alreadyDone": "Your registration is already complete."
+    }
+  },
+  "placement": {
+    "metaTitle": "Placement test — Ward Academy",
+    "heading": "Placement test",
+    "invalidLink": "Invalid or expired link.",
+    "notReady": "The test isn't ready yet — the teacher will send it soon.",
+    "suggestedLevel": "Suggested level:",
+    "completedNote": "This test is done — the result is with the teacher.",
+    "doneTitle": "Done — great work!",
+    "resultScore": "{correct} of {total} correct.",
+    "resultNote": "The result has reached the teacher, who'll be fully ready for the intro session.",
+    "instruction": "Ask your child to answer the following questions on their own:",
+    "grading": "Grading…",
+    "submit": "Submit answers",
+    "errors": {
+      "invalid": "Invalid link.",
+      "alreadyDone": "This test was already completed.",
+      "notAvailable": "The test isn't available yet."
     }
   },
   "guardian": {

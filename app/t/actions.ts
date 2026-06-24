@@ -1,10 +1,13 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type TakeState = { error?: string; result?: { level: string; correct: number; total: number } };
 
 const norm = (s: string) => s.trim().toLowerCase();
+// Parent/child-facing test errors follow the active locale (bilingual surface 5).
+const tErr = async (key: string) => (await getTranslations("placement.errors"))(key);
 
 /**
  * A lead's student takes the placement test via the signed link. Access is by
@@ -13,7 +16,7 @@ const norm = (s: string) => s.trim().toLowerCase();
  */
 export async function submitLeadTest(_prev: TakeState | undefined, formData: FormData): Promise<TakeState> {
   const token = String(formData.get("token") ?? "");
-  if (!token) return { error: "رابطٌ غير صالح." };
+  if (!token) return { error: await tErr("invalid") };
 
   const admin = createAdminClient();
   const { data: test } = await admin
@@ -21,9 +24,9 @@ export async function submitLeadTest(_prev: TakeState | undefined, formData: For
     .select("id, status, lead_id")
     .eq("share_token", token)
     .single();
-  if (!test) return { error: "رابطٌ غير صالح أو منتهٍ." };
-  if (test.status === "completed") return { error: "تمّ حلّ هذا الاختبار مسبقاً." };
-  if (test.status !== "shared") return { error: "الاختبار غير متاحٍ بعد." };
+  if (!test) return { error: (await getTranslations("placement"))("invalidLink") };
+  if (test.status === "completed") return { error: await tErr("alreadyDone") };
+  if (test.status !== "shared") return { error: await tErr("notAvailable") };
 
   const { data: questions } = await admin
     .from("lead_test_questions")
