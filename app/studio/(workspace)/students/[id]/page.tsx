@@ -10,7 +10,7 @@ import {
   addLessonSlot, removeLessonSlot, generateLessonSessions,
   createManualHomework, gradeManualHomework, removeManualHomework,
   generateDiagnosticReport, updateDiagnostic, approveDiagnostic,
-  setSkillAssessment,
+  recordObjectiveAssessment,
 } from "@/app/studio/actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import SessionScheduleForm from "@/components/studio/SessionScheduleForm";
@@ -19,13 +19,13 @@ import PlanBuilder from "@/components/studio/PlanBuilder";
 import ItemCard from "@/components/studio/ItemCard";
 import VideoCall from "@/components/VideoCall";
 import { Card, Badge, Avatar, AITrustBadge, Spark } from "@/components/ward/ui";
-import { petalValues, SKILL_AR, SKILLS, valueOf, vocabMastered, VOCAB_AR, SPEAKING_LEVELS } from "@/lib/skills";
+import { SKILLS, SKILL_AR, VOCAB_AR } from "@/lib/skills";
 import { UnitBloom, FlowerProgress, ScopeChip, VocabCounter } from "@/components/bloom/Bloom";
+import { fetchStudentBloom } from "@/lib/progress/bloom";
 import { FORMAT_LABELS, ITEM_FORMATS, DIFFICULTIES } from "@/lib/items";
 import { WEEKDAY_AR } from "@/lib/availability";
 import { fmtUTC } from "@/lib/datetime";
 
-const objOf = (o: any) => (Array.isArray(o) ? o[0] : o) ?? {};
 const one = (o: any) => (Array.isArray(o) ? o[0] : o);
 const btn = (v: string, s = "sm") => `ward-btn ward-btn--${v} ward-btn--${s}`;
 const ctl = "ward-field__control";
@@ -66,30 +66,14 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const { data: plan } = await supabase.from("study_plans").select("id, title, level, items, status, track, scope_label, milestone_label").eq("learner_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle();
   const planItems: any[] = (plan?.items as any[]) ?? [];
 
-  const { data: prog } = await supabase.from("progress_records").select("attempts, correct, completions, objectives(description, level, skill, unit)").eq("learner_id", id);
-  const rows = (prog ?? []) as any[];
-  const skillProgress = rows.map((r) => ({ attempts: r.attempts, correct: r.correct, skill: objOf(r.objectives).skill }));
-  const petals = petalValues(skillProgress);
-  const vocabCount = vocabMastered(skillProgress);
-  const overall = petals.length ? Math.round((petals.reduce((a, p) => a + p.value, 0) / petals.length) * 100) : 0;
-
-  // Bloom Map: per-skill honest meters (% of mastered objectives) + objectives grouped by unit.
-  const isMastered = (r: any) => r.attempts >= 1 && r.correct / Math.max(1, r.attempts) >= 0.6;
-  const skillStats = SKILLS.map((sk) => {
-    const inSkill = rows.filter((r) => objOf(r.objectives).skill === sk);
-    return { skill: sk, total: inSkill.length, mastered: inSkill.filter(isMastered).length };
-  });
-  const lagging = skillStats.filter((s) => s.total > 0 && s.mastered / s.total < 0.5).map((s) => SKILL_AR[s.skill]);
-  const rowsByUnit = new Map<string, any[]>();
-  for (const r of rows) {
-    const u = (objOf(r.objectives).unit as string) || "دروس";
-    const arr = rowsByUnit.get(u) ?? [];
-    arr.push(r);
-    rowsByUnit.set(u, arr);
-  }
-  const { data: skillAssess } = await supabase.from("skill_assessments").select("skill, value, label").eq("learner_id", id);
-  const speakingAssess = (skillAssess ?? []).find((a: any) => a.skill === "speaking") as { value: number; label: string | null } | undefined;
-  const skillValue = (sk: string, mastered: number, total: number) => (sk === "speaking" ? speakingAssess?.value ?? 0 : total ? mastered / total : 0);
+  // New progress model: unit/skill blooms rolled up from objective_progress (§5).
+  const bloom = await fetchStudentBloom(supabase, id);
+  const vocabCount = 0; // vocabulary is a separate track (not in curriculum_objectives yet)
+  const petals = bloom.skills.map((s) => ({ name: s.skill, ar: SKILL_AR[s.skill], value: s.fraction }));
+  const overall = bloom.skills.length ? Math.round((bloom.skills.reduce((a, s) => a + s.fraction, 0) / bloom.skills.length) * 100) : 0;
+  const skillStats = bloom.skills;
+  const lagging = bloom.skills.filter((s) => s.total > 0 && s.fraction < 0.5).map((s) => SKILL_AR[s.skill]);
+  const startedUnits = bloom.startedUnits;
 
   const { data: sessions } = await supabase
     .from("sessions")
@@ -868,43 +852,27 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-            <FlowerProgress size={92} skills={skillStats.map((s) => ({ label: SKILL_AR[s.skill], value: skillValue(s.skill, s.mastered, s.total), detail: s.skill === "speaking" ? speakingAssess?.label ?? "—" : `${s.mastered}/${s.total}` }))} />
+            <FlowerProgress size={92} skills={skillStats.map((s) => ({ label: SKILL_AR[s.skill], value: s.fraction, detail: `${s.value.toFixed(1)}/10` }))} />
             <VocabCounter count={vocabCount} label={`${VOCAB_AR} — كلمة`} variant="chip" />
           </div>
           <div style={{ flex: 1, minWidth: 200, display: "flex", flexDirection: "column", gap: 6 }}>
-            <div style={secTitle}>إتقان المهارات الأربع</div>
+            <div style={secTitle}>المهارات الأربع — متوسّط عبر الوحدات المبدوءة</div>
             {skillStats.map((s) => {
-              if (s.skill === "speaking") {
-                return (
-                  <div key={s.skill} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-strong)", width: 72, flexShrink: 0 }}>{SKILL_AR.speaking}</span>
-                    <form action={setSkillAssessment} style={{ display: "flex", alignItems: "center", gap: 6, flex: 1 }}>
-                      <input type="hidden" name="learnerId" value={id} />
-                      <input type="hidden" name="skill" value="speaking" />
-                      <select name="value" defaultValue={speakingAssess?.value ?? ""} required className={sel} style={{ width: "auto", minHeight: 32, fontSize: 12, flex: 1 }}>
-                        <option value="" disabled>تقييم المعلّمة…</option>
-                        {SPEAKING_LEVELS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
-                      </select>
-                      <SubmitButton pendingText="…" className={btn("ghost")}>حفظ</SubmitButton>
-                    </form>
-                  </div>
-                );
-              }
-              const pct = s.total ? Math.round((s.mastered / s.total) * 100) : 0;
-              const lag = s.total > 0 && s.mastered / s.total < 0.5;
+              const pct = Math.round(s.fraction * 100);
+              const lag = s.total > 0 && s.fraction < 0.5;
               return (
                 <div key={s.skill} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-strong)", width: 72, flexShrink: 0 }}>{SKILL_AR[s.skill]}</span>
                   <div style={{ flex: 1, height: 8, borderRadius: 999, background: "var(--surface-sunken)", overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${pct}%`, borderRadius: 999, background: s.total === 0 ? "transparent" : lag ? "var(--apricot-400)" : "var(--brand)" }} />
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-brand)", fontVariantNumeric: "tabular-nums", width: 40, textAlign: "end", flexShrink: 0 }}>{s.mastered}/{s.total}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-brand)", fontVariantNumeric: "tabular-nums", width: 48, textAlign: "end", flexShrink: 0 }}>{s.value.toFixed(1)}/10</span>
                 </div>
               );
             })}
           </div>
         </div>
-        <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>البتلة تمتلئ بنسبة الأهداف المُتقَنة — لا الدرجات الخام. **التحدّث** تُقيّمه المعلّمة. «الأساس اللغوي» = المفردات والقواعد.</p>
+        <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>البتلة = متوسّط درجات أهداف المهارة عبر الوحدات المبدوءة (الهدف غير المُقيَّم = بذرة). التحدّث يحسمه المعلّم. «الأساس اللغوي» مسارٌ منفصل.</p>
       </Card>
 
       {lagging.length > 0 && (
@@ -914,24 +882,38 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         </Card>
       )}
 
-      {/* Objectives grouped by unit, with bud→bloom + honest tally */}
-      {rows.length === 0 ? (
-        <Card><p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا نشاط بعد — أضِف أهدافاً من الخطّة، ثمّ أسنِد واجبات.</p></Card>
+      {/* Unit blooms + per-objective teacher assessment (feeds the decaying average) */}
+      {startedUnits.length === 0 ? (
+        <Card><p style={{ fontSize: 13, color: "var(--text-muted)" }}>لا تقييماتٍ بعد — قيّم أوّل هدفٍ من وحدةٍ ليبدأ تفتّحها.</p></Card>
       ) : (
-        [...rowsByUnit.entries()].map(([unit, urows]) => (
-          <Card key={unit} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)" }}>{unit}</div>
-            {urows.map((r: any, i: number) => {
-              const o = objOf(r.objectives);
-              return (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, borderBottom: i < urows.length - 1 ? "1px solid var(--ink-100)" : "none", paddingBottom: 6 }}>
-                  <UnitBloom value={valueOf({ attempts: r.attempts, correct: r.correct })} size={30} />
-                  <span style={{ fontSize: 13, color: "var(--text-body)", flex: 1 }}>{o.description ?? "هدف"}</span>
-                  {o.skill && <Badge tone="neutral">{SKILL_AR[o.skill as keyof typeof SKILL_AR] ?? o.skill}</Badge>}
-                  <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-brand)", fontVariantNumeric: "tabular-nums" }}>{r.correct}/{r.attempts}</span>
-                </div>
-              );
-            })}
+        startedUnits.map((u) => (
+          <Card key={u.unit_id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <UnitBloom value={u.value} size={34} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)" }}>{u.title_ar}</div>
+                <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{u.level} · وردة الوحدة {u.value.toFixed(1)}/10 · قُيّم {u.assessedCount}/{u.total}</div>
+              </div>
+            </div>
+            {u.objectives.map((o, i) => (
+              <div key={o.objective_id} style={{ display: "flex", alignItems: "center", gap: 10, borderTop: i === 0 ? "none" : "1px solid var(--ink-100)", paddingTop: i === 0 ? 0 : 6 }}>
+                <UnitBloom stage={o.state} size={26} />
+                <span style={{ fontSize: 12.5, color: o.assessed ? "var(--text-body)" : "var(--text-muted)", flex: 1 }}>{o.descriptor_ar}</span>
+                <Badge tone="neutral">{SKILL_AR[o.skill]}</Badge>
+                <form action={recordObjectiveAssessment} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <input type="hidden" name="learnerId" value={id} />
+                  <input type="hidden" name="objectiveId" value={o.objective_id} />
+                  <select name="state" defaultValue={o.assessed ? o.state : ""} required className={sel} style={{ width: "auto", minHeight: 30, fontSize: 12 }}>
+                    <option value="" disabled>قيّم…</option>
+                    <option value="seed">بذرة</option>
+                    <option value="bud">برعم</option>
+                    <option value="balloon">بالون</option>
+                    <option value="bloom">وردة</option>
+                  </select>
+                  <SubmitButton pendingText="…" className={btn("ghost")}>حفظ</SubmitButton>
+                </form>
+              </div>
+            ))}
           </Card>
         ))
       )}

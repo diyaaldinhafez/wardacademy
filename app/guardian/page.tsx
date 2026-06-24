@@ -3,8 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { addChild, grantConsent } from "./actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import WorkspaceHeader from "@/components/studio/WorkspaceHeader";
-import { FlowerProgress, ScopeChip, VocabCounter } from "@/components/bloom/Bloom";
-import { SKILLS, SKILL_AR, VOCAB_AR } from "@/lib/skills";
+import { FlowerProgress, ScopeChip, UnitBloom } from "@/components/bloom/Bloom";
+import { SKILL_AR, VOCAB_AR } from "@/lib/skills";
+import { fetchStudentBlooms } from "@/lib/progress/bloom";
 import { fmtUTC } from "@/lib/datetime";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -23,18 +24,8 @@ export default async function GuardianPage() {
   const { data: children } = await supabase
     .from("guardianships")
     .select("learner_id, consent_granted, profiles!guardianships_learner_id_fkey(full_name, login_email)");
-  const { data: prog } = await supabase
-    .from("progress_records")
-    .select("learner_id, attempts, correct, completions, objectives(description, level, skill)");
-  const progByLearner = new Map<string, any[]>();
-  for (const r of (prog ?? []) as any[]) {
-    const arr = progByLearner.get(r.learner_id) ?? [];
-    arr.push(r);
-    progByLearner.set(r.learner_id, arr);
-  }
-  const { data: assess } = await supabase.from("skill_assessments").select("learner_id, skill, value, label");
-  const speakingByLearner = new Map<string, { value: number; label: string | null }>();
-  for (const a of (assess ?? []) as any[]) if (a.skill === "speaking") speakingByLearner.set(a.learner_id, { value: a.value, label: a.label });
+  const learnerIds = ((children ?? []) as any[]).map((c) => c.learner_id);
+  const bloomByLearner = await fetchStudentBlooms(supabase, learnerIds);
   const { data: sessions } = await supabase
     .from("sessions")
     .select("id, scheduled_at, duration_minutes, learner_id, lesson_title")
@@ -98,7 +89,7 @@ export default async function GuardianPage() {
       <ul className="flex flex-col gap-4">
         {(children ?? []).map((c: any) => {
           const name = first(c.profiles).full_name ?? "الطفل";
-          const rows = progByLearner.get(c.learner_id) ?? [];
+          const bloom = bloomByLearner.get(c.learner_id);
           const pl = placementByLearner.get(c.learner_id);
           const plan = planByLearner.get(c.learner_id);
           return (
@@ -156,51 +147,39 @@ export default async function GuardianPage() {
                   </div>
                 );
               })()}
-              {rows.length === 0 ? (
-                <p className="text-sm text-ink-soft">لا نشاط بعد — سيبدأ تقرير التفتّح بمجرّد أوّل واجب.</p>
+              {!bloom || bloom.assessedObjectives === 0 ? (
+                <p className="text-sm text-ink-soft">لا نشاط بعد — سيبدأ تقرير التفتّح بمجرّد أوّل تقييم.</p>
               ) : (() => {
-                const isM = (r: any) => r.attempts >= 1 && r.correct / Math.max(1, r.attempts) >= 0.6;
-                const stats = SKILLS.map((sk) => {
-                  const inSkill = rows.filter((r: any) => first(r.objectives).skill === sk);
-                  return { skill: sk, total: inSkill.length, mastered: inSkill.filter(isM).length };
-                });
-                const vocabCount = rows.filter((r: any) => first(r.objectives).skill === "vocabulary" && isM(r)).length;
-                const sp = speakingByLearner.get(c.learner_id);
-                const totalM = stats.reduce((a, s) => a + s.mastered, 0);
-                const totalT = stats.reduce((a, s) => a + s.total, 0);
-                const readOf = (m: number, t: number) => t === 0 ? "لم تبدأ بعد" : m / t >= 0.85 ? "تتفتّح — أداءٌ قويّ" : m / t >= 0.4 ? "تنمو بثبات" : "تحتاج رعاية";
-                const valOf = (s: { skill: string; mastered: number; total: number }) => (s.skill === "speaking" ? sp?.value ?? 0 : s.total ? s.mastered / s.total : 0);
+                const readOf = (st: string) => st === "bloom" ? "تتفتّح — أداءٌ قويّ" : st === "balloon" ? "تنمو بثبات" : st === "bud" ? "في بدايتها" : "لم تبدأ بعد";
                 return (
                   <div className="rounded-2xl border border-brand-100 bg-white p-3">
                     <div className="flex items-center gap-4">
-                      <FlowerProgress size={96} skills={stats.map((s) => ({ label: SKILL_AR[s.skill as keyof typeof SKILL_AR] ?? s.skill, value: valOf(s), detail: s.skill === "speaking" ? sp?.label ?? "—" : `${s.mastered}/${s.total}` }))} />
+                      <FlowerProgress size={96} skills={bloom.skills.map((s) => ({ label: SKILL_AR[s.skill], value: s.fraction, detail: `${s.assessed}/${s.total}` }))} />
                       <div className="flex-1">
                         {plan?.scope_label && <div className="mb-1"><ScopeChip>{plan.scope_label}</ScopeChip></div>}
                         <p className="text-sm text-ink" style={{ lineHeight: 1.8 }}>
-                          وردة {name} هذا الأسبوع — أتقن <b>{totalM} من {totalT}</b> هدفاً. أرقامٌ حقيقيةٌ بلا تجميل.
+                          وردة {name} عبر <b>{bloom.startedUnits.length}</b> وحدة بدأها — قُيّم <b>{bloom.assessedObjectives}</b> هدفاً. أرقامٌ حقيقيةٌ بلا تجميل.
                           {plan?.milestone_label ? <span className="text-ink-soft"> 🎯 {plan.milestone_label}.</span> : null}
                         </p>
                       </div>
                     </div>
                     <ul className="mt-2 flex flex-col">
-                      {stats.map((s) => (
+                      {bloom.skills.map((s) => (
                         <li key={s.skill} className="flex items-center gap-2 py-1.5 text-sm" style={{ borderTop: "1px solid var(--ink-100)" }}>
-                          <span className="flex-1 font-medium text-ink">{SKILL_AR[s.skill as keyof typeof SKILL_AR] ?? s.skill}</span>
-                          {s.skill === "speaking" ? (
-                            <span className="font-bold text-brand-700" style={{ whiteSpace: "nowrap" }}>{sp?.label ? `تقييم المعلّم: ${sp.label}` : "بانتظار تقييم المعلّم"}</span>
-                          ) : (
-                            <>
-                              <span className="text-ink-soft">{readOf(s.mastered, s.total)}</span>
-                              <span className="font-bold text-brand-700" style={{ fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{s.mastered} من {s.total}</span>
-                            </>
-                          )}
+                          <span className="flex-1 font-medium text-ink">{SKILL_AR[s.skill]}</span>
+                          <span className="text-ink-soft">{readOf(s.stage)}</span>
+                          <span className="font-bold text-brand-700" style={{ fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{s.value.toFixed(1)} / 10</span>
                         </li>
                       ))}
                     </ul>
-                    <div className="mt-2 flex items-center justify-between gap-2 border-t border-brand-100 pt-2">
-                      <VocabCounter count={vocabCount} label={`${VOCAB_AR} — كلمة متقَنة`} variant="chip" />
-                    </div>
-                    <p className="mt-2 text-xs text-ink-soft">أربع بتلات = أربع مهارات. «{VOCAB_AR}» (المفردات والقواعد) عدّادٌ مستقلّ. التحدّث يُقيّمه المعلّم.</p>
+                    {bloom.startedUnits.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-3 border-t border-brand-100 pt-2">
+                        {bloom.startedUnits.map((u) => (
+                          <UnitBloom key={u.unit_id} value={u.value} size={34} label={`${u.assessedCount}/${u.total}`} />
+                        ))}
+                      </div>
+                    )}
+                    <p className="mt-2 text-xs text-ink-soft">أربع بتلات = أربع مهارات. وردة الوحدة = متوسّط كلّ أهدافها. «{VOCAB_AR}» عدّادٌ مستقلّ. التحدّث يُقيّمه المعلّم.</p>
                   </div>
                 );
               })()}

@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { stageForValue, valueOf, vocabMastered, SKILLS, SKILL_AR, VOCAB_AR, type BloomStage } from "@/lib/skills";
+import { SKILL_AR, VOCAB_AR, type BloomStage } from "@/lib/skills";
 import { FlowerProgress, UnitBloom as BloomUnit, ScopeChip, VocabCounter } from "@/components/bloom/Bloom";
+import { fetchStudentBloom } from "@/lib/progress/bloom";
 import { submitPlacement, submitManualHomework, submitAssessment } from "./actions";
 import AnswerForm from "@/components/learn/AnswerForm";
 import SubmitButton from "@/components/studio/SubmitButton";
@@ -40,9 +41,7 @@ export default async function LearnPage() {
     .from("submissions")
     .select("item_id, is_correct, graded, created_at")
     .order("created_at", { ascending: false });
-  const { data: prog } = await supabase
-    .from("progress_records")
-    .select("attempts, correct, completions, objectives(description, level, skill, unit)");
+  const bloom = await fetchStudentBloom(supabase, user.id);
   const { data: manualHw } = await supabase
     .from("manual_homework")
     .select("id, title, instructions, status, score, max_score, feedback, homework_files(id, kind, file_path)")
@@ -116,36 +115,15 @@ export default async function LearnPage() {
     if (!lastByItem.has(s.item_id)) lastByItem.set(s.item_id, { is_correct: s.is_correct, graded: s.graded });
   }
 
-  // Flower (5 skills) + the daily unit hero — from real progress.
-  const progRows = (prog ?? []).map((p: any) => ({ attempts: p.attempts, correct: p.correct, o: objOf(p), stage: stageForValue(valueOf(p)) }));
-  const vocabCount = vocabMastered((prog ?? []).map((p: any) => ({ attempts: p.attempts, correct: p.correct, skill: objOf(p).skill })));
-  const inProgress = progRows.filter((p) => p.stage !== "bloom").sort((a, b) => b.attempts - a.attempts);
-  const currentUnit = inProgress[0] ?? progRows[0];
-
-  // Honest per-skill mastery for the flower.
-  const isMastered = (r: { attempts: number; correct: number }) => r.attempts >= 1 && r.correct / Math.max(1, r.attempts) >= 0.6;
-  const skillStats = SKILLS.map((sk) => {
-    const inSkill = progRows.filter((p) => p.o.skill === sk);
-    return { skill: sk, total: inSkill.length, mastered: inSkill.filter(isMastered).length };
-  });
-  const { data: skillAssess } = await supabase.from("skill_assessments").select("skill, value, label").eq("learner_id", user.id);
-  const speakingAssess = (skillAssess ?? []).find((a: any) => a.skill === "speaking") as { value: number; label: string | null } | undefined;
-  const skillValue = (sk: string, m: number, t: number) => (sk === "speaking" ? speakingAssess?.value ?? 0 : t ? m / t : 0);
-
-  // The garden path: the plan's units, each mastered / current / upcoming.
-  const planItems = (studyPlan?.items as any[]) ?? [];
-  const gardenUnits: { unit: string; status: "mastered" | "current" | "upcoming"; stage: BloomStage }[] = [];
-  const seen = new Set<string>();
-  for (const it of planItems) {
-    const u = (it.unit as string) || "الدروس";
-    if (seen.has(u)) continue;
-    seen.add(u);
-    const uRows = progRows.filter((p) => ((p.o.unit as string) || "الدروس") === u);
-    const practiced = uRows.filter((p) => p.attempts > 0);
-    const status = practiced.length === 0 ? "upcoming" : uRows.every((p) => p.stage === "bloom") ? "mastered" : "current";
-    gardenUnits.push({ unit: u, status, stage: status === "mastered" ? "bloom" : status === "current" ? "balloon" : "bud" });
-  }
+  // Unit hero + skill flower + garden path — all from the one shared roll-up.
+  const vocabCount = 0; // vocabulary is a separate track (not in curriculum_objectives yet)
+  const currentUnit = bloom.startedUnits.find((u) => u.stage !== "bloom") ?? bloom.startedUnits[0] ?? null;
   const STATUS_AR: Record<string, string> = { mastered: "تفتّحت", current: "أنت هنا", upcoming: "قادمة" };
+  const gardenUnits = bloom.startedUnits.map((u) => ({
+    unit: u.title_ar,
+    status: (u.stage === "bloom" ? "mastered" : "current") as "mastered" | "current" | "upcoming",
+    stage: u.stage as BloomStage,
+  }));
 
   return (
     <main className="mx-auto max-w-2xl px-5 py-10">
@@ -211,17 +189,17 @@ export default async function LearnPage() {
       {/* Daily hero: the current unit bud -> balloon -> bloom */}
       {currentUnit && (
         <section className="mb-8">
-          <h2 className={h2}>درس اليوم</h2>
+          <h2 className={h2}>وحدتي الحالية</h2>
           <div className="flex items-center gap-4 rounded-2xl p-5 text-white shadow-ward-2" style={{ background: "var(--grad-bloom, linear-gradient(135deg,#9F7DE7,#6840BD))" }}>
             <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full" style={{ background: "rgba(41,23,78,0.26)" }}>
               <BloomUnit stage={currentUnit.stage} size={60} pop={currentUnit.stage === "bloom"} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-base font-extrabold leading-tight" dir="ltr">{currentUnit.o.description ?? "Lesson"}</p>
+              <p className="text-base font-extrabold leading-tight">{currentUnit.title_ar}</p>
               <p className="mt-1 text-sm" style={{ color: "var(--ward-purple-100)" }}>
-                {currentUnit.stage === "bloom" ? "تفتّح! أتقنتَ هذا الدرس 🎉" : currentUnit.stage === "balloon" ? "بالونك ينتفخ — أكمِل لتُتقنه" : "ابدأ هذا الدرس"}
+                {currentUnit.stage === "bloom" ? "تفتّحت! أتقنتَ هذه الوحدة 🎉" : currentUnit.stage === "balloon" ? "بالونك ينتفخ — أكمِل لتتفتّح" : currentUnit.stage === "bud" ? "برعمك ينمو — واصِل" : "ابدأ هذه الوحدة"}
               </p>
-              <p className="mt-1 text-xs font-bold" style={{ color: "var(--ward-purple-100)", fontVariantNumeric: "tabular-nums" }}>{currentUnit.correct} / {currentUnit.attempts}</p>
+              <p className="mt-1 text-xs font-bold" style={{ color: "var(--ward-purple-100)", fontVariantNumeric: "tabular-nums" }}>{currentUnit.assessedCount} / {currentUnit.total} هدفاً · {currentUnit.value.toFixed(1)}/10</p>
             </div>
           </div>
         </section>
@@ -258,9 +236,9 @@ export default async function LearnPage() {
         </div>
         <div className={card}>
           <div className="flex items-center gap-4">
-            <FlowerProgress size={104} skills={skillStats.map((s) => ({ label: SKILL_AR[s.skill as keyof typeof SKILL_AR] ?? s.skill, value: skillValue(s.skill, s.mastered, s.total), detail: s.skill === "speaking" ? speakingAssess?.label ?? "—" : `${s.mastered}/${s.total}` }))} />
+            <FlowerProgress size={104} skills={bloom.skills.map((s) => ({ label: SKILL_AR[s.skill], value: s.fraction, detail: `${s.value.toFixed(1)}/10` }))} />
             <p className="flex-1 text-sm text-ink-soft" style={{ lineHeight: 1.8 }}>
-              أربع بتلات — أربع مهارات، تنمو كلّما أتقنتَ أهدافها. الأرقام صادقة: عدد الأهداف المُتقَنة من إجماليها.
+              أربع بتلات — أربع مهارات، تنمو كلّما تفتّحت أهدافها عبر وحداتك. الأرقام صادقة: متوسّط درجاتك في كلّ مهارة.
             </p>
           </div>
           <div className="mt-3 flex items-center justify-between gap-3 border-t border-brand-100 pt-3">

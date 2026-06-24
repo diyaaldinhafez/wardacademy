@@ -16,7 +16,8 @@ import {
   type PlanIndexSource,
 } from "@/lib/generation/service";
 import { homePathForRoles } from "@/lib/roles";
-import { SPEAKING_LEVELS } from "@/lib/skills";
+import { SPEAKING_LEVELS, type BloomStage } from "@/lib/skills";
+import { valueForState } from "@/lib/progress/evidence";
 import type { ItemFormat, Difficulty } from "@/lib/items";
 
 export async function login(_prev: { error?: string } | undefined, formData: FormData) {
@@ -480,6 +481,27 @@ export async function updateReport(formData: FormData) {
 // — Curriculum resources & assessments (the student detail page) —
 
 /** Tenant + instructor guard for the actions below. */
+// Teacher assessment of a curriculum objective → objective_assessments. The DB
+// trigger rolls it into the decaying average (65/35) and the unit/skill blooms.
+export async function recordObjectiveAssessment(formData: FormData) {
+  const learnerId = String(formData.get("learnerId") ?? "");
+  const objectiveId = String(formData.get("objectiveId") ?? "");
+  const state = String(formData.get("state") ?? "") as BloomStage;
+  if (!learnerId || !objectiveId || !["seed", "bud", "balloon", "bloom"].includes(state)) throw new Error("بيانات التقييم ناقصة.");
+  const { supabase, user, tenantId } = await instructorCtx();
+  const { error } = await supabase.from("objective_assessments").insert({
+    tenant_id: tenantId,
+    student_id: learnerId,
+    objective_id: objectiveId,
+    value: valueForState(state),
+    state,
+    evidence: "teacher",
+    assessor: user.id,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/studio/students/${learnerId}`);
+}
+
 async function instructorCtx() {
   const supabase = await createClient();
   const {
