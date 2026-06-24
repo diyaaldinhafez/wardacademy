@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateLeadTest, generateIntroReport } from "@/lib/generation/service";
 import { assertAdmin } from "@/lib/auth";
@@ -11,6 +12,9 @@ import { introLabel, introLabels } from "@/lib/introReport";
 
 const HORIZON_WEEKS = 4;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://ward.academy";
+
+// Admin is English by internal decision — system messages are English.
+const adminErr = async (key: string) => (await getTranslations({ locale: "en", namespace: "admin.errors" }))(key);
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -34,7 +38,7 @@ async function defaultInstructorId(tenantId: string): Promise<string> {
   const admin = createAdminClient();
   const { data } = await admin.from("profiles").select("id, roles, created_at").eq("tenant_id", tenantId).order("created_at", { ascending: true });
   const teacher = (data ?? []).find((p: any) => ((p.roles as string[]) ?? []).includes("instructor"));
-  if (!teacher) throw new Error("لا يوجد معلّمٌ في المنصّة بعد.");
+  if (!teacher) throw new Error(await adminErr("noTeacher"));
   return teacher.id;
 }
 
@@ -42,7 +46,7 @@ async function defaultInstructorId(tenantId: string): Promise<string> {
 export async function addSlot(formData: FormData) {
   const startsAt = String(formData.get("startsAt") ?? "");
   const duration = Number(formData.get("duration") ?? 30);
-  if (!startsAt) throw new Error("اختر وقتاً.");
+  if (!startsAt) throw new Error(await adminErr("pickTime"));
 
   const { supabase, profile } = await assertAdmin();
   const instructorId = await defaultInstructorId(profile.tenant_id);
@@ -54,7 +58,7 @@ export async function addSlot(formData: FormData) {
     duration_minutes: duration,
     status: "open",
   });
-  if (error) throw new Error(error.code === "23505" ? "هذا الوقت مُضافٌ مسبقاً." : error.message);
+  if (error) throw new Error(error.code === "23505" ? await adminErr("slotExists") : error.message);
   revalidatePath("/admin/teachers", "layout");
 }
 
@@ -76,21 +80,21 @@ export async function generateLeadTestAction(formData: FormData) {
     .select("id, tenant_id, student_age, student_level")
     .eq("id", leadId)
     .single();
-  if (!lead) throw new Error("الطلب غير موجود.");
+  if (!lead) throw new Error(await adminErr("leadNotFound"));
 
   const questions = await generateLeadTest({
-    grade: lead.student_age ? `عمر ${lead.student_age} سنة` : null,
+    grade: lead.student_age ? `Age ${lead.student_age}` : null,
     level: lead.student_level,
     count: 10,
   });
-  if (!questions.length) throw new Error("تعذّر توليد الاختبار.");
+  if (!questions.length) throw new Error(await adminErr("testGenFailed"));
 
   const { data: test, error } = await supabase
     .from("lead_tests")
     .insert({ tenant_id: lead.tenant_id, lead_id: lead.id, status: "draft", created_by: user.id })
     .select("id")
     .single();
-  if (error || !test) throw new Error(error?.message ?? "تعذّر الإنشاء.");
+  if (error || !test) throw new Error(error?.message ?? (await adminErr("createFailed")));
 
   const rows = questions.map((q, i) => ({
     lead_test_id: test.id,
@@ -106,7 +110,7 @@ export async function generateLeadTestAction(formData: FormData) {
   if (qErr) throw new Error(qErr.message);
 
   await supabase.from("leads").update({ status: "testing" }).eq("id", leadId);
-  await logEvent(supabase, profile, leadId, "ولّد اختبار التحديد");
+  await logEvent(supabase, profile, leadId, "Generated placement test");
   revalidatePath(`/admin/registrations/${leadId}`);
   revalidatePath("/admin/tests");
 }
@@ -143,8 +147,8 @@ export async function provisionAccounts(
     .select("id, tenant_id, guardian_name, guardian_email, student_name, status")
     .eq("id", leadId)
     .single();
-  if (!lead) return { error: "الطلب غير موجود." };
-  if (lead.status === "converted") return { error: "جُهّزت الحسابات مسبقاً." };
+  if (!lead) return { error: await adminErr("leadNotFound") };
+  if (lead.status === "converted") return { error: await adminErr("accountsAlready") };
 
   const instructorId = await defaultInstructorId(lead.tenant_id);
   const admin = createAdminClient();
@@ -152,7 +156,7 @@ export async function provisionAccounts(
   // Create accounts WITHOUT a password; the family sets their own via an invite
   // (set-password) link — no plaintext password is ever shown or sent.
   const { data: g, error: ge } = await admin.auth.admin.createUser({ email: lead.guardian_email, email_confirm: true });
-  if (ge || !g.user) return { error: ge && /already|exists|registered/i.test(ge.message) ? "بريد وليّ الأمر مسجَّلٌ مسبقاً." : ge?.message ?? "تعذّر الإنشاء." };
+  if (ge || !g.user) return { error: ge && /already|exists|registered/i.test(ge.message) ? await adminErr("guardianEmailExists") : ge?.message ?? (await adminErr("createFailed")) };
   await admin.from("profiles").insert({ id: g.user.id, tenant_id: lead.tenant_id, full_name: lead.guardian_name, roles: ["guardian"], login_email: lead.guardian_email });
 
   const slug = (lead.student_name || "learner").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 12) || "learner";
@@ -160,7 +164,7 @@ export async function provisionAccounts(
   const { data: s, error: se } = await admin.auth.admin.createUser({ email: sEmail, email_confirm: true });
   if (se || !s.user) {
     await admin.auth.admin.deleteUser(g.user.id);
-    return { error: se?.message ?? "تعذّر إنشاء حساب الطالب." };
+    return { error: se?.message ?? (await adminErr("studentAccountFailed")) };
   }
   await admin.from("profiles").insert({ id: s.user.id, tenant_id: lead.tenant_id, full_name: lead.student_name, roles: ["learner"], is_minor: true, login_email: sEmail, assigned_instructor_id: instructorId });
   await admin.from("guardianships").insert({ tenant_id: lead.tenant_id, guardian_id: g.user.id, learner_id: s.user.id, relationship: "parent", consent_granted: true, consent_at: new Date().toISOString() });
@@ -194,7 +198,7 @@ export async function provisionAccounts(
   }
 
   await admin.from("leads").update({ status: "converted", converted_learner_id: s.user.id }).eq("id", leadId);
-  await logEvent(supabase, profile, leadId, "جُهّزت الحسابات");
+  await logEvent(supabase, profile, leadId, "Accounts provisioned");
   revalidatePath(`/admin/registrations/${leadId}`);
   return { guardian: { email: lead.guardian_email, link: guardianLink }, student: { email: sEmail, link: studentLink } };
 }
@@ -259,8 +263,8 @@ export async function createRule(formData: FormData) {
   const startTime = String(formData.get("startTime") ?? "");
   const endTime = String(formData.get("endTime") ?? "");
   const slotMinutes = Number(formData.get("slotMinutes") ?? 30);
-  if (Number.isNaN(weekday) || !startTime || !endTime) throw new Error("أكمِل بيانات القاعدة.");
-  if (endTime <= startTime) throw new Error("وقت النهاية يجب أن يكون بعد البداية.");
+  if (Number.isNaN(weekday) || !startTime || !endTime) throw new Error(await adminErr("completeRuleData"));
+  if (endTime <= startTime) throw new Error(await adminErr("endAfterStart"));
 
   const { supabase, profile } = await assertAdmin();
   const instructorId = await defaultInstructorId(profile.tenant_id);
@@ -298,7 +302,7 @@ export async function setBreakMinutes(formData: FormData) {
 export async function addException(formData: FormData) {
   const onDate = String(formData.get("onDate") ?? "");
   const reason = String(formData.get("reason") ?? "").trim() || null;
-  if (!onDate) throw new Error("اختر تاريخاً.");
+  if (!onDate) throw new Error(await adminErr("pickDate"));
   const { supabase, profile } = await assertAdmin();
   const { error } = await supabase
     .from("availability_exceptions")
@@ -333,7 +337,7 @@ export async function resendConfirmation(formData: FormData) {
     .order("starts_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (!lead || !slot) throw new Error("لا يوجد موعدٌ محجوزٌ لهذا الطلب.");
+  if (!lead || !slot) throw new Error(await adminErr("noBookedSlot"));
 
   const { data: tenant } = await supabase.from("tenants").select("timezone").eq("id", profile.tenant_id).maybeSingle();
   const res = await sendBookingConfirmation({
@@ -343,7 +347,7 @@ export async function resendConfirmation(formData: FormData) {
     whenUTC: slot.starts_at,
     timezone: tenant?.timezone ?? "Asia/Riyadh",
   });
-  if (!res.ok && !res.skipped) throw new Error(res.error ?? "تعذّر الإرسال.");
+  if (!res.ok && !res.skipped) throw new Error(res.error ?? (await adminErr("sendFailed")));
   revalidatePath(`/admin/registrations`);
 }
 
@@ -359,7 +363,7 @@ export async function generateIntroReportAction(formData: FormData) {
 
   const { supabase, user, profile } = await assertAdmin();
   const { data: lead } = await supabase.from("leads").select("id, student_name").eq("id", leadId).single();
-  if (!lead) throw new Error("الطلب غير موجود.");
+  if (!lead) throw new Error(await adminErr("leadNotFound"));
 
   const report = await generateIntroReport({
     studentName: lead.student_name,
@@ -407,9 +411,9 @@ export async function sendIntroReportAction(formData: FormData) {
   const { supabase, profile } = await assertAdmin();
 
   const { data: report } = await supabase.from("intro_reports").select("ai_report, status").eq("lead_id", leadId).maybeSingle();
-  if (!report?.ai_report) throw new Error("ولّد التقرير أولاً.");
+  if (!report?.ai_report) throw new Error(await adminErr("generateReportFirst"));
   const { data: lead } = await supabase.from("leads").select("guardian_name, guardian_email, student_name").eq("id", leadId).single();
-  if (!lead) throw new Error("الطلب غير موجود.");
+  if (!lead) throw new Error(await adminErr("leadNotFound"));
 
   const res = await sendIntroReport({
     to: lead.guardian_email,
@@ -417,10 +421,10 @@ export async function sendIntroReportAction(formData: FormData) {
     studentName: lead.student_name,
     body: report.ai_report,
   });
-  if (!res.ok && !res.skipped) throw new Error(res.error ?? "تعذّر الإرسال.");
+  if (!res.ok && !res.skipped) throw new Error(res.error ?? (await adminErr("sendFailed")));
 
   await supabase.from("intro_reports").update({ status: "sent", sent_at: new Date().toISOString() }).eq("lead_id", leadId);
-  await logEvent(supabase, profile, leadId, "أُرسل تقرير الجلسة");
+  await logEvent(supabase, profile, leadId, "Session report sent");
   revalidatePath(`/admin/registrations/${leadId}`);
 }
 
@@ -428,14 +432,14 @@ export async function sendIntroReportAction(formData: FormData) {
 export async function setPaymentStatus(formData: FormData) {
   const leadId = String(formData.get("leadId") ?? "");
   const status = String(formData.get("status") ?? "");
-  if (!["pending", "link_sent", "paid"].includes(status)) throw new Error("حالة دفعٍ غير صحيحة.");
+  if (!["pending", "link_sent", "paid"].includes(status)) throw new Error(await adminErr("invalidPaymentStatus"));
   const { supabase, profile } = await assertAdmin();
   const { error } = await supabase
     .from("leads")
     .update({ payment_status: status, paid_at: status === "paid" ? new Date().toISOString() : null })
     .eq("id", leadId);
   if (error) throw new Error(error.message);
-  await logEvent(supabase, profile, leadId, status === "paid" ? "تمّ الدفع" : status === "link_sent" ? "أُرسل رابط الدفع" : "أُعيد الدفع للانتظار");
+  await logEvent(supabase, profile, leadId, status === "paid" ? "Payment received" : status === "link_sent" ? "Payment link sent" : "Payment reset to pending");
   revalidatePath(`/admin/registrations/${leadId}`);
 }
 
@@ -447,7 +451,7 @@ export async function updateLeadContact(formData: FormData) {
   const guardian_email = get("guardianEmail").toLowerCase();
   const student_name = get("studentName");
   const guardian_phone = get("guardianPhone");
-  if (!guardian_name || !guardian_email || !student_name) throw new Error("الاسم والبريد واسم الطالب مطلوبة.");
+  if (!guardian_name || !guardian_email || !student_name) throw new Error(await adminErr("contactRequired"));
 
   const { supabase, profile } = await assertAdmin();
   const { error } = await supabase
@@ -455,7 +459,7 @@ export async function updateLeadContact(formData: FormData) {
     .update({ guardian_name, guardian_email, student_name, guardian_phone: guardian_phone || null })
     .eq("id", leadId);
   if (error) throw new Error(error.message);
-  await logEvent(supabase, profile, leadId, "عُدِّلت بيانات التواصل");
+  await logEvent(supabase, profile, leadId, "Contact details updated");
   revalidatePath(`/admin/registrations/${leadId}`);
 }
 
@@ -486,14 +490,14 @@ export async function archiveLead(formData: FormData) {
   const leadId = String(formData.get("leadId") ?? "");
   const { supabase, profile } = await assertAdmin();
   await supabase.from("leads").update({ archived: true }).eq("id", leadId);
-  await logEvent(supabase, profile, leadId, "أُرشِف الطلب");
+  await logEvent(supabase, profile, leadId, "Request archived");
   redirect("/admin/registrations");
 }
 export async function unarchiveLead(formData: FormData) {
   const leadId = String(formData.get("leadId") ?? "");
   const { supabase, profile } = await assertAdmin();
   await supabase.from("leads").update({ archived: false }).eq("id", leadId);
-  await logEvent(supabase, profile, leadId, "أُلغيت الأرشفة");
+  await logEvent(supabase, profile, leadId, "Archive removed");
   revalidatePath(`/admin/registrations/${leadId}`);
 }
 
@@ -503,7 +507,7 @@ export async function cancelBooking(formData: FormData) {
   const { supabase, profile } = await assertAdmin();
   await supabase.from("availability_slots").update({ status: "open", lead_id: null }).eq("lead_id", leadId).eq("status", "booked");
   await supabase.from("leads").update({ status: "new" }).eq("id", leadId).eq("status", "booked");
-  await logEvent(supabase, profile, leadId, "أُلغي الحجز");
+  await logEvent(supabase, profile, leadId, "Booking cancelled");
   revalidatePath(`/admin/registrations/${leadId}`);
 }
 
@@ -511,7 +515,7 @@ export async function cancelBooking(formData: FormData) {
 export async function rebookByAdmin(formData: FormData) {
   const leadId = String(formData.get("leadId") ?? "");
   const slotId = String(formData.get("slotId") ?? "");
-  if (!slotId) throw new Error("اختر موعداً.");
+  if (!slotId) throw new Error(await adminErr("pickSlot"));
   const { supabase, profile } = await assertAdmin();
   await supabase.from("availability_slots").update({ status: "open", lead_id: null }).eq("lead_id", leadId).eq("status", "booked");
   const { data: claimed, error } = await supabase
@@ -520,9 +524,9 @@ export async function rebookByAdmin(formData: FormData) {
     .eq("id", slotId)
     .eq("status", "open")
     .select("id");
-  if (error || !claimed?.length) throw new Error("هذا الموعد لم يعد متاحاً.");
+  if (error || !claimed?.length) throw new Error(await adminErr("slotUnavailable"));
   await supabase.from("leads").update({ status: "booked" }).eq("id", leadId).eq("status", "new");
-  await logEvent(supabase, profile, leadId, "أُعيدت جدولة الموعد");
+  await logEvent(supabase, profile, leadId, "Booking rescheduled");
   revalidatePath(`/admin/registrations/${leadId}`);
 }
 
@@ -587,7 +591,7 @@ export async function generateMonthlyInvoice(formData: FormData) {
   const learnerId = String(formData.get("learnerId") ?? "");
   const { supabase, profile } = await assertAdmin();
   const { data: enr } = await supabase.from("enrollments").select("id, monthly_fee, learner_id").eq("id", enrollmentId).single();
-  if (!enr) throw new Error("الاشتراك غير موجود.");
+  if (!enr) throw new Error(await adminErr("enrollmentNotFound"));
 
   const d = new Date();
   const period = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -606,7 +610,7 @@ export async function setInvoiceStatus(formData: FormData) {
   const invoiceId = String(formData.get("invoiceId") ?? "");
   const learnerId = String(formData.get("learnerId") ?? "");
   const status = String(formData.get("status") ?? "");
-  if (!["pending", "paid", "void"].includes(status)) throw new Error("حالة فاتورةٍ غير صحيحة.");
+  if (!["pending", "paid", "void"].includes(status)) throw new Error(await adminErr("invalidInvoiceStatus"));
   const { supabase } = await assertAdmin();
   const { error } = await supabase
     .from("invoices")
@@ -622,7 +626,7 @@ export async function createRequest(formData: FormData) {
   const learnerId = String(formData.get("learnerId") ?? "");
   const type = String(formData.get("type") ?? "");
   const details = String(formData.get("details") ?? "").trim() || null;
-  if (!["pause", "cancel", "complaint", "other"].includes(type)) throw new Error("نوع طلبٍ غير صحيح.");
+  if (!["pause", "cancel", "complaint", "other"].includes(type)) throw new Error(await adminErr("invalidRequestType"));
   const { supabase, profile } = await assertAdmin();
   const { error } = await supabase.from("requests").insert({ tenant_id: profile.tenant_id, learner_id: learnerId, type, details, created_by: profile.id });
   if (error) throw new Error(error.message);
@@ -635,7 +639,7 @@ export async function updateRequestStatus(formData: FormData) {
   const learnerId = String(formData.get("learnerId") ?? "");
   const status = String(formData.get("status") ?? "");
   const resolution = String(formData.get("resolution") ?? "").trim() || null;
-  if (!["open", "in_progress", "closed"].includes(status)) throw new Error("حالةٌ غير صحيحة.");
+  if (!["open", "in_progress", "closed"].includes(status)) throw new Error(await adminErr("invalidStatus"));
   const { supabase } = await assertAdmin();
   const { error } = await supabase
     .from("requests")
@@ -768,8 +772,8 @@ export async function addIntroRule(formData: FormData) {
   const startTime = String(formData.get("startTime") ?? "");
   const endTime = String(formData.get("endTime") ?? "");
   const slotMinutes = Number(formData.get("slotMinutes") ?? 30);
-  if (Number.isNaN(weekday) || !startTime || !endTime) throw new Error("أكمِل بيانات الموعد.");
-  if (endTime <= startTime) throw new Error("وقت النهاية يجب أن يكون بعد البداية.");
+  if (Number.isNaN(weekday) || !startTime || !endTime) throw new Error(await adminErr("completeSlotData"));
+  if (endTime <= startTime) throw new Error(await adminErr("endAfterStart"));
   const { supabase, profile } = await assertAdmin();
   const { error } = await supabase.from("intro_availability_rules").insert({ tenant_id: profile.tenant_id, weekday, start_time: startTime, end_time: endTime, slot_minutes: slotMinutes });
   if (error) throw new Error(error.message);
