@@ -45,7 +45,7 @@ export async function submitLeadTest(_prev: TakeState | undefined, formData: For
     byLevel.set(lvl, s);
   }
 
-  const order = ["A1", "A2", "B1", "B2", "C1", "C2"];
+  const order = ["A1", "A2", "B1"];
   let suggested = "A1";
   for (const lvl of order) {
     const s = byLevel.get(lvl);

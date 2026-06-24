@@ -322,7 +322,7 @@ export const signup = {
   ageOptions: ["9", "10", "11", "12", "13"],
   trackOptions: [
     { value: "school", label: "School support — help with their English class" },
-    { value: "cefr", label: "CEFR English — structured levels (A1–C1)" },
+    { value: "cefr", label: "CEFR English — structured levels (A1–B1)" },
     { value: "unsure", label: "Not sure yet — the teacher will advise" },
   ],
   consentLabel:
@@ -478,7 +478,7 @@ export const enroll = {
     pendingBadge: "Awaiting teacher approval",
     teacherNote: "The teacher will review this and confirm the final level before your first lesson.",
     bands: [
-      { min: 9, title: "Wonderful!", level: "Upper-Intermediate (B2)" },
+      { min: 9, title: "Wonderful!", level: "Upper-Intermediate (B1)" },
       { min: 7, title: "Great job!", level: "Intermediate (B1)" },
       { min: 5, title: "Nice work!", level: "Elementary (A2)" },
       { min: 3, title: "Good start!", level: "Beginner (A1)" },

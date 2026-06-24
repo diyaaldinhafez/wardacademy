@@ -15,7 +15,7 @@ create table public.objectives (
   tenant_id   uuid        not null references public.tenants(id) on delete cascade,
   parent_id   uuid        references public.objectives(id) on delete set null,
   track       public.objective_track not null,
-  level       text,        -- CEFR code (A1..C2) or a school reference label
+  level       text,        -- CEFR code (A1..B1) or a school reference label
   description text        not null,
   created_by  uuid        references public.profiles(id) on delete set null,
   created_at  timestamptz not null default now()

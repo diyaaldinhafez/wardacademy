@@ -505,7 +505,7 @@ export async function generatePlan(opts: { level: string; learnerName: string })
     "(listening | speaking | reading | writing | vocabulary — 'vocabulary' here means the language foundation: vocabulary + grammar), " +
     "and the unit it belongs to (lessons in the same unit must share the identical unit string). Order the items unit by unit.";
   const system =
-    "You design a short English study plan on Ward Academy's own CEFR-aligned curriculum (A1→B2) for a child aged 9–13. " +
+    "You design a short English study plan on Ward Academy's own CEFR-aligned curriculum (A1→B1) for a child aged 9–13. " +
     "Given a starting CEFR level, produce 2–3 thematic units, each with 2–4 progressive, original, measurable lesson objectives (no copied material) that build on each other. " +
     `Use the CEFR sub-level as the level ref. ${tagging} Return via emit_plan.`;
   const userMsg = `Student: ${learnerName}. Starting CEFR level: ${level}. Create the plan.`;

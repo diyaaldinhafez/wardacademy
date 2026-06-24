@@ -503,7 +503,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <p style={{ fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.7 }}>
-              <strong>منهاج وَرد</strong> (CEFR · A1→B2). ارفع <strong>فهرس كتاب المنهج</strong> (صورة / PDF / نصّ) — يقرؤه الذكاء ويستخرج وحداته ودروسه <strong>بدقّةٍ بلا تأليف</strong>.
+              <strong>منهاج وَرد</strong> (CEFR · A1→B1). ارفع <strong>فهرس كتاب المنهج</strong> (صورة / PDF / نصّ) — يقرؤه الذكاء ويستخرج وحداته ودروسه <strong>بدقّةٍ بلا تأليف</strong>.
             </p>
             <form action={startPlanFromIndex} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
               <input type="hidden" name="learnerId" value={id} />

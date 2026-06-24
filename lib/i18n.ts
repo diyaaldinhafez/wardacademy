@@ -434,7 +434,7 @@ const ar: Dict = {
       pendingBadge: "بانتظار اعتماد المعلّم",
       teacherNote: "سيراجع المعلّم هذا ويعتمد المستوى النهائي قبل أوّل درس.",
       bands: [
-        { min: 9, title: "رائع!", level: "فوق المتوسّط (B2)" },
+        { min: 9, title: "رائع!", level: "متقدّم (B1)" },
         { min: 7, title: "أحسنت!", level: "متوسّط (B1)" },
         { min: 5, title: "عملٌ جيّد!", level: "أساسيّ (A2)" },
         { min: 3, title: "بدايةٌ طيّبة!", level: "مبتدئ (A1)" },
