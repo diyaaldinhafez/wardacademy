@@ -47,7 +47,7 @@ export default async function LearnPage() {
   const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
   const { data: items } = await supabase
     .from("items")
-    .select("id, prompt, content, format, difficulty, origin, objective_id, objectives(description, level)")
+    .select("id, prompt, content, format, difficulty, origin, objective_id, curriculum_objectives(descriptor_ar, level)")
     .eq("status", "approved")
     .order("created_at", { ascending: false });
   const { data: subs } = await supabase
