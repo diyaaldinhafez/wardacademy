@@ -773,6 +773,17 @@
       }
     }
   },
+  "setPassword": {
+    "title": "Set your password",
+    "newPw": "New password",
+    "confirmPw": "Confirm password",
+    "save": "Save and sign in",
+    "saving": "Saving…",
+    "done": "Password set ✓ Taking you to sign in…",
+    "invalidLink": "This link is invalid or expired. Ask the team to send you a new one.",
+    "tooShort": "Password must be at least 8 characters.",
+    "mismatch": "The passwords don't match."
+  },
   "guardian": {
     "title": "Your children",
     "addChildTitle": "Add a child",
