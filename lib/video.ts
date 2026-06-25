@@ -8,7 +8,7 @@ const API = "https://api.daily.co/v1";
 
 function apiKey(): string {
   const k = process.env.DAILY_API_KEY;
-  if (!k) throw new Error("الفيديو غير مُهيّأ بعد — أضِف DAILY_API_KEY إلى البيئة.");
+  if (!k) throw new Error("Video isn't configured yet — add DAILY_API_KEY to the environment.");
   return k;
 }
 
@@ -38,9 +38,9 @@ export async function ensureRoom(name: string): Promise<string> {
       }),
     });
   }
-  if (!res.ok) throw new Error("تعذّر تجهيز غرفة الفيديو.");
+  if (!res.ok) throw new Error("Couldn't prepare the video room.");
   const room = (await res.json()) as { url?: string };
-  if (!room.url) throw new Error("تعذّر تجهيز غرفة الفيديو.");
+  if (!room.url) throw new Error("Couldn't prepare the video room.");
   return room.url;
 }
 
@@ -52,9 +52,9 @@ export async function mintToken({ roomName, userName, isOwner }: { roomName: str
       properties: { room_name: roomName, user_name: userName, is_owner: isOwner, exp: Math.floor(Date.now() / 1000) + 60 * 60 * 4 },
     }),
   });
-  if (!res.ok) throw new Error("تعذّر إنشاء رمز الدخول للجلسة.");
+  if (!res.ok) throw new Error("Couldn't create the session access token.");
   const out = (await res.json()) as { token?: string };
-  if (!out.token) throw new Error("تعذّر إنشاء رمز الدخول للجلسة.");
+  if (!out.token) throw new Error("Couldn't create the session access token.");
   return out.token;
 }
 

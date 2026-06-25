@@ -773,6 +773,19 @@
       }
     }
   },
+  "video": {
+    "join": "Join the session",
+    "connecting": "Connecting…",
+    "fullscreen": "Fullscreen",
+    "unknownError": "Unknown error",
+    "joinFailed": "Couldn't join: {msg}",
+    "userFallback": "User",
+    "errors": {
+      "signInFirst": "Sign in first.",
+      "sessionNotFound": "Session not found.",
+      "notParticipant": "You're not part of this session."
+    }
+  },
   "setPassword": {
     "title": "Set your password",
     "newPw": "New password",

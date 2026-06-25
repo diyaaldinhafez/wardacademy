@@ -1,13 +1,17 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import type DailyIframe from "@daily-co/daily-js";
 import { joinVideoSession } from "@/app/video-actions";
 
 type Frame = ReturnType<typeof DailyIframe.createFrame>;
 
-/** In-platform Daily video call for a 1:1 session. */
-export default function VideoCall({ sessionId, label = "انضمام للجلسة", className }: { sessionId: string; label?: string; className?: string }) {
+/** In-platform Daily video call for a 1:1 session. Internal (teacher + child),
+ * so it renders in the surface's forced-en locale. */
+export default function VideoCall({ sessionId, label, className }: { sessionId: string; label?: string; className?: string }) {
+  const t = useTranslations("video");
+  const joinLabel = label ?? t("join");
   const [state, setState] = useState<"idle" | "loading" | "in" | "error">("idle");
   const [err, setErr] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -33,7 +37,7 @@ export default function VideoCall({ sessionId, label = "انضمام للجلس�
       });
       frame.on("error", (ev) => {
         console.error("[VideoCall] daily error", ev);
-        setErr(`Daily: ${ev?.errorMsg ?? "خطأ غير معروف"}`);
+        setErr(`Daily: ${ev?.errorMsg ?? t("unknownError")}`);
       });
       frameRef.current = frame;
       // Reveal the container BEFORE joining so the Daily UI (camera check / join)
@@ -47,7 +51,7 @@ export default function VideoCall({ sessionId, label = "انضمام للجلس�
         frameRef.current = null;
       }
       const msg = (e as { errorMsg?: string; message?: string })?.errorMsg ?? (e as Error)?.message ?? (typeof e === "string" ? e : JSON.stringify(e));
-      setErr(`تعذّر الانضمام: ${msg}`);
+      setErr(t("joinFailed", { msg }));
       setState("error");
     }
   }
@@ -56,13 +60,13 @@ export default function VideoCall({ sessionId, label = "انضمام للجلس�
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {state !== "in" && (
         <button onClick={join} disabled={state === "loading"} className={className ?? "ward-btn ward-btn--primary ward-btn--sm"}>
-          {state === "loading" ? "جارٍ الاتصال…" : `🎥 ${label}`}
+          {state === "loading" ? t("connecting") : `🎥 ${joinLabel}`}
         </button>
       )}
       {err && <p style={{ fontSize: 12, color: "var(--rose-700, #b4435f)" }}>{err}</p>}
       {state === "in" && (
         <button onClick={() => containerRef.current?.requestFullscreen?.()} className="ward-btn ward-btn--ghost ward-btn--sm" style={{ alignSelf: "flex-start" }}>
-          ⛶ ملء الشاشة
+          ⛶ {t("fullscreen")}
         </button>
       )}
       <div ref={containerRef} style={{ width: "100%", height: state === "in" ? "min(72vh, 680px)" : 0, minHeight: state === "in" ? 420 : 0, overflow: "hidden", borderRadius: 12, background: "#000", transition: "height .2s" }} />
