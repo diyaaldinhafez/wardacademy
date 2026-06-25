@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  startPlacement, startPlan, startPlanFromIndex, createManualPlan, approvePlan, draftReportWithAI, assignItem,
+  startPlacement, startPlan, startPlanFromCatalog, startPlanFromIndex, createManualPlan, approvePlan, draftReportWithAI, assignItem,
   addResource, removeResource, generateAssessmentTest, approveAssessment, removeAssessment,
   generateDraft, approveItem, rejectItem, updateReport, approveReport,
   addLessonSlot, removeLessonSlot, generateLessonSessions,
@@ -508,6 +508,10 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
               <p style={{ fontSize: 11.5, color: "var(--text-muted)", margin: "8px 0", lineHeight: 1.6 }}>
                 {t("plan.regenHint")}{plan.status === "approved" && t("plan.regenHintApproved")}
               </p>
+              <form action={startPlanFromCatalog} style={{ marginBottom: 8 }}>
+                <input type="hidden" name="learnerId" value={id} />
+                <SubmitButton pendingText="…" className={btn("secondary")}>{t("plan.buildFromCatalog")}</SubmitButton>
+              </form>
               <form action={startPlanFromIndex} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
                 <input type="hidden" name="learnerId" value={id} />
                 <input name="index" type="file" required accept="image/*,.pdf,.txt,.md,.csv" className={ctl} style={{ width: "auto", flex: 1, minWidth: 180 }} />
@@ -518,6 +522,11 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <p style={{ fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.7 }}>{t("plan.emptyIntro")}</p>
+            <form action={startPlanFromCatalog}>
+              <input type="hidden" name="learnerId" value={id} />
+              <p style={{ fontSize: 11.5, color: "var(--text-muted)", margin: "0 0 6px", lineHeight: 1.6 }}>{t("plan.buildFromCatalogHint")}</p>
+              <SubmitButton pendingText="…" className={btn("primary")}>{t("plan.buildFromCatalog")}</SubmitButton>
+            </form>
             <form action={startPlanFromIndex} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
               <input type="hidden" name="learnerId" value={id} />
               <input name="index" type="file" required accept="image/*,.pdf,.txt,.md,.csv" className={ctl} style={{ width: "auto", flex: 1, minWidth: 180 }} />

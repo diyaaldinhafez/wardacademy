@@ -16,6 +16,7 @@ import {
   generateAssessment,
   type PlanIndexSource,
 } from "@/lib/generation/service";
+import { aggregatePlanItems } from "@/lib/curriculum/aggregatePlan";
 import { homePathForRoles } from "@/lib/roles";
 import { type BloomStage } from "@/lib/skills";
 import { valueForState } from "@/lib/progress/evidence";
@@ -377,6 +378,46 @@ export async function startPlan(formData: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/studio", "layout");
+}
+
+/**
+ * Build a study plan DETERMINISTICALLY from the Ward Curriculum catalog — all of
+ * the confirmed entry level's objectives, in catalog order, no AI/authoring.
+ * id = objective_id (real, stable). Runs beside the AI paths; approvePlan is
+ * unchanged (gate 2 builds, later gates cut the old paths).
+ */
+export async function startPlanFromCatalog(formData: FormData) {
+  const learnerId = String(formData.get("learnerId") ?? "");
+  if (!learnerId) throw new Error(await studioErr("noStudent"));
+  const { supabase, user, tenantId } = await instructorCtx();
+  const { data: placement } = await supabase
+    .from("placement_tests")
+    .select("suggested_level, confirmed_level")
+    .eq("learner_id", learnerId)
+    .eq("status", "completed")
+    .order("completed_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const level = placement?.confirmed_level ?? placement?.suggested_level ?? "A1";
+
+  const items = await aggregatePlanItems(supabase, level);
+  if (items.length === 0) throw new Error(await studioErr("noCatalogObjectives"));
+
+  await clearLearnerPlans(supabase, learnerId);
+  const { error } = await supabase.from("study_plans").insert({
+    tenant_id: tenantId,
+    learner_id: learnerId,
+    title: `Ward Curriculum · Level ${level}`,
+    level,
+    items, // id = objective_id (no randomUUID — real catalog ids)
+    status: "draft",
+    track: "cefr",
+    scope_label: `Ward Curriculum · Level ${level}`,
+    milestone_label: `Level assessment on completing ${level}`,
+    created_by: user.id,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/studio/students/${learnerId}`);
 }
 
 const PLAN_SKILLS = ["listening", "speaking", "reading", "writing", "vocabulary"];
