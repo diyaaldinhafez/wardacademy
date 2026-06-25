@@ -1,29 +1,22 @@
 // Seed a whole demo CLASS — 5 varied students with ~months of hand-authored
-// history (NO AI / zero tokens). Re-runnable: each student's data is cleared
-// first. Run: node scripts/seed-demo-class.mjs
+// history (NO AI / zero tokens). Plans are aggregated from the Ward Curriculum via
+// the SAME path as production (aggregatePlanMirror == aggregatePlanItems), and
+// progress is seeded through objective_assessments so the DB trigger computes the
+// decaying-average bloom (no direct injection). Re-runnable. Run:
+//   node scripts/seed-demo-class.mjs
 import pkg from "@next/env";
 pkg.loadEnvConfig(process.cwd());
 import { createClient } from "@supabase/supabase-js";
-import { randomUUID } from "node:crypto";
+import { aggregatePlanMirror } from "./lib/aggregatePlanMirror.mjs";
 
 const c = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 const iso = (d) => new Date(d).toISOString();
 const must = (r, w) => { if (r.error) throw new Error(`${w}: ${r.error.message}`); return r.data; };
 const DAY = 86400000;
-
-// — Unit library: theme → 4 lessons {description, skill} —
-const U = (unit, ...ls) => ({ unit, lessons: ls.map(([description, skill]) => ({ description, skill })) });
-const LIB = {
-  routines: U("الروتين اليوميّ", ["المضارع البسيط للعادات", "vocabulary"], ["الاستماع إلى وصف يومٍ دراسيّ", "listening"], ["قراءة فقرةٍ عن روتينٍ صباحيّ", "reading"], ["كتابة فقرةٍ عن يومك", "writing"]),
-  family: U("عائلتي وأصدقائي", ["مفردات أفراد العائلة", "vocabulary"], ["التحدّث: تقديم عائلتك", "speaking"], ["الاستماع إلى حوارٍ بين صديقين", "listening"], ["قراءة رسالةٍ من صديق", "reading"]),
-  town: U("في المدينة", ["مفردات الأماكن والاتّجاهات", "vocabulary"], ["التحدّث: السؤال عن الطريق", "speaking"], ["الاستماع إلى إعلاناتٍ في المدينة", "listening"], ["كتابة بطاقةٍ بريديةٍ عن مدينتك", "writing"]),
-  food: U("الطعام والمطاعم", ["مفردات الطعام والمقادير", "vocabulary"], ["التحدّث: الطلب في مطعم", "speaking"], ["قراءة قائمة طعامٍ ووصفة", "reading"], ["كتابة وصفةٍ بسيطة", "writing"]),
-  hobbies: U("هواياتي ووقت الفراغ", ["مفردات الهوايات", "vocabulary"], ["الاستماع إلى أشخاصٍ يصفون هواياتهم", "listening"], ["قراءة مقالٍ عن الرياضة", "reading"], ["التحدّث: هوايتك المفضّلة", "speaking"]),
-  school: U("الحياة المدرسيّة", ["مفردات المواد والصفّ", "vocabulary"], ["الاستماع إلى جدولٍ دراسيّ", "listening"], ["قراءة قواعد المدرسة", "reading"], ["كتابة عن مادّتك المفضّلة", "writing"]),
-  travel: U("السفر والعُطَل", ["مفردات السفر والمطار", "vocabulary"], ["الزمن الماضي: عُطلتي الأخيرة", "writing"], ["الاستماع إلى إعلانات السفر", "listening"], ["التحدّث: التخطيط لرحلة", "speaking"]),
-  shopping: U("التسوّق", ["مفردات الملابس والأسعار", "vocabulary"], ["التحدّث: في المتجر", "speaking"], ["قراءة إعلاناتِ تخفيضات", "reading"], ["كتابة قائمة تسوّق", "writing"]),
-  future: U("خططي المستقبليّة", ["زمن المستقبل (will / going to)", "writing"], ["التحدّث: أحلامي ووظيفتي", "speaking"], ["الاستماع إلى أهدافِ أشخاص", "listening"], ["قراءة مقالٍ عن المهن", "reading"]),
-};
+const unitIdOf = (objectiveId) => objectiveId.split("-").slice(0, 2).join("-"); // "A1-U01-W1" → "A1-U01"
+// The ONE shared 0–10 → state band (mirrors ward_stage_for_value / lib/skills).
+const stageFor = (v) => (v < 2 ? "seed" : v < 5.5 ? "bud" : v < 8.5 ? "balloon" : "bloom");
+const clamp = (v) => Math.max(0, Math.min(10, Math.round(v * 100) / 100));
 
 const REPORTS = [
   ["جلسةٌ مثمرة؛ تابع الطالب الدرس باهتمامٍ وأنجز التمارين بدقّة.", "تركيزٌ وحماسٌ للمشاركة.", "مزيدٌ من القراءة الجهرية في البيت."],
@@ -47,18 +40,16 @@ const QBANK = [
   ["listening", "After breakfast she goes to ___.", ["school", "the park", "bed", "work"], "school"],
   ["writing", "Which word orders events first?", ["first", "fast", "funny", "free"], "first"],
   ["vocabulary", "My mother's mother is my ___.", ["grandmother", "aunt", "sister", "cousin"], "grandmother"],
-  ["reading", "A 'bakery' is a place to buy ___.", ["bread", "books", "shoes", "fruit"], "bread"],
-  ["writing", "Choose the correct adjective: He is very ___.", ["kind", "kindly", "kindness", "kinds"], "kind"],
 ];
-const SPEAK = [{ v: 0.25, l: "يبدأ" }, { v: 0.5, l: "تتطوّر" }, { v: 0.75, l: "جيّدة" }, { v: 1, l: "متمكّنة" }];
-const speakFor = (s) => SPEAK.reduce((a, b) => (Math.abs(b.v - s) < Math.abs(a.v - s) ? b : a));
 
+// level + how far along (taught objectives) + mastery profile. Levels span A1+A2+B1.
+// suggested → confirmed shows the human level decision (رغد: A2 suggested, A1 confirmed).
 const PERSONAS = [
-  { name: "سارة عبدالله", match: "سارة", level: "A2", units: ["routines", "family", "town"], taught: 7, strength: 0.72, lag: ["speaking"], wd: 2, time: "15:00", tasks: true },
-  { name: "يوسف الخطيب", match: "يوسف", level: "B1", units: ["food", "travel", "future"], taught: 10, strength: 0.86, lag: ["writing"], wd: 1, time: "16:00", tasks: false },
-  { name: "لمى الحربي", level: "A2", units: ["school", "hobbies", "shopping"], taught: 8, strength: 0.74, lag: ["speaking"], wd: 3, time: "14:00", tasks: false },
-  { name: "عمر الزهراني", level: "B1", units: ["travel", "food", "future"], taught: 11, strength: 0.9, lag: [], wd: 4, time: "17:00", tasks: false },
-  { name: "رغد القحطاني", level: "A2", units: ["hobbies", "routines", "family"], taught: 5, strength: 0.58, lag: ["writing"], wd: 0, time: "13:00", tasks: true },
+  { name: "سارة عبدالله", match: "سارة", level: "A1", suggested: "A1", taught: 6, strength: 0.5, lag: ["speaking"], wd: 2, time: "15:00", tasks: true },
+  { name: "رغد القحطاني", level: "A1", suggested: "A2", taught: 5, strength: 0.42, lag: ["writing"], wd: 0, time: "13:00", tasks: true },
+  { name: "لمى الحربي", level: "A2", suggested: "A2", taught: 11, strength: 0.72, lag: ["speaking"], wd: 3, time: "14:00", tasks: false },
+  { name: "يوسف الخطيب", match: "يوسف", level: "B1", suggested: "B1", taught: 16, strength: 0.84, lag: ["writing"], wd: 1, time: "16:00", tasks: false },
+  { name: "عمر الزهراني", level: "B1", suggested: "B1", taught: 24, strength: 0.94, lag: [], wd: 4, time: "17:00", tasks: false },
 ];
 
 function weeklyDates(wd, time, taught) {
@@ -66,10 +57,11 @@ function weeklyDates(wd, time, taught) {
   const now = new Date();
   const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), hh, mm));
   while (d.getUTCDay() !== wd || d.getTime() < now.getTime()) d.setUTCDate(d.getUTCDate() + 1);
+  const sessions = Math.min(taught, 8); // show up to 8 past sessions
   const future = [new Date(d), new Date(d.getTime() + 7 * DAY)];
   const past = [];
   let p = new Date(d.getTime() - 7 * DAY);
-  for (let i = 0; i < taught; i++) { past.unshift(new Date(p)); p = new Date(p.getTime() - 7 * DAY); }
+  for (let i = 0; i < sessions; i++) { past.unshift(new Date(p)); p = new Date(p.getTime() - 7 * DAY); }
   return { past, future };
 }
 
@@ -92,14 +84,12 @@ async function ensureLearner(persona, ctx) {
 async function clearLearner(L) {
   await c.from("submissions").delete().eq("learner_id", L);
   await c.from("assignments").delete().eq("learner_id", L);
-  await c.from("progress_records").delete().eq("learner_id", L);
+  await c.from("objective_assessments").delete().eq("student_id", L);
+  await c.from("objective_progress").delete().eq("student_id", L);
   await c.from("manual_homework").delete().eq("learner_id", L);
   await c.from("assessments").delete().eq("learner_id", L);
   await c.from("sessions").delete().eq("learner_id", L);
-  await c.from("skill_assessments").delete().eq("learner_id", L);
   await c.from("placement_tests").delete().eq("learner_id", L);
-  const { data: ps } = await c.from("study_plans").select("id").eq("learner_id", L);
-  if ((ps ?? []).length) await c.from("objectives").delete().in("plan_id", ps.map((p) => p.id));
   await c.from("study_plans").delete().eq("learner_id", L);
 }
 
@@ -108,39 +98,42 @@ async function seed(persona, ctx) {
   const L = prof.id, { T, I } = ctx;
   await clearLearner(L);
 
-  await c.from("placement_tests").insert({ tenant_id: T, learner_id: L, status: "completed", suggested_level: persona.level, completed_at: iso(Date.now() - 90 * DAY) });
+  // Structured placement (suggested = machine; confirmed = human decision).
+  await c.from("placement_tests").insert({ tenant_id: T, learner_id: L, status: "completed", suggested_level: persona.suggested, confirmed_level: persona.level, completed_at: iso(Date.now() - 90 * DAY) });
 
-  const lessons = persona.units.flatMap((k) => LIB[k].lessons.map((l) => ({ id: randomUUID(), description: l.description, level: persona.level, skill: l.skill, unit: LIB[k].unit })));
-  const plan = must(await c.from("study_plans").insert({ tenant_id: T, learner_id: L, title: `منهاج وَرد — المستوى ${persona.level}`, level: persona.level, items: lessons, status: "approved", track: "cefr", scope_label: `${persona.level} · منهاج وَرد`, milestone_label: "تقييمٌ عند إتمام المنهاج", created_by: I, approved_at: iso(Date.now() - 92 * DAY) }).select("id").single(), "plan");
-  must(await c.from("objectives").insert(lessons.map((l) => ({ tenant_id: T, track: "cefr", level: persona.level, description: l.description, skill: l.skill, unit: l.unit, plan_id: plan.id, plan_lesson_id: l.id, created_by: I }))), "objectives");
-  const { data: objs } = await c.from("objectives").select("id, plan_lesson_id").eq("plan_id", plan.id);
-  const objOf = (i) => objs.find((o) => o.plan_lesson_id === lessons[i].id).id;
+  // The plan is aggregated from the catalog — SAME as production (no LIB, no authoring).
+  const items = await aggregatePlanMirror(c, persona.level);
+  const plan = must(await c.from("study_plans").insert({ tenant_id: T, learner_id: L, title: `Ward Curriculum · Level ${persona.level}`, level: persona.level, items, status: "approved", track: "cefr", scope_label: `Ward Curriculum · Level ${persona.level}`, milestone_label: `Level assessment on completing ${persona.level}`, created_by: I, approved_at: iso(Date.now() - 92 * DAY) }).select("id").single(), "plan");
 
-  // Progress for taught lessons (varied; lag skills weaker; current lesson partial)
-  const prog = [];
-  for (let i = 0; i < persona.taught; i++) {
-    const sk = lessons[i].skill;
-    const ratio = Math.max(0.2, Math.min(0.95, persona.strength - (persona.lag.includes(sk) ? 0.28 : 0) + (((i * 17) % 7) - 3) * 0.02));
-    const last = i === persona.taught - 1;
-    const attempts = last ? 3 : 5 + ((i * 13) % 4);
-    const correct = Math.max(0, Math.min(attempts, Math.round(attempts * ratio)));
-    prog.push({ tenant_id: T, learner_id: L, objective_id: objOf(i), attempts, correct, completions: 0, last_activity_at: iso(Date.now() - (persona.taught - i) * 7 * DAY) });
+  // Progress: ONE objective_assessments row per taught objective (first assessment =
+  // the value; the trigger rolls it into objective_progress). Values 0–10; the four
+  // states come from ward_stage_for_value, not invented bands.
+  const taught = Math.min(persona.taught, items.length);
+  const firstUnit = items.length ? unitIdOf(items[0].id) : null;
+  const rows = [];
+  for (let i = 0; i < taught; i++) {
+    const it = items[i];
+    const jitter = (((i * 17) % 7) - 3) * 0.3;
+    const value = clamp(persona.strength * 10 - (persona.lag.includes(it.skill) ? 2.8 : 0) + jitter);
+    rows.push({
+      tenant_id: T, student_id: L, objective_id: it.id, value, state: stageFor(value),
+      // unit-1 objectives look auto-graded (as if from a unit test); the rest teacher.
+      evidence: unitIdOf(it.id) === firstUnit ? "auto" : "teacher",
+      assessed_at: iso(Date.now() - (taught - i) * 6 * DAY),
+    });
   }
-  must(await c.from("progress_records").insert(prog), "progress");
-
-  const sp = speakFor(persona.strength - (persona.lag.includes("speaking") ? 0.25 : 0));
-  must(await c.from("skill_assessments").insert({ tenant_id: T, learner_id: L, skill: "speaking", value: sp.v, label: sp.l, updated_by: I }), "speaking");
+  if (rows.length) must(await c.from("objective_assessments").insert(rows), "objective_assessments");
 
   // Sessions
-  const { past, future } = weeklyDates(persona.wd, persona.time, persona.taught);
+  const { past, future } = weeklyDates(persona.wd, persona.time, taught);
   const pastIds = [], futureIds = [];
   for (let i = 0; i < past.length; i++) {
-    const s = must(await c.from("sessions").insert({ tenant_id: T, instructor_id: I, learner_id: L, scheduled_at: iso(past[i]), duration_minutes: 30, status: "completed", lesson_title: lessons[i].description, plan_item_index: i }).select("id").single(), "past session");
+    const s = must(await c.from("sessions").insert({ tenant_id: T, instructor_id: I, learner_id: L, scheduled_at: iso(past[i]), duration_minutes: 30, status: "completed", lesson_title: items[Math.min(i, items.length - 1)].description, plan_item_index: Math.min(i, items.length - 1) }).select("id").single(), "past session");
     pastIds.push(s.id);
   }
   for (let i = 0; i < future.length; i++) {
-    const li = Math.min(persona.taught + i, lessons.length - 1);
-    const s = must(await c.from("sessions").insert({ tenant_id: T, instructor_id: I, learner_id: L, scheduled_at: iso(future[i]), duration_minutes: 30, status: "scheduled", lesson_title: lessons[li].description, plan_item_index: li }).select("id").single(), "future session");
+    const li = Math.min(taught + i, items.length - 1);
+    const s = must(await c.from("sessions").insert({ tenant_id: T, instructor_id: I, learner_id: L, scheduled_at: iso(future[i]), duration_minutes: 30, status: "scheduled", lesson_title: items[li].description, plan_item_index: li }).select("id").single(), "future session");
     futureIds.push(s.id);
   }
 
@@ -164,32 +157,35 @@ async function seed(persona, ctx) {
     must(await c.from("manual_homework").insert({ tenant_id: T, learner_id: L, instructor_id: I, session_id: h.s, title: h.title, instructions: "حلّ التمرين وارفع صورة الحلّ.", status: h.status, score: h.score ?? null, max_score: h.max_score ?? null, feedback: h.feedback ?? null, created_at: iso(Date.now() - 20 * DAY), submitted_at: h.status !== "assigned" ? iso(Date.now() - h.off * DAY) : null, graded_at: h.status === "graded" ? iso(Date.now() - (h.off - 1) * DAY) : null }), "manual hw");
   }
 
-  // Digital homework: 2 items + graded submissions (feed progress on 2 taught objectives)
+  // Digital homework: 2 items on catalog objectives + graded submissions (no objective_id on the submission — like the live flow).
   const mkItem = async (objIndex, q, sessionId, correct) => {
-    const item = must(await c.from("items").insert({ tenant_id: T, objective_id: objOf(objIndex), format: "multiple_choice", difficulty: "easy", prompt: q[1], content: { options: q[2] }, origin: "manual", status: "approved", created_by: I, target_learner_id: L, approved_by: I, approved_at: iso(Date.now() - 15 * DAY) }).select("id").single(), "item");
-    await c.from("item_keys").insert({ item_id: item.id, tenant_id: T, answer: q[3] });
-    await c.from("assignments").insert({ tenant_id: T, item_id: item.id, learner_id: L, assigned_by: I, session_id: sessionId });
-    await c.from("submissions").insert({ item_id: item.id, learner_id: L, response: { answer: correct ? q[3] : q[2][1] }, is_correct: correct, graded: true, graded_by: I, graded_at: iso(Date.now() - 12 * DAY) });
+    const objectiveId = items[Math.min(objIndex, items.length - 1)].id;
+    const item = must(await c.from("items").insert({ tenant_id: T, objective_id: objectiveId, format: "multiple_choice", difficulty: "easy", prompt: q[1], content: { options: q[2] }, origin: "manual", status: "approved", created_by: I, target_learner_id: L, approved_by: I, approved_at: iso(Date.now() - 15 * DAY) }).select("id").single(), "item");
+    must(await c.from("item_keys").insert({ item_id: item.id, tenant_id: T, answer: q[3] }), "item_keys");
+    must(await c.from("assignments").insert({ tenant_id: T, item_id: item.id, learner_id: L, assigned_by: I, session_id: sessionId }), "assignment");
+    must(await c.from("submissions").insert({ item_id: item.id, learner_id: L, response: { answer: correct ? q[3] : q[2][1] }, is_correct: correct, graded: true, graded_by: I, graded_at: iso(Date.now() - 12 * DAY) }), "submission");
   };
-  await mkItem(1, QBANK[0], pastIds[1], true);
-  await mkItem(Math.min(3, persona.taught - 1), QBANK[2], pastIds[Math.min(3, pastIds.length - 1)], persona.strength > 0.7);
+  await mkItem(1, QBANK[0], pastIds[Math.min(1, pastIds.length - 1)], true);
+  await mkItem(Math.min(3, taught - 1), QBANK[2], pastIds[Math.min(3, pastIds.length - 1)], persona.strength > 0.7);
 
-  // Assessments: 1 completed (unit 1, per-skill result) + (tasks: 1 draft unit 2)
+  // Assessments: 1 completed unit test (tied to a real catalog unit, per-skill result) + (tasks: 1 draft).
   const flags = QBANK.slice(0, 8).map(([skill], i) => ({ skill, ok: ((i * 37 + 13) % 100) / 100 < (persona.strength - (persona.lag.includes(skill) ? 0.3 : 0)) }));
   const result = {};
   for (const f of flags) { const r = result[f.skill] ?? { correct: 0, total: 0 }; r.total++; if (f.ok) r.correct++; result[f.skill] = r; }
   const score = flags.filter((f) => f.ok).length;
-  const u1 = LIB[persona.units[0]].unit, u2 = LIB[persona.units[1]].unit;
-  const comp = must(await c.from("assessments").insert({ tenant_id: T, learner_id: L, title: `اختبار وحدة: ${u1}`, scope: "unit", unit: u1, status: "completed", score, max_score: 8, result, created_by: I, completed_at: iso(Date.now() - 30 * DAY) }).select("id").single(), "completed assessment");
+  const u1Title = items[0]?.unit ?? "—";
+  const comp = must(await c.from("assessments").insert({ tenant_id: T, learner_id: L, title: `اختبار وحدة: ${u1Title}`, scope: "unit", unit: u1Title, curriculum_unit_id: firstUnit, status: "completed", score, max_score: 8, result, created_by: I, completed_at: iso(Date.now() - 30 * DAY) }).select("id").single(), "completed assessment");
   must(await c.from("assessment_questions").insert(QBANK.slice(0, 8).map((q, i) => ({ assessment_id: comp.id, tenant_id: T, skill: q[0], format: "multiple_choice", prompt: q[1], content: { options: q[2] }, answer: q[3], position: i, response: { answer: flags[i].ok ? q[3] : q[2][1] }, is_correct: flags[i].ok }))), "completed questions");
 
   if (persona.tasks) {
-    const draftA = must(await c.from("assessments").insert({ tenant_id: T, learner_id: L, title: `اختبار وحدة: ${u2}`, scope: "unit", unit: u2, status: "draft", created_by: I }).select("id").single(), "draft assessment");
+    const u2 = items.find((it) => unitIdOf(it.id) !== firstUnit);
+    const u2Unit = u2 ? unitIdOf(u2.id) : firstUnit;
+    const draftA = must(await c.from("assessments").insert({ tenant_id: T, learner_id: L, title: `اختبار وحدة: ${u2?.unit ?? u1Title}`, scope: "unit", unit: u2?.unit ?? u1Title, curriculum_unit_id: u2Unit, status: "draft", created_by: I }).select("id").single(), "draft assessment");
     must(await c.from("assessment_questions").insert(QBANK.slice(2, 8).map((q, i) => ({ assessment_id: draftA.id, tenant_id: T, skill: q[0], format: "multiple_choice", prompt: q[1], content: { options: q[2] }, answer: q[3], position: i }))), "draft questions");
   }
 
-  const A = prog.reduce((s, r) => s + r.attempts, 0), C = prog.reduce((s, r) => s + r.correct, 0);
-  console.log(`  ✓ ${persona.name} — ${persona.level} · ${persona.taught}/${lessons.length} دروس · جلسات ${past.length} · إتقان ${Math.round((C / A) * 100)}%${persona.tasks ? " · لديه مهامّ" : ""}`);
+  const stages = rows.reduce((m, r) => ((m[r.state] = (m[r.state] ?? 0) + 1), m), {});
+  console.log(`  ✓ ${persona.name} — ${persona.level} (suggested ${persona.suggested}) · plan ${items.length} · taught ${taught} · stages ${JSON.stringify(stages)}`);
 }
 
 const main = async () => {
@@ -200,7 +196,7 @@ const main = async () => {
   console.log(`Seeding 5 demo students under "${instructor.full_name}"...`);
   const ctx = { people: people ?? [], T, I };
   for (const p of PERSONAS) await seed(p, ctx);
-  console.log("✓ Done — a class of 5.");
+  console.log("✓ Done — a class of 5 (catalog plans, A1+A2+B1).");
 };
 
 main().catch((e) => { console.error("FAILED:", e.message); process.exit(1); });

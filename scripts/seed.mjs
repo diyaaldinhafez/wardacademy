@@ -59,42 +59,8 @@ try {
     [user.id, tenantId, "Teacher (dev)", EMAIL],
   );
 
-  const { rows: c } = await pg.query("select count(*)::int n from public.objectives where tenant_id=$1", [tenantId]);
-  if (c[0].n === 0) {
-    const samples = [
-      ["cefr", "A2", "Use the past simple tense to describe activities done yesterday"],
-      ["cefr", "A2", "Ask and answer simple questions about daily routines"],
-      ["cefr", "B1", "Express opinions and give reasons using because and so"],
-      ["school", "Grade 6 - Unit 3", "Read a short paragraph and identify the main idea"],
-    ];
-    for (const [track, level, description] of samples) {
-      await pg.query(
-        "insert into public.objectives(tenant_id, track, level, description, created_by) values ($1,$2,$3,$4,$5)",
-        [tenantId, track, level, description, user.id],
-      );
-    }
-    console.log("seeded", samples.length, "objectives");
-  } else {
-    console.log("objectives already present:", c[0].n);
-  }
-
-  // Tag objectives with a skill (5 petals = 5 skills) where missing.
-  const skillMap = [
-    ["past simple", "writing"],
-    ["daily routines", "speaking"],
-    ["opinion", "speaking"],
-    ["main idea", "reading"],
-    ["read", "reading"],
-    ["write", "writing"],
-    ["listen", "listening"],
-    ["speak", "speaking"],
-    ["vocab", "vocabulary"],
-  ];
-  const { rows: untagged } = await pg.query("select id, description from public.objectives where tenant_id=$1 and skill is null", [tenantId]);
-  for (const o of untagged) {
-    const hit = skillMap.find(([k]) => new RegExp(k, "i").test(o.description));
-    await pg.query("update public.objectives set skill=$1::public.skill where id=$2", [hit ? hit[1] : "vocabulary", o.id]);
-  }
+  // Objectives come from the Ward Curriculum catalog (curriculum_objectives) — the
+  // single source; nothing to seed here.
 
   // A guardian + a learner (their child), so the learner practice view has an
   // account to sign in as. Guardian-anchored with consent granted.
@@ -139,19 +105,22 @@ try {
   );
 
   // ---- Demo content so the three accounts feel alive (each piece added once) ----
-  const objs = (await pg.query("select id, description from public.objectives where tenant_id=$1 order by created_at", [tenantId])).rows;
-  const routines = objs.find((o) => /routine/i.test(o.description)) ?? objs[1] ?? objs[0];
+  // A catalog objective (the dev learner is an A2 plan) to hang demo homework on.
+  const catObj = (await pg.query("select objective_id from public.curriculum_objectives where level='A2' order by unit_number, seq, objective_id limit 1")).rows[0];
   const itemRows = (await pg.query("select id, format, status from public.items where tenant_id=$1 order by created_at", [tenantId])).rows;
   const approvedItems = itemRows.filter((i) => i.status === "approved");
   const cnt = async (tbl) => (await pg.query(`select count(*)::int n from public.${tbl} where tenant_id=$1`, [tenantId])).rows[0].n;
+  // Per-learner guard: the dev student shares the default tenant with demo classes,
+  // so tenant-wide counts would skip provisioning him. Scope his content to himself.
+  const cntL = async (tbl) => (await pg.query(`select count(*)::int n from public.${tbl} where learner_id=$1`, [learner.id])).rows[0].n;
 
   // a draft for the teacher's "Drafts to review"
-  if (!itemRows.some((i) => i.status === "draft") && routines) {
+  if (!itemRows.some((i) => i.status === "draft") && catObj) {
     const did = (
       await pg.query(
         `insert into public.items(tenant_id,objective_id,format,difficulty,prompt,content,origin,status,created_by)
            values ($1,$2,'multiple_choice','easy',$3,$4::jsonb,'ai','draft',$5) returning id`,
-        [tenantId, routines.id, "Choose the correct question about a daily routine.", JSON.stringify({ options: ["What time you wake up?", "What time do you wake up?", "What time does you wake up?", "What time waking up?"] }), user.id],
+        [tenantId, catObj.objective_id, "Choose the correct question about a daily routine.", JSON.stringify({ options: ["What time you wake up?", "What time do you wake up?", "What time does you wake up?", "What time waking up?"] }), user.id],
       )
     ).rows[0].id;
     await pg.query("insert into public.item_keys(item_id,tenant_id,answer,explanation) values ($1,$2,$3::jsonb,$4)", [did, tenantId, JSON.stringify("What time do you wake up?"), "Present simple questions use 'do' + base verb."]);
@@ -175,7 +144,7 @@ try {
   }
 
   // a past session (with approved report) + an upcoming one
-  if ((await cnt("sessions")) === 0) {
+  if ((await cntL("sessions")) === 0) {
     const past = new Date(Date.now() - 2 * 24 * 3600 * 1000); past.setUTCHours(15, 0, 0, 0);
     const future = new Date(Date.now() + 3 * 24 * 3600 * 1000); future.setUTCHours(16, 0, 0, 0);
     const sPast = (await pg.query("insert into public.sessions(tenant_id,instructor_id,learner_id,scheduled_at,duration_minutes,status) values ($1,$2,$3,$4,30,'completed') returning id", [tenantId, user.id, learner.id, past.toISOString()])).rows[0].id;
@@ -187,22 +156,24 @@ try {
     console.log("seeded: 2 sessions + approved report");
   }
 
-  // a completed placement result
-  if ((await cnt("placement_tests")) === 0) {
-    await pg.query("insert into public.placement_tests(tenant_id,learner_id,status,suggested_level,completed_at) values ($1,$2,'completed','A2',now())", [tenantId, learner.id]);
+  // a completed placement result (suggested = machine; confirmed = human decision)
+  if ((await cntL("placement_tests")) === 0) {
+    await pg.query("insert into public.placement_tests(tenant_id,learner_id,status,suggested_level,confirmed_level,completed_at) values ($1,$2,'completed','A2','A2',now())", [tenantId, learner.id]);
     console.log("seeded: placement (A2)");
   }
 
-  // an approved study plan
-  if ((await cnt("study_plans")) === 0) {
-    const planItems = [
-      { description: "Use the past simple to talk about yesterday's activities", level: "A2" },
-      { description: "Ask and answer questions about daily routines", level: "A2" },
-      { description: "Read a short paragraph and find the main idea", level: "A2" },
-      { description: "Give an opinion with a reason using 'because'", level: "B1" },
-    ];
-    await pg.query("insert into public.study_plans(tenant_id,learner_id,title,level,items,status,created_by,approved_at) values ($1,$2,$3,'A2',$4::jsonb,'approved',$5,now())", [tenantId, learner.id, "English Plan for Yousef — A2", JSON.stringify(planItems), user.id]);
-    console.log("seeded: approved study plan");
+  // an approved study plan — aggregated from the Ward Curriculum (same as production)
+  if ((await cntL("study_plans")) === 0) {
+    const planRows = (await pg.query(
+      `select o.objective_id, o.descriptor_ar, o.skill, o.level, u.title_ar
+         from public.curriculum_objectives o join public.curriculum_units u on u.unit_id = o.unit_id
+        where o.level = 'A2' order by o.unit_number, o.seq, o.objective_id`)).rows;
+    const items = planRows.map((r) => ({ id: r.objective_id, description: r.descriptor_ar, skill: r.skill, level: r.level, unit: r.title_ar }));
+    await pg.query(
+      "insert into public.study_plans(tenant_id,learner_id,title,level,items,status,track,scope_label,milestone_label,created_by,approved_at) values ($1,$2,$3,'A2',$4::jsonb,'approved','cefr',$5,$6,$7,now())",
+      [tenantId, learner.id, "Ward Curriculum · Level A2", JSON.stringify(items), "Ward Curriculum · Level A2", "Level assessment on completing A2", user.id],
+    );
+    console.log("seeded: approved catalog plan (A2,", items.length, "objectives)");
   }
 
   // open intro slots so the public booking calendar has options
