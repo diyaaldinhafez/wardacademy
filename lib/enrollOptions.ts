@@ -1,7 +1,7 @@
 // Shared option sets + Arabic labels for the enrolment form and the admin view.
 // Stored values are stable codes; labels are for display.
 
-import { SKILL_AR, type Skill } from "@/lib/skills";
+import { type Skill } from "@/lib/skills";
 
 export type Opt = { value: string; label: string };
 
@@ -137,7 +137,6 @@ export const REFERRALS: Opt[] = [
 
 // The four assessed skills on the enrolment form (vocabulary excluded here).
 export const ENROLL_SKILLS: Skill[] = ["listening", "speaking", "reading", "writing"];
-export { SKILL_AR };
 
 // value → label lookups for the admin display.
 const toMap = (opts: Opt[]) => Object.fromEntries(opts.map((o) => [o.value, o.label]));

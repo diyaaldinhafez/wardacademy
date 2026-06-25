@@ -71,7 +71,6 @@ export function expandSlots(opts: {
   return out;
 }
 
-export const WEEKDAY_AR = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 export const WEEKDAY_EN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 /** How many sessions a single weekly rule yields (session + break spacing). */

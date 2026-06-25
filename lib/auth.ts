@@ -18,7 +18,7 @@ export async function assertAdmin() {
     .eq("id", user.id)
     .single();
   if (!profile || !((profile.roles as string[]) ?? []).includes("admin")) {
-    throw new Error("هذا الإجراء للإدارة فقط.");
+    throw new Error("This action is for admins only.");
   }
   return { supabase, user, profile };
 }
@@ -36,7 +36,7 @@ export async function assertInstructor() {
     .eq("id", user.id)
     .single();
   if (!profile || !((profile.roles as string[]) ?? []).includes("instructor")) {
-    throw new Error("هذا الإجراء للمعلّم فقط.");
+    throw new Error("This action is for teachers only.");
   }
   return { supabase, user, profile };
 }

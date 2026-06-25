@@ -8,13 +8,6 @@
 export const SKILLS = ["listening", "speaking", "reading", "writing"] as const;
 export type Skill = (typeof SKILLS)[number];
 
-export const SKILL_AR: Record<Skill, string> = {
-  listening: "الاستماع",
-  speaking: "المحادثة",
-  reading: "القراءة",
-  writing: "الكتابة",
-};
-
 export const SKILL_EN: Record<Skill, string> = {
   listening: "Listening",
   speaking: "Speaking",
@@ -24,7 +17,6 @@ export const SKILL_EN: Record<Skill, string> = {
 
 // Vocabulary — tracked and counted, never a petal.
 export const VOCAB_SKILL = "vocabulary" as const;
-export const VOCAB_AR = "الأساس اللغوي";
 export const VOCAB_EN = "Building Blocks";
 
 // Every objective skill that can exist in the data (the 4 petals + vocabulary).

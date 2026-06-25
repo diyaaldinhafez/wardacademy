@@ -2,14 +2,6 @@
 
 export type Tone = "brand" | "neutral" | "success" | "warning" | "danger" | "info" | "apricot";
 
-export const LEAD_STATUS_AR: Record<string, string> = {
-  new: "جديد",
-  booked: "محجوز",
-  testing: "قيد الاختبار",
-  tested: "اكتمل الاختبار",
-  converted: "مُحوّل",
-  archived: "مؤرشف",
-};
 // English (admin is English by internal decision).
 export const LEAD_STATUS_EN: Record<string, string> = {
   new: "New",
