@@ -236,23 +236,13 @@
         "placementResult": "Placement result: Level {level}",
         "draft": "Draft",
         "approved": "Approved",
-        "approvePlan": "Approve plan — turns lessons into teachable objectives",
-        "syncPlan": "Sync curriculum — add new lessons as objectives",
-        "regenSummary": "Or generate with AI from a curriculum index (replaces the current plan)",
-        "regenHint": "Upload a CEFR curriculum index (image/PDF/text); AI reads it and builds a plan from it automatically.",
-        "regenHintApproved": " The current curriculum will be replaced — objectives that already carry progress are kept.",
-        "generateFromIndex": "Generate from index",
-        "emptyIntro": "Ward Curriculum (CEFR · A1→B1). Upload a curriculum index (image / PDF / text) and AI builds a plan from it automatically.",
-        "reading": "Reading and generating…",
-        "fromLevelSummary": "Or generate from a CEFR level (no index)",
-        "fromLevelHint": "AI generates a graded plan from the placement level ({level}).",
-        "generateFromLevel": "Generate from level",
+        "approvePlan": "Approve plan — lock it",
+        "regenSummary": "Rebuild from Ward Curriculum (replaces the current plan)",
+        "regenHint": "Rebuilds the plan from the Ward Curriculum at the confirmed entry level — replaces the current plan.",
+        "regenHintApproved": " Recorded progress is kept (it's tracked on the curriculum, not the plan).",
+        "emptyIntro": "Ward Curriculum (CEFR · A1→B1). The plan is built from the confirmed entry level.",
         "buildFromCatalog": "Build from Ward Curriculum",
-        "buildFromCatalogHint": "Aggregates the full plan deterministically from the Ward Curriculum at the confirmed entry level — every objective, in order, no AI.",
-        "manualSummary": "Or build a fully manual plan",
-        "manualHint": "Create the plan empty, then add its units and lessons by hand.",
-        "manualTitlePlaceholder": "Plan / curriculum title",
-        "createManual": "Create manual plan"
+        "buildFromCatalogHint": "Aggregates the full plan deterministically from the Ward Curriculum at the confirmed entry level — every objective, in order."
       },
       "curriculum": {
         "title": "Learning resources",
@@ -397,24 +387,8 @@
         "schedule": "Schedule session"
       }
     },
-    "planBuilder": {
-      "titlePlaceholder": "Plan / curriculum title",
-      "unitNamePlaceholder": "Unit name",
-      "moveUp": "Move up",
-      "moveDown": "Move down",
-      "deleteUnit": "Delete unit",
-      "lessonPlaceholder": "Lesson title / description",
-      "skillPlaceholder": "Skill…",
-      "levelPlaceholder": "Level",
-      "addLesson": "+ Add lesson",
-      "addUnit": "+ Add unit",
-      "save": "Save plan",
-      "saving": "Saving…",
-      "saved": "Saved"
-    },
     "errors": {
       "planNotFound": "Plan not found.",
-      "invalidPlanData": "Invalid plan data.",
       "assessmentDataMissing": "Assessment data is incomplete.",
       "noStudent": "No student selected.",
       "noCatalogObjectives": "No curriculum objectives for this level.",
@@ -433,10 +407,6 @@
       "enterHomeworkTitle": "Enter the homework title.",
       "attachHomeworkImage": "Attach the homework image from the book.",
       "createHomeworkFailed": "Couldn't create the homework.",
-      "uploadIndexFile": "Upload the index image or file.",
-      "fileTooBig15": "File is larger than 15 MB.",
-      "unsupportedFormat": "Unsupported format — use an image (JPG/PNG), PDF, or a text file.",
-      "enterPlanTitle": "Enter the plan title.",
       "completeRuleData": "Complete the rule's details.",
       "endAfterStart": "End time must be after the start time."
     }

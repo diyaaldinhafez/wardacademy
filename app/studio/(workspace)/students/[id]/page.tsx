@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  startPlacement, startPlan, startPlanFromCatalog, startPlanFromIndex, createManualPlan, approvePlan, draftReportWithAI, assignItem,
+  startPlacement, startPlanFromCatalog, approvePlan, draftReportWithAI, assignItem,
   addResource, removeResource, generateAssessmentTest, approveAssessment, removeAssessment,
   generateDraft, approveItem, rejectItem, updateReport, approveReport,
   addLessonSlot, removeLessonSlot, generateLessonSessions,
@@ -15,7 +15,7 @@ import {
 import SubmitButton from "@/components/studio/SubmitButton";
 import SessionScheduleForm from "@/components/studio/SessionScheduleForm";
 import StudentTabs, { type StudentTab } from "@/components/studio/StudentTabs";
-import PlanBuilder from "@/components/studio/PlanBuilder";
+import PlanView from "@/components/studio/PlanView";
 import ItemCard from "@/components/studio/ItemCard";
 import VideoCall from "@/components/VideoCall";
 import { Card, Badge, Avatar, AITrustBadge, Spark } from "@/components/ward/ui";
@@ -492,32 +492,25 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
               {plan.scope_label && <ScopeChip>{plan.scope_label}</ScopeChip>}
               {plan.milestone_label && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{plan.milestone_label}</span>}
             </div>
-            <PlanBuilder
-              planId={plan.id}
-              learnerId={id}
+            <PlanView
               title={plan.title}
               items={planItems}
               skills={SKILLS.map((s) => ({ value: s, label: tc(`skills.${s}`) }))}
             />
-            <form action={approvePlan}>
-              <input type="hidden" name="planId" value={plan.id} />
-              <SubmitButton pendingText="…" className={btn("success")}>
-                {plan.status === "draft" ? t("plan.approvePlan") : t("plan.syncPlan")}
-              </SubmitButton>
-            </form>
+            {plan.status === "draft" && (
+              <form action={approvePlan}>
+                <input type="hidden" name="planId" value={plan.id} />
+                <SubmitButton pendingText="…" className={btn("success")}>{t("plan.approvePlan")}</SubmitButton>
+              </form>
+            )}
             <details style={{ borderTop: "1px solid var(--ink-100)", paddingTop: 8 }}>
               <summary style={{ fontSize: 12, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>{t("plan.regenSummary")}</summary>
               <p style={{ fontSize: 11.5, color: "var(--text-muted)", margin: "8px 0", lineHeight: 1.6 }}>
                 {t("plan.regenHint")}{plan.status === "approved" && t("plan.regenHintApproved")}
               </p>
-              <form action={startPlanFromCatalog} style={{ marginBottom: 8 }}>
+              <form action={startPlanFromCatalog}>
                 <input type="hidden" name="learnerId" value={id} />
                 <SubmitButton pendingText="…" className={btn("secondary")}>{t("plan.buildFromCatalog")}</SubmitButton>
-              </form>
-              <form action={startPlanFromIndex} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
-                <input type="hidden" name="learnerId" value={id} />
-                <input name="index" type="file" required accept="image/*,.pdf,.txt,.md,.csv" className={ctl} style={{ width: "auto", flex: 1, minWidth: 180 }} />
-                <SubmitButton pendingText="…" className={btn("soft")}><Spark size={14} /> {t("plan.generateFromIndex")}</SubmitButton>
               </form>
             </details>
           </>
@@ -529,28 +522,6 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
               <p style={{ fontSize: 11.5, color: "var(--text-muted)", margin: "0 0 6px", lineHeight: 1.6 }}>{t("plan.buildFromCatalogHint")}</p>
               <SubmitButton pendingText="…" className={btn("primary")}>{t("plan.buildFromCatalog")}</SubmitButton>
             </form>
-            <form action={startPlanFromIndex} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
-              <input type="hidden" name="learnerId" value={id} />
-              <input name="index" type="file" required accept="image/*,.pdf,.txt,.md,.csv" className={ctl} style={{ width: "auto", flex: 1, minWidth: 180 }} />
-              <SubmitButton pendingText={t("plan.reading")} className={btn("soft")}><Spark size={14} /> {t("plan.generateFromIndex")}</SubmitButton>
-            </form>
-            <details>
-              <summary style={{ fontSize: 12, color: "var(--text-muted)", cursor: "pointer" }}>{t("plan.fromLevelSummary")}</summary>
-              <p style={{ fontSize: 11.5, color: "var(--text-muted)", margin: "8px 0", lineHeight: 1.6 }}>{t("plan.fromLevelHint", { level: pl?.suggested_level ?? "A1" })}</p>
-              <form action={startPlan} style={{ marginTop: 4 }}>
-                <input type="hidden" name="learnerId" value={id} />
-                <SubmitButton pendingText="…" className={btn("ghost")}><Spark size={14} /> {t("plan.generateFromLevel")}</SubmitButton>
-              </form>
-            </details>
-            <details>
-              <summary style={{ fontSize: 12, color: "var(--brand)", cursor: "pointer", fontWeight: 600 }}>{t("plan.manualSummary")}</summary>
-              <p style={{ fontSize: 11.5, color: "var(--text-muted)", margin: "8px 0", lineHeight: 1.6 }}>{t("plan.manualHint")}</p>
-              <form action={createManualPlan} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
-                <input type="hidden" name="learnerId" value={id} />
-                <input name="title" required placeholder={t("plan.manualTitlePlaceholder")} className={ctl} style={{ width: "auto", flex: 1, minWidth: 160 }} />
-                <SubmitButton pendingText="…" className={btn("secondary")}>{t("plan.createManual")}</SubmitButton>
-              </form>
-            </details>
           </div>
         )}
       </Card>
