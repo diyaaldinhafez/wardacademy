@@ -1,0 +1,510 @@
+{
+  "takenAt": "2026-06-25T14:48:08.076Z",
+  "counts": {
+    "study_plans": 5,
+    "objectives": 0
+  },
+  "study_plans": [
+    {
+      "id": "9a1bd808-a183-49ba-b234-f2adf428ef3e",
+      "tenant_id": "b0991b81-8017-4876-ae6b-df0c483059b1",
+      "learner_id": "2cce35e1-e469-47f9-b33a-9e32b0ec2f89",
+      "title": "منهاج وَرد — المستوى A2",
+      "level": "A2",
+      "items": [
+        {
+          "id": "bf1beb65-f7ba-4464-9410-1b8c8a66938d",
+          "unit": "الحياة المدرسيّة",
+          "level": "A2",
+          "skill": "vocabulary",
+          "description": "مفردات المواد والصفّ"
+        },
+        {
+          "id": "86e428c2-4425-470c-94ba-32f511502ada",
+          "unit": "الحياة المدرسيّة",
+          "level": "A2",
+          "skill": "listening",
+          "description": "الاستماع إلى جدولٍ دراسيّ"
+        },
+        {
+          "id": "ab18b599-2983-45b9-b97b-e52e787b4641",
+          "unit": "الحياة المدرسيّة",
+          "level": "A2",
+          "skill": "reading",
+          "description": "قراءة قواعد المدرسة"
+        },
+        {
+          "id": "bc84194f-d6fe-4a5b-9d61-b8d3bb96b076",
+          "unit": "الحياة المدرسيّة",
+          "level": "A2",
+          "skill": "writing",
+          "description": "كتابة عن مادّتك المفضّلة"
+        },
+        {
+          "id": "bc6b2441-06f2-44b5-ab30-f95262ac905a",
+          "unit": "هواياتي ووقت الفراغ",
+          "level": "A2",
+          "skill": "vocabulary",
+          "description": "مفردات الهوايات"
+        },
+        {
+          "id": "1187698a-a23e-44fa-836b-ae8535b691c1",
+          "unit": "هواياتي ووقت الفراغ",
+          "level": "A2",
+          "skill": "listening",
+          "description": "الاستماع إلى أشخاصٍ يصفون هواياتهم"
+        },
+        {
+          "id": "848ec93a-6093-48c9-8887-3d9f03ef97f2",
+          "unit": "هواياتي ووقت الفراغ",
+          "level": "A2",
+          "skill": "reading",
+          "description": "قراءة مقالٍ عن الرياضة"
+        },
+        {
+          "id": "ca56c44e-5cf3-4955-8fa6-aecdb535f2b3",
+          "unit": "هواياتي ووقت الفراغ",
+          "level": "A2",
+          "skill": "speaking",
+          "description": "التحدّث: هوايتك المفضّلة"
+        },
+        {
+          "id": "42889328-397c-4336-ab61-0ddbd410ca0d",
+          "unit": "التسوّق",
+          "level": "A2",
+          "skill": "vocabulary",
+          "description": "مفردات الملابس والأسعار"
+        },
+        {
+          "id": "f28063ff-b176-4830-88bb-6ba60af613bc",
+          "unit": "التسوّق",
+          "level": "A2",
+          "skill": "speaking",
+          "description": "التحدّث: في المتجر"
+        },
+        {
+          "id": "0bd6b80d-15fa-40a4-ab9d-ce37f27d0279",
+          "unit": "التسوّق",
+          "level": "A2",
+          "skill": "reading",
+          "description": "قراءة إعلاناتِ تخفيضات"
+        },
+        {
+          "id": "56f30c5c-2f98-45a4-ab1e-f74d0dcdeb83",
+          "unit": "التسوّق",
+          "level": "A2",
+          "skill": "writing",
+          "description": "كتابة قائمة تسوّق"
+        }
+      ],
+      "status": "approved",
+      "created_by": "7370323f-189e-4397-9804-4a573a74498d",
+      "approved_at": "2026-03-20T10:57:29.629Z",
+      "created_at": "2026-06-20T10:57:29.705Z",
+      "track": "cefr",
+      "scope_label": "A2 · منهاج وَرد",
+      "milestone_label": "تقييمٌ عند إتمام المنهاج"
+    },
+    {
+      "id": "57936630-8075-4020-807f-c5d88787d4bc",
+      "tenant_id": "b0991b81-8017-4876-ae6b-df0c483059b1",
+      "learner_id": "d96ff3e7-d436-45de-92c0-6c522af481b2",
+      "title": "منهاج وَرد — المستوى B1",
+      "level": "B1",
+      "items": [
+        {
+          "id": "e9601669-fbd9-4e36-88e1-61bb4d6bfedd",
+          "unit": "السفر والعُطَل",
+          "level": "B1",
+          "skill": "vocabulary",
+          "description": "مفردات السفر والمطار"
+        },
+        {
+          "id": "68f4aac9-a40c-45fa-98f8-5064560e2c89",
+          "unit": "السفر والعُطَل",
+          "level": "B1",
+          "skill": "writing",
+          "description": "الزمن الماضي: عُطلتي الأخيرة"
+        },
+        {
+          "id": "e1b64bf5-a558-439e-9b4a-b651e65f85a0",
+          "unit": "السفر والعُطَل",
+          "level": "B1",
+          "skill": "listening",
+          "description": "الاستماع إلى إعلانات السفر"
+        },
+        {
+          "id": "052a5f67-12d3-4aea-85fa-907a45d53f1b",
+          "unit": "السفر والعُطَل",
+          "level": "B1",
+          "skill": "speaking",
+          "description": "التحدّث: التخطيط لرحلة"
+        },
+        {
+          "id": "3dee1b8a-5a85-462c-b8b9-7d469b408cda",
+          "unit": "الطعام والمطاعم",
+          "level": "B1",
+          "skill": "vocabulary",
+          "description": "مفردات الطعام والمقادير"
+        },
+        {
+          "id": "b0721ed5-972a-4f85-9a8f-545184b637ea",
+          "unit": "الطعام والمطاعم",
+          "level": "B1",
+          "skill": "speaking",
+          "description": "التحدّث: الطلب في مطعم"
+        },
+        {
+          "id": "9de7ac85-ddab-4662-b819-41fab1b0e83e",
+          "unit": "الطعام والمطاعم",
+          "level": "B1",
+          "skill": "reading",
+          "description": "قراءة قائمة طعامٍ ووصفة"
+        },
+        {
+          "id": "0c726e1e-2452-4d08-b429-354a2c9c36ee",
+          "unit": "الطعام والمطاعم",
+          "level": "B1",
+          "skill": "writing",
+          "description": "كتابة وصفةٍ بسيطة"
+        },
+        {
+          "id": "e5dd5d09-3fd5-468a-b08b-5160c90d08ff",
+          "unit": "خططي المستقبليّة",
+          "level": "B1",
+          "skill": "writing",
+          "description": "زمن المستقبل (will / going to)"
+        },
+        {
+          "id": "7c093932-ec72-4938-80f4-f58501acbcec",
+          "unit": "خططي المستقبليّة",
+          "level": "B1",
+          "skill": "speaking",
+          "description": "التحدّث: أحلامي ووظيفتي"
+        },
+        {
+          "id": "527fa21e-db0b-454a-b10a-c3e276552c9e",
+          "unit": "خططي المستقبليّة",
+          "level": "B1",
+          "skill": "listening",
+          "description": "الاستماع إلى أهدافِ أشخاص"
+        },
+        {
+          "id": "88292a68-ae54-4cfc-95dc-e9241a7132b6",
+          "unit": "خططي المستقبليّة",
+          "level": "B1",
+          "skill": "reading",
+          "description": "قراءة مقالٍ عن المهن"
+        }
+      ],
+      "status": "approved",
+      "created_by": "7370323f-189e-4397-9804-4a573a74498d",
+      "approved_at": "2026-03-20T10:57:34.175Z",
+      "created_at": "2026-06-20T10:57:34.273Z",
+      "track": "cefr",
+      "scope_label": "B1 · منهاج وَرد",
+      "milestone_label": "تقييمٌ عند إتمام المنهاج"
+    },
+    {
+      "id": "6c422104-1b46-46d5-9a58-abf15753f5fa",
+      "tenant_id": "b0991b81-8017-4876-ae6b-df0c483059b1",
+      "learner_id": "f7bcbb06-f11c-4d4d-a655-98cae00f67f8",
+      "title": "منهاج وَرد — المستوى A2",
+      "level": "A2",
+      "items": [
+        {
+          "id": "4239903b-f268-419b-80cc-98e1cbb390c1",
+          "unit": "هواياتي ووقت الفراغ",
+          "level": "A2",
+          "skill": "vocabulary",
+          "description": "مفردات الهوايات"
+        },
+        {
+          "id": "5f5309e2-39f9-4230-9214-1d62fa40f716",
+          "unit": "هواياتي ووقت الفراغ",
+          "level": "A2",
+          "skill": "listening",
+          "description": "الاستماع إلى أشخاصٍ يصفون هواياتهم"
+        },
+        {
+          "id": "4a3b348e-f744-4cbe-a4d4-ecd2b5f13e77",
+          "unit": "هواياتي ووقت الفراغ",
+          "level": "A2",
+          "skill": "reading",
+          "description": "قراءة مقالٍ عن الرياضة"
+        },
+        {
+          "id": "14f6fd2c-d01e-4a7d-ad2c-d94a046e1aad",
+          "unit": "هواياتي ووقت الفراغ",
+          "level": "A2",
+          "skill": "speaking",
+          "description": "التحدّث: هوايتك المفضّلة"
+        },
+        {
+          "id": "6c0650c3-8d67-40f2-a98d-5b0a9b1d119b",
+          "unit": "الروتين اليوميّ",
+          "level": "A2",
+          "skill": "vocabulary",
+          "description": "المضارع البسيط للعادات"
+        },
+        {
+          "id": "2fc2366d-2fd2-4ba4-ad56-cf5c0d8d79bf",
+          "unit": "الروتين اليوميّ",
+          "level": "A2",
+          "skill": "listening",
+          "description": "الاستماع إلى وصف يومٍ دراسيّ"
+        },
+        {
+          "id": "9564bc8c-2722-4ff4-a798-6ab45e051fac",
+          "unit": "الروتين اليوميّ",
+          "level": "A2",
+          "skill": "reading",
+          "description": "قراءة فقرةٍ عن روتينٍ صباحيّ"
+        },
+        {
+          "id": "a1daf96b-5a51-44c4-881c-f0a00daa2c80",
+          "unit": "الروتين اليوميّ",
+          "level": "A2",
+          "skill": "writing",
+          "description": "كتابة فقرةٍ عن يومك"
+        },
+        {
+          "id": "3aaeb281-8e3d-4dc8-aed7-d4227c15d635",
+          "unit": "عائلتي وأصدقائي",
+          "level": "A2",
+          "skill": "vocabulary",
+          "description": "مفردات أفراد العائلة"
+        },
+        {
+          "id": "873d8ea9-e349-4c5d-99a4-b209b459ede0",
+          "unit": "عائلتي وأصدقائي",
+          "level": "A2",
+          "skill": "speaking",
+          "description": "التحدّث: تقديم عائلتك"
+        },
+        {
+          "id": "2811eb61-f119-42f9-90b2-64669e663b32",
+          "unit": "عائلتي وأصدقائي",
+          "level": "A2",
+          "skill": "listening",
+          "description": "الاستماع إلى حوارٍ بين صديقين"
+        },
+        {
+          "id": "2fa1f11f-6dfa-464e-88f2-00d35ba4b8f5",
+          "unit": "عائلتي وأصدقائي",
+          "level": "A2",
+          "skill": "reading",
+          "description": "قراءة رسالةٍ من صديق"
+        }
+      ],
+      "status": "approved",
+      "created_by": "7370323f-189e-4397-9804-4a573a74498d",
+      "approved_at": "2026-03-20T10:57:39.626Z",
+      "created_at": "2026-06-20T10:57:39.761Z",
+      "track": "cefr",
+      "scope_label": "A2 · منهاج وَرد",
+      "milestone_label": "تقييمٌ عند إتمام المنهاج"
+    },
+    {
+      "id": "a72dae60-14b1-4a5d-9493-780cb86388d1",
+      "tenant_id": "b0991b81-8017-4876-ae6b-df0c483059b1",
+      "learner_id": "5dde9a66-7588-4059-a549-a375ef5f5931",
+      "title": "منهاج وَرد — المستوى A2",
+      "level": "A2",
+      "items": [
+        {
+          "id": "4ed21c62-3bc0-4313-9104-8dd6fa5a6f51",
+          "unit": "الروتين اليوميّ",
+          "level": "A2",
+          "skill": "vocabulary",
+          "description": "المضارع البسيط للعادات"
+        },
+        {
+          "id": "d68de147-76b7-4a1e-af1e-323c516979c4",
+          "unit": "الروتين اليوميّ",
+          "level": "A2",
+          "skill": "listening",
+          "description": "الاستماع إلى وصف يومٍ دراسيّ"
+        },
+        {
+          "id": "ea9e642c-db70-4d4d-9cbc-2b94339f1f83",
+          "unit": "الروتين اليوميّ",
+          "level": "A2",
+          "skill": "reading",
+          "description": "قراءة فقرةٍ عن روتينٍ صباحيّ"
+        },
+        {
+          "id": "f34df0da-19fa-4d7a-bbc9-dc4c0f8597b5",
+          "unit": "الروتين اليوميّ",
+          "level": "A2",
+          "skill": "writing",
+          "description": "كتابة فقرةٍ عن يومك"
+        },
+        {
+          "id": "d4ec429c-f4ab-4435-84db-9e1240d95f9d",
+          "unit": "عائلتي وأصدقائي",
+          "level": "A2",
+          "skill": "vocabulary",
+          "description": "مفردات أفراد العائلة"
+        },
+        {
+          "id": "1d7e4e5b-e426-4c21-8aa9-90cd1b0f3764",
+          "unit": "عائلتي وأصدقائي",
+          "level": "A2",
+          "skill": "speaking",
+          "description": "التحدّث: تقديم عائلتك"
+        },
+        {
+          "id": "b8467331-651a-4b4e-9f7b-3e0dcf0e3694",
+          "unit": "عائلتي وأصدقائي",
+          "level": "A2",
+          "skill": "listening",
+          "description": "الاستماع إلى حوارٍ بين صديقين"
+        },
+        {
+          "id": "8125cc68-1563-4f42-8086-fb496fa17e78",
+          "unit": "عائلتي وأصدقائي",
+          "level": "A2",
+          "skill": "reading",
+          "description": "قراءة رسالةٍ من صديق"
+        },
+        {
+          "id": "44ee603d-5136-4e20-af01-b154de0b9b44",
+          "unit": "في المدينة",
+          "level": "A2",
+          "skill": "vocabulary",
+          "description": "مفردات الأماكن والاتّجاهات"
+        },
+        {
+          "id": "eaf21a01-943b-4177-818c-5ffd9a3542ff",
+          "unit": "في المدينة",
+          "level": "A2",
+          "skill": "speaking",
+          "description": "التحدّث: السؤال عن الطريق"
+        },
+        {
+          "id": "a24da86e-012a-4948-8e30-bf34f23aafd0",
+          "unit": "في المدينة",
+          "level": "A2",
+          "skill": "listening",
+          "description": "الاستماع إلى إعلاناتٍ في المدينة"
+        },
+        {
+          "id": "f2c05f20-84b9-4ee9-bc13-76e5003cfa92",
+          "unit": "في المدينة",
+          "level": "A2",
+          "skill": "writing",
+          "description": "كتابة بطاقةٍ بريديةٍ عن مدينتك"
+        }
+      ],
+      "status": "approved",
+      "created_by": "7370323f-189e-4397-9804-4a573a74498d",
+      "approved_at": "2026-03-20T10:57:19.098Z",
+      "created_at": "2026-06-20T10:57:19.176Z",
+      "track": "cefr",
+      "scope_label": "A2 · منهاج وَرد",
+      "milestone_label": "تقييمٌ عند إتمام المنهاج"
+    },
+    {
+      "id": "26951fd8-d451-49e4-af52-e448c9baaa90",
+      "tenant_id": "b0991b81-8017-4876-ae6b-df0c483059b1",
+      "learner_id": "695c4dd8-42aa-4fae-b7fb-b7b445164742",
+      "title": "منهاج وَرد — المستوى B1",
+      "level": "B1",
+      "items": [
+        {
+          "id": "d23ec5a3-a7ee-48ef-8181-651e584f3697",
+          "unit": "الطعام والمطاعم",
+          "level": "B1",
+          "skill": "vocabulary",
+          "description": "مفردات الطعام والمقادير"
+        },
+        {
+          "id": "a905a463-d3ad-4487-b8cb-d65c7f2356f2",
+          "unit": "الطعام والمطاعم",
+          "level": "B1",
+          "skill": "speaking",
+          "description": "التحدّث: الطلب في مطعم"
+        },
+        {
+          "id": "27b0f826-77e9-4325-a742-37ebe9b1dc9a",
+          "unit": "الطعام والمطاعم",
+          "level": "B1",
+          "skill": "reading",
+          "description": "قراءة قائمة طعامٍ ووصفة"
+        },
+        {
+          "id": "9b2f0d78-4187-48d6-a594-9b3050ef91b2",
+          "unit": "الطعام والمطاعم",
+          "level": "B1",
+          "skill": "writing",
+          "description": "كتابة وصفةٍ بسيطة"
+        },
+        {
+          "id": "e44091b4-ee30-4a7e-8bbd-257382dbb628",
+          "unit": "السفر والعُطَل",
+          "level": "B1",
+          "skill": "vocabulary",
+          "description": "مفردات السفر والمطار"
+        },
+        {
+          "id": "0db93bc8-d7ba-4db0-b1b2-729d39e764b7",
+          "unit": "السفر والعُطَل",
+          "level": "B1",
+          "skill": "writing",
+          "description": "الزمن الماضي: عُطلتي الأخيرة"
+        },
+        {
+          "id": "533bfbd1-9788-48c6-b531-a5de299334cb",
+          "unit": "السفر والعُطَل",
+          "level": "B1",
+          "skill": "listening",
+          "description": "الاستماع إلى إعلانات السفر"
+        },
+        {
+          "id": "660573be-9f62-489e-a827-202857ec437d",
+          "unit": "السفر والعُطَل",
+          "level": "B1",
+          "skill": "speaking",
+          "description": "التحدّث: التخطيط لرحلة"
+        },
+        {
+          "id": "0258cbe7-7299-4d03-b916-29cb4fcb5f93",
+          "unit": "خططي المستقبليّة",
+          "level": "B1",
+          "skill": "writing",
+          "description": "زمن المستقبل (will / going to)"
+        },
+        {
+          "id": "c8af6188-7cee-4d5e-af96-b088b0d0b66a",
+          "unit": "خططي المستقبليّة",
+          "level": "B1",
+          "skill": "speaking",
+          "description": "التحدّث: أحلامي ووظيفتي"
+        },
+        {
+          "id": "65fc623a-48fc-4267-941c-fb3d575070e5",
+          "unit": "خططي المستقبليّة",
+          "level": "B1",
+          "skill": "listening",
+          "description": "الاستماع إلى أهدافِ أشخاص"
+        },
+        {
+          "id": "bb88efb3-6a85-40ca-8943-8b4674073d23",
+          "unit": "خططي المستقبليّة",
+          "level": "B1",
+          "skill": "reading",
+          "description": "قراءة مقالٍ عن المهن"
+        }
+      ],
+      "status": "approved",
+      "created_by": "7370323f-189e-4397-9804-4a573a74498d",
+      "approved_at": "2026-03-20T10:57:25.549Z",
+      "created_at": "2026-06-20T10:57:25.626Z",
+      "track": "cefr",
+      "scope_label": "B1 · منهاج وَرد",
+      "milestone_label": "تقييمٌ عند إتمام المنهاج"
+    }
+  ],
+  "objectives": []
+}

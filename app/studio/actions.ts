@@ -58,16 +58,18 @@ export async function generateDraft(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/studio/login");
 
-  // RLS guarantees the objective is in the instructor's tenant.
+  // Homework targets a Ward Curriculum objective (the catalog is the single source).
+  const { data: profile } = await supabase.from("profiles").select("tenant_id").eq("id", user.id).single();
+  if (!profile) throw new Error("Objective not found");
   const { data: obj, error } = await supabase
-    .from("objectives")
-    .select("id, tenant_id, description, track, level")
-    .eq("id", objectiveId)
+    .from("curriculum_objectives")
+    .select("objective_id, descriptor_ar, skill, level")
+    .eq("objective_id", objectiveId)
     .single();
   if (error || !obj) throw new Error("Objective not found");
 
   const gen = await generateItem({
-    objective: { description: obj.description, track: obj.track, level: obj.level },
+    objective: { description: obj.descriptor_ar, track: "cefr", level: obj.level },
     format,
     difficulty,
   });
@@ -82,8 +84,8 @@ export async function generateDraft(formData: FormData) {
   const { data: item, error: insErr } = await supabase
     .from("items")
     .insert({
-      tenant_id: obj.tenant_id,
-      objective_id: obj.id,
+      tenant_id: profile.tenant_id,
+      objective_id: obj.objective_id,
       format,
       difficulty,
       prompt: gen.prompt,
@@ -99,7 +101,7 @@ export async function generateDraft(formData: FormData) {
 
   const { error: keyErr } = await supabase.from("item_keys").insert({
     item_id: item.id,
-    tenant_id: obj.tenant_id,
+    tenant_id: profile.tenant_id,
     answer: answer ?? null,
     explanation: typeof explanation === "string" ? explanation : null,
     rubric: typeof rubric === "string" ? rubric : null,
@@ -431,42 +433,15 @@ const PLAN_SKILLS = ["listening", "speaking", "reading", "writing", "vocabulary"
  */
 export async function approvePlan(formData: FormData) {
   const planId = String(formData.get("planId") ?? "");
-  const { supabase, user } = await instructorCtx();
+  const { supabase } = await instructorCtx();
 
-  const { data: plan } = await supabase.from("study_plans").select("tenant_id, items, status, track").eq("id", planId).single();
+  const { data: plan } = await supabase.from("study_plans").select("status").eq("id", planId).single();
   if (!plan) throw new Error(await studioErr("planNotFound"));
 
-  type PlanItem = { id?: string; description?: string; level?: string | null; skill?: string | null; unit?: string | null };
-  const items = ((plan.items as PlanItem[]) ?? []).filter((it) => it && it.id && String(it.description ?? "").trim());
-  const currentIds = new Set(items.map((it) => it.id as string));
-
-  const { data: existingObjs } = await supabase.from("objectives").select("id, plan_lesson_id").eq("plan_id", planId);
-  const materialized = new Set((existingObjs ?? []).map((o: { plan_lesson_id: string | null }) => o.plan_lesson_id));
-
-  // Create objectives for lessons that don't have one yet.
-  const toCreate = items.filter((it) => !materialized.has(it.id as string));
-  if (toCreate.length) {
-    const rows = toCreate.map((it) => ({
-      tenant_id: plan.tenant_id,
-      track: "cefr",
-      level: it.level ?? null,
-      description: String(it.description).trim(),
-      skill: it.skill && PLAN_SKILLS.includes(it.skill) ? it.skill : null,
-      unit: it.unit ?? null,
-      plan_id: planId,
-      plan_lesson_id: it.id,
-      created_by: user.id,
-    }));
-    const { error: oErr } = await supabase.from("objectives").insert(rows);
-    if (oErr) throw new Error(oErr.message);
-  }
-
-  // Drop objectives whose lesson was removed from the plan.
-  const orphanIds = (existingObjs ?? [])
-    .filter((o: { id: string; plan_lesson_id: string | null }) => o.plan_lesson_id && !currentIds.has(o.plan_lesson_id))
-    .map((o: { id: string }) => o.id);
-  if (orphanIds.length) await supabase.from("objectives").delete().in("id", orphanIds);
-
+  // The plan lives in study_plans.items (catalog-sourced: id = curriculum
+  // objective_id). Progress is tracked independently against curriculum_objectives
+  // + objective_progress — no materialization into the old objectives table.
+  // Approve = lock the plan (gate: preview → approve → locked).
   if (plan.status !== "approved") {
     const { error } = await supabase.from("study_plans").update({ status: "approved", approved_at: new Date().toISOString() }).eq("id", planId);
     if (error) throw new Error(error.message);

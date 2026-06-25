@@ -23,6 +23,7 @@ import { SKILLS } from "@/lib/skills";
 import { getTranslations } from "next-intl/server";
 import { UnitBloom, FlowerProgress, ScopeChip, VocabCounter } from "@/components/bloom/Bloom";
 import { fetchStudentBloom } from "@/lib/progress/bloom";
+import { aggregatePlanItems } from "@/lib/curriculum/aggregatePlan";
 import { FORMAT_LABELS, ITEM_FORMATS, DIFFICULTIES } from "@/lib/items";
 import { WEEKDAY_EN } from "@/lib/availability";
 import { fmtUTC } from "@/lib/datetime";
@@ -116,11 +117,12 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   // This learner's own AI homework drafts (await teacher approval).
   const { data: draftItems } = await supabase
     .from("items")
-    .select("id, prompt, content, format, difficulty, status, item_keys(answer, explanation, rubric), objectives(description, level)")
+    .select("id, prompt, content, format, difficulty, status, item_keys(answer, explanation, rubric), curriculum_objectives(descriptor_ar, level)")
     .eq("status", "draft").eq("target_learner_id", id)
     .order("created_at", { ascending: false });
-  // The tenant's objectives — the bank the teacher generates homework from.
-  const { data: objectives } = await supabase.from("objectives").select("id, description, level").order("created_at", { ascending: false });
+  // The Ward Curriculum objectives for the plan's level — the bank the teacher
+  // generates homework from (catalog only; works for any approved plan).
+  const objectives = plan?.level ? await aggregatePlanItems(supabase, plan.level) : [];
   const { data: resources } = await supabase.from("learning_resources").select("id, title, note, file_path, file_name, mime_type, size_bytes, created_at").eq("learner_id", id).order("created_at", { ascending: false });
   // Short-lived signed download URLs for the private resource files.
   const resourceUrls = new Map<string, string>();
