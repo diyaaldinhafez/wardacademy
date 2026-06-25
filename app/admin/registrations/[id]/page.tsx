@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   generateLeadTestAction,
   approveLeadTestAction,
+  confirmPlacementLevel,
   resendConfirmation,
   generateIntroReportAction,
   updateIntroReport,
@@ -82,7 +83,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
   const { data: test } = await supabase
     .from("lead_tests")
-    .select("id, status, share_token, suggested_level")
+    .select("id, status, share_token, suggested_level, confirmed_level")
     .eq("lead_id", id)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -292,6 +293,24 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             <p style={{ fontSize: 13.5, color: "var(--text-body)" }}>
               {t("testDone")} <span style={{ fontWeight: 700, color: "var(--leaf-700)" }}>{test.suggested_level ?? "—"}</span>
             </p>
+            {/* Confirm/override the entry level — the human decision, kept separate from the machine's suggested_level. */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: 10, borderRadius: 10, background: "var(--surface-soft)" }}>
+              <label style={flabel}>{t("confirmLevelTitle")}</label>
+              <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{t("confirmLevelHint")}</p>
+              {test.confirmed_level && (
+                <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--leaf-700)" }}>{t("levelConfirmed", { level: test.confirmed_level })}</span>
+              )}
+              {lead.status === "converted" ? (
+                <p style={{ fontSize: 12, fontStyle: "italic", color: "var(--text-muted)", margin: 0 }}>⚠ {t("levelLockedNotice")}</p>
+              ) : (
+                <form action={confirmPlacementLevel} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                  <input type="hidden" name="testId" value={test.id} />
+                  <input type="hidden" name="leadId" value={lead.id} />
+                  <Pills name="level" type="radio" options={[{ value: "A1", label: "A1" }, { value: "A2", label: "A2" }, { value: "B1", label: "B1" }]} selected={test.confirmed_level ?? test.suggested_level ?? undefined} />
+                  <SubmitButton pendingText="…" className={btn("success")}>{t("confirmLevelBtn")}</SubmitButton>
+                </form>
+              )}
+            </div>
             <ol style={{ display: "flex", flexDirection: "column", gap: 6, paddingInlineStart: 18, listStyle: "decimal" }}>
               {qs.map((q, i) => (
                 <li key={i} style={{ fontSize: 13 }}>

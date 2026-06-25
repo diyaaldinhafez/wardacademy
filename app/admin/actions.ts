@@ -129,6 +129,23 @@ export async function approveLeadTestAction(formData: FormData) {
 }
 
 /**
+ * Confirm or override the placement entry level (the human decision), kept
+ * separate from suggested_level (the machine result — never overwritten). Runs
+ * at the completed-test step in the registration funnel; provisionAccounts then
+ * carries confirmed_level over to placement_tests for the student side.
+ */
+export async function confirmPlacementLevel(formData: FormData) {
+  const testId = String(formData.get("testId") ?? "");
+  const leadId = String(formData.get("leadId") ?? "");
+  const level = String(formData.get("level") ?? "");
+  const { supabase } = await assertAdmin();
+  if (!["A1", "A2", "B1"].includes(level)) throw new Error(await adminErr("invalidLevel"));
+  const { error } = await supabase.from("lead_tests").update({ confirmed_level: level }).eq("id", testId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/registrations/${leadId}`);
+}
+
+/**
  * Provision real accounts from a lead: creates the guardian + the child's login
  * (no password), links them with consent, carries over the placement level,
  * assigns the teacher, and returns set-password invite links to share.
@@ -172,14 +189,14 @@ export async function provisionAccounts(
   // carry over placement level
   const { data: lt } = await admin
     .from("lead_tests")
-    .select("suggested_level")
+    .select("suggested_level, confirmed_level")
     .eq("lead_id", leadId)
     .eq("status", "completed")
     .order("completed_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (lt?.suggested_level) {
-    await admin.from("placement_tests").insert({ tenant_id: lead.tenant_id, learner_id: s.user.id, status: "completed", suggested_level: lt.suggested_level, completed_at: new Date().toISOString() });
+    await admin.from("placement_tests").insert({ tenant_id: lead.tenant_id, learner_id: s.user.id, status: "completed", suggested_level: lt.suggested_level, confirmed_level: lt.confirmed_level ?? null, completed_at: new Date().toISOString() });
   }
 
   // Set-password (invite) links — emailed to the guardian; both returned for WhatsApp.

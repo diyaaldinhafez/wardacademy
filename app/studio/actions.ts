@@ -351,13 +351,14 @@ export async function startPlan(formData: FormData) {
   const { data: learner } = await supabase.from("profiles").select("full_name").eq("id", learnerId).single();
   const { data: placement } = await supabase
     .from("placement_tests")
-    .select("suggested_level")
+    .select("suggested_level, confirmed_level")
     .eq("learner_id", learnerId)
     .eq("status", "completed")
     .order("completed_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  const level = placement?.suggested_level ?? "A1";
+  // The human-confirmed level wins; the machine's suggestion is the fallback.
+  const level = placement?.confirmed_level ?? placement?.suggested_level ?? "A1";
 
   const plan = await generatePlan({ level, learnerName: learner?.full_name ?? "the student" });
 
@@ -841,12 +842,12 @@ export async function generateDiagnosticReport(formData: FormData) {
 
   let placementLevel: string | null = null;
   if (lead) {
-    const { data: lt } = await admin.from("lead_tests").select("suggested_level").eq("lead_id", lead.id).eq("status", "completed").order("completed_at", { ascending: false }).limit(1).maybeSingle();
-    placementLevel = lt?.suggested_level ?? null;
+    const { data: lt } = await admin.from("lead_tests").select("suggested_level, confirmed_level").eq("lead_id", lead.id).eq("status", "completed").order("completed_at", { ascending: false }).limit(1).maybeSingle();
+    placementLevel = lt?.confirmed_level ?? lt?.suggested_level ?? null;
   }
   if (!placementLevel) {
-    const { data: pt } = await admin.from("placement_tests").select("suggested_level").eq("learner_id", learnerId).eq("status", "completed").order("created_at", { ascending: false }).limit(1).maybeSingle();
-    placementLevel = pt?.suggested_level ?? null;
+    const { data: pt } = await admin.from("placement_tests").select("suggested_level, confirmed_level").eq("learner_id", learnerId).eq("status", "completed").order("created_at", { ascending: false }).limit(1).maybeSingle();
+    placementLevel = pt?.confirmed_level ?? pt?.suggested_level ?? null;
   }
 
   const report = await generateDiagnostic({
@@ -914,8 +915,8 @@ export async function startPlanFromIndex(formData: FormData) {
 
   const plan = await generatePlanFromIndex({ source });
 
-  const { data: placement } = await supabase.from("placement_tests").select("suggested_level").eq("learner_id", learnerId).eq("status", "completed").order("completed_at", { ascending: false }).limit(1).maybeSingle();
-  const level = placement?.suggested_level ?? "A1";
+  const { data: placement } = await supabase.from("placement_tests").select("suggested_level, confirmed_level").eq("learner_id", learnerId).eq("status", "completed").order("completed_at", { ascending: false }).limit(1).maybeSingle();
+  const level = placement?.confirmed_level ?? placement?.suggested_level ?? "A1";
 
   await clearLearnerPlans(supabase, learnerId);
   const { error } = await supabase.from("study_plans").insert({
@@ -941,8 +942,8 @@ export async function createManualPlan(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   if (!learnerId || !title) throw new Error(await studioErr("enterPlanTitle"));
   const { supabase, user, tenantId } = await instructorCtx();
-  const { data: placement } = await supabase.from("placement_tests").select("suggested_level").eq("learner_id", learnerId).eq("status", "completed").order("completed_at", { ascending: false }).limit(1).maybeSingle();
-  const level = placement?.suggested_level ?? "—";
+  const { data: placement } = await supabase.from("placement_tests").select("suggested_level, confirmed_level").eq("learner_id", learnerId).eq("status", "completed").order("completed_at", { ascending: false }).limit(1).maybeSingle();
+  const level = placement?.confirmed_level ?? placement?.suggested_level ?? "—";
   await clearLearnerPlans(supabase, learnerId);
   const { error } = await supabase.from("study_plans").insert({
     tenant_id: tenantId, learner_id: learnerId, title, level, items: [], status: "draft",

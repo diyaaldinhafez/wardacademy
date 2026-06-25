@@ -920,6 +920,11 @@
       "testReady": "Test ready to share:",
       "shareWa": "Share via WhatsApp",
       "testDone": "Test complete · suggested level:",
+      "confirmLevelTitle": "Confirm entry level",
+      "confirmLevelHint": "Confirm the suggested level or override it — this is the CEFR level the plan will start from.",
+      "confirmLevelBtn": "Confirm level",
+      "levelConfirmed": "Confirmed: {level}",
+      "levelLockedNotice": "Accounts are already provisioned — re-confirming here won't sync to the student (post-provision sync isn't supported).",
       "studentAnswer": "Student's answer:",
       "correctAnswer": "Correct:",
       "introReportTitle": "Intro session report",
@@ -1114,6 +1119,7 @@
       "invalidInvoiceStatus": "Invalid invoice status.",
       "invalidRequestType": "Invalid request type.",
       "invalidStatus": "Invalid status.",
+      "invalidLevel": "Invalid level.",
       "completeSlotData": "Complete the slot's details."
     }
   }
