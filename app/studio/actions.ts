@@ -322,15 +322,14 @@ export async function startPlacement(formData: FormData) {
 }
 
 /**
- * Clear a learner's existing plan(s) before (re)creating one — so switching plan
- * methods (AI / manual) never leaves orphans. (Progress now lives in the new
- * catalog model — objective_progress — so plan objectives are pruned directly.)
+ * Clear a learner's existing plan(s) before (re)creating one — so rebuilding from
+ * the catalog never leaves orphans. (Progress lives in the catalog model —
+ * objective_progress, keyed by curriculum objective_id — independent of the plan.)
  */
 async function clearLearnerPlans(supabase: Awaited<ReturnType<typeof createClient>>, learnerId: string) {
   const { data: plans } = await supabase.from("study_plans").select("id").eq("learner_id", learnerId);
   const ids = (plans ?? []).map((p: { id: string }) => p.id);
   if (!ids.length) return;
-  await supabase.from("objectives").delete().in("plan_id", ids);
   await supabase.from("study_plans").delete().in("id", ids);
 }
 
