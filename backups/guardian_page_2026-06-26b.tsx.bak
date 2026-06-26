@@ -76,6 +76,10 @@ export default async function GuardianPage() {
     <main className="mx-auto max-w-2xl px-5 py-10">
       <WorkspaceHeader title={tg("title")} subtitle={profile?.full_name ?? user.email ?? ""} rightSlot={<LocaleSwitcher />} />
 
+      <section className={`mb-8 ${card}`}>
+        <p className="text-sm text-ink-soft">{tg("addChildRedirect")}</p>
+      </section>
+
       {(children ?? []).length === 0 && <p className="text-sm text-ink-soft">{tg("noChildren")}</p>}
 
       <ul className="flex flex-col gap-4">

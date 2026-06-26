@@ -765,7 +765,6 @@
   },
   "guardian": {
     "title": "Your children",
-    "addChildRedirect": "To register a new child, our admissions team handles it after the placement test and intro session.",
     "noChildren": "No children linked yet.",
     "childFallback": "your child",
     "consentGranted": "Consent granted",
