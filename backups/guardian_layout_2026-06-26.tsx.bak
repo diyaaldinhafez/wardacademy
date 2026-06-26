@@ -1,16 +1,15 @@
 import type { Metadata } from "next";
-import { guardianEffectiveLocale } from "@/lib/parentLocale";
+import { getLocale } from "next-intl/server";
 
 export const metadata: Metadata = {
   title: "Ward Academy — Guardian",
   robots: { index: false, follow: false },
 };
 
-// First bilingual surface: direction follows the EFFECTIVE locale — an explicit
-// switcher cookie, else the guardian's saved comms_locale, else 'ar'. A single
-// container owns the direction — children inherit.
+// First bilingual surface: direction follows the active locale (English-first,
+// flips to RTL for ع). A single container owns the direction — children inherit.
 export default async function GuardianLayout({ children }: { children: React.ReactNode }) {
-  const locale = await guardianEffectiveLocale();
+  const locale = await getLocale();
   return (
     <div dir={locale === "ar" ? "rtl" : "ltr"} lang={locale} className="min-h-screen bg-cream text-ink">
       {children}

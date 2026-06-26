@@ -8,7 +8,6 @@ import LocaleSwitcher from "@/components/LocaleSwitcher";
 import { FlowerProgress, ScopeChip, UnitBloom } from "@/components/bloom/Bloom";
 import { fetchStudentBlooms } from "@/lib/progress/bloom";
 import { fmtUTC } from "@/lib/datetime";
-import { guardianEffectiveLocale } from "@/lib/parentLocale";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const first = (x: any) => (Array.isArray(x) ? x[0] : x) ?? {};
@@ -17,10 +16,8 @@ const SKILL_KEYS = ["listening", "speaking", "reading", "writing"];
 
 export default async function GuardianPage() {
   const supabase = await createClient();
-  // Effective locale: switcher cookie → guardian's saved comms_locale → 'ar'.
-  const locale = await guardianEffectiveLocale();
-  const tg = await getTranslations({ locale, namespace: "guardian" });
-  const tSkill = await getTranslations({ locale, namespace: "common.skills" });
+  const tg = await getTranslations("guardian");
+  const tSkill = await getTranslations("common.skills");
   // Petal/skill labels follow the active locale (UI labels, not authored content).
   const skillLabel = (sk: string) =>
     SKILL_KEYS.includes(sk) ? tSkill(sk) : sk;
