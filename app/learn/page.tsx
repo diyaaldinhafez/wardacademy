@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { type BloomStage } from "@/lib/skills";
-import { FlowerProgress, UnitBloom as BloomUnit, ScopeChip, VocabCounter } from "@/components/bloom/Bloom";
+import { FlowerProgress, UnitBloom as BloomUnit, ScopeChip } from "@/components/bloom/Bloom";
 import { fetchStudentBloom } from "@/lib/progress/bloom";
 import { submitPlacement, submitManualHomework, submitAssessment } from "./actions";
 import AnswerForm from "@/components/learn/AnswerForm";
@@ -129,7 +129,6 @@ export default async function LearnPage() {
   }
 
   // Unit hero + skill flower + garden path — all from the one shared roll-up.
-  const vocabCount = 0; // vocabulary is a separate track (not in curriculum_objectives yet)
   const currentUnit = bloom.startedUnits.find((u) => u.stage !== "bloom") ?? bloom.startedUnits[0] ?? null;
   const gardenUnits = bloom.startedUnits.map((u) => ({
     unit: u.title_ar, // educational content (catalog unit title) — left as-is until title_en exists
@@ -255,9 +254,6 @@ export default async function LearnPage() {
           <div className="flex items-center gap-4">
             <FlowerProgress size={104} skills={bloom.skills.map((s) => ({ label: skillLabel(s.skill), value: s.fraction, detail: `${s.value.toFixed(1)}/10` }))} />
             <p className="flex-1 text-sm text-ink-soft" style={{ lineHeight: 1.8 }}>{t("flower.blurb")}</p>
-          </div>
-          <div className="mt-3 flex items-center justify-between gap-3 border-t border-brand-100 pt-3">
-            <VocabCounter count={vocabCount} label={t("flower.vocabLabel")} variant="stat" />
           </div>
         </div>
       </section>

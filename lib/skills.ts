@@ -3,8 +3,9 @@
 // The design layer holds NO assessment logic — the platform computes the numbers
 // here and passes plain props (value 0–10, fraction 0..1, counts) to the components.
 
-// Four petals = four skills. Vocabulary is NOT a petal — it is a separate track
-// shown by VocabCounter (the language foundation: vocabulary + grammar).
+// Four petals = four skills. Vocabulary is NOT a petal — it is a separate,
+// deferred track (the language foundation: vocabulary + grammar), tagged in data
+// but not surfaced as a counter in the MVP.
 export const SKILLS = ["listening", "speaking", "reading", "writing"] as const;
 export type Skill = (typeof SKILLS)[number];
 

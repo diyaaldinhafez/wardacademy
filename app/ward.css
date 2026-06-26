@@ -177,9 +177,8 @@ textarea.ward-field__control { resize:vertical; min-height:96px; line-height:var
 .app-topbar { display:flex; align-items:center; gap:12px; padding:14px 28px; background:var(--surface-card); border-block-end:1px solid var(--border-soft); }
 .app-content { padding:28px; display:flex; flex-direction:column; gap:20px; width:100%; max-width:1200px; margin-inline:auto; }
 
-/* Bloom Map (garden): pop reward, gentle balloon float, vocab pop */
+/* Bloom Map (garden): pop reward, gentle balloon float */
 .bloom-unit--pop .bloom-unit__art, .bloom-unit--pop svg { animation: ward-pop 700ms cubic-bezier(0.34,1.56,0.64,1); }
-.bloom-vocab--pop .bloom-vocab__top { animation: ward-pop 700ms cubic-bezier(0.34,1.56,0.64,1); }
 @media (prefers-reduced-motion: no-preference) {
   .bloom-unit--balloon .bloom-unit__art { animation: ward-spark-idle 3.4s cubic-bezier(0.65,0,0.35,1) infinite; }
 }

@@ -21,7 +21,7 @@ import VideoCall from "@/components/VideoCall";
 import { Card, Badge, Avatar, AITrustBadge, Spark } from "@/components/ward/ui";
 import { SKILLS } from "@/lib/skills";
 import { getTranslations } from "next-intl/server";
-import { UnitBloom, FlowerProgress, ScopeChip, VocabCounter } from "@/components/bloom/Bloom";
+import { UnitBloom, FlowerProgress, ScopeChip } from "@/components/bloom/Bloom";
 import { fetchStudentBloom } from "@/lib/progress/bloom";
 import { aggregatePlanItems } from "@/lib/curriculum/aggregatePlan";
 import { FORMAT_LABELS, ITEM_FORMATS, DIFFICULTIES } from "@/lib/items";
@@ -74,7 +74,6 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
   // New progress model: unit/skill blooms rolled up from objective_progress (§5).
   const bloom = await fetchStudentBloom(supabase, id);
-  const vocabCount = 0; // vocabulary is a separate track (not in curriculum_objectives yet)
   const petals = bloom.skills.map((s) => ({ name: s.skill, label: tc(`skills.${s.skill}`), value: s.fraction }));
   const overall = bloom.skills.length ? Math.round((bloom.skills.reduce((a, s) => a + s.fraction, 0) / bloom.skills.length) * 100) : 0;
   const skillStats = bloom.skills;
@@ -466,7 +465,6 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           {petals.map((p) => (
             <span key={p.name} style={{ fontSize: 11.5, color: "var(--text-muted)", background: "var(--surface-sunken)", borderRadius: 999, padding: "3px 10px" }}>{p.label} {Math.round(p.value * 100)}%</span>
           ))}
-          <VocabCounter count={vocabCount} label={t("overview.vocabLabel")} variant="chip" />
         </div>
       </Card>
     </div>
@@ -841,12 +839,11 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           {plan?.milestone_label && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{plan.milestone_label}</span>}
         </div>
       )}
-      {/* Four-skill mastery (honest meters) + the separate vocabulary counter */}
+      {/* Four-skill mastery (honest meters) */}
       <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
             <FlowerProgress size={92} skills={skillStats.map((s) => ({ label: skillLabel(s.skill), value: s.fraction, detail: `${s.value.toFixed(1)}/10` }))} />
-            <VocabCounter count={vocabCount} label={t("progress.vocabLabel")} variant="chip" />
           </div>
           <div style={{ flex: 1, minWidth: 200, display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={secTitle}>{t("progress.skillsTitle")}</div>

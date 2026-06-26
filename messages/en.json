@@ -61,8 +61,7 @@
     },
     "flower": {
       "heading": "My flower",
-      "blurb": "Four petals = four skills. They grow when you learn!",
-      "vocabLabel": "Words I know"
+      "blurb": "Four petals = four skills. They grow when you learn!"
     },
     "plan": { "heading": "My plan" },
     "sessions": {
@@ -226,8 +225,7 @@
         "nextSessionTitle": "Next session",
         "noUpcoming": "No upcoming sessions — schedule one from the Sessions tab.",
         "alertsTitle": "Alerts",
-        "skillsTitle": "Four skills + Building Blocks",
-        "vocabLabel": "Building Blocks — words"
+        "skillsTitle": "Four skills"
       },
       "plan": {
         "title": "Study plan",
@@ -361,8 +359,7 @@
       },
       "progress": {
         "skillsTitle": "Four skills — average across started units",
-        "skillsNote": "A petal = the average of that skill's objective scores across started units (an un-assessed objective counts as seed). Speaking is rated by the teacher. “Building Blocks” is a separate track.",
-        "vocabLabel": "Building Blocks — words",
+        "skillsNote": "A petal = the average of that skill's objective scores across started units (an un-assessed objective counts as seed). Speaking is rated by the teacher.",
         "whereToHelp": "Where should I step in?",
         "weakest": "Weakest now:",
         "weakestHint": " — focus the next session there.",
@@ -794,7 +791,7 @@
     "stageBud": "Just starting",
     "stageSeed": "Not started yet",
     "bloomSummary": "{name}'s flower spans {units, plural, one {# unit} other {# units}} they've begun, with {objectives} skills checked so far. Honest numbers, no fluff.",
-    "petalsNote": "Four petals = four skills. A unit's flower is the average of everything in it. “{vocab}” is counted on its own. Speaking is judged by the teacher.",
+    "petalsNote": "Four petals = four skills. A unit's flower is the average of everything in it. Speaking is judged by the teacher.",
     "testResults": "Test results",
     "sessionNotes": "Session notes",
     "strengths": "Strengths:",

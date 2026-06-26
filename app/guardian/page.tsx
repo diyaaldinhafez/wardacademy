@@ -188,7 +188,7 @@ export default async function GuardianPage() {
                         ))}
                       </div>
                     )}
-                    <p className="mt-2 text-xs text-ink-soft">{tg("petalsNote", { vocab: tVocab("label") })}</p>
+                    <p className="mt-2 text-xs text-ink-soft">{tg("petalsNote")}</p>
                   </div>
                 );
               })()}

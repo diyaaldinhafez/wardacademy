@@ -33,7 +33,7 @@ export type FlowerSkill = { label: string; value: number; detail?: string };
 /**
  * The child's flower: FOUR petals = the four skills (Listening, Speaking,
  * Reading, Writing). Each petal scales from bud (0.34) to full bloom (1.0) by
- * value 0..1. Centre = the AI spark. Vocabulary is NOT here — see VocabCounter.
+ * value 0..1. Centre = the AI spark. Vocabulary is NOT a petal (separate track).
  */
 export function FlowerProgress({ skills, size = 160, showLegend = false }: { skills: FlowerSkill[]; size?: number; showLegend?: boolean }) {
   const data = skills.length ? skills.slice(0, 4) : [{ label: "", value: 0 }, { label: "", value: 0 }, { label: "", value: 0 }, { label: "", value: 0 }];
@@ -141,32 +141,6 @@ export function ScopeChip({ children }: { children: React.ReactNode }) {
       {children}
     </span>
   );
-}
-
-/**
- * VocabCounter — the honest tally of vocabulary words MASTERED. A clustered
- * stack of gem-cards: deliberately NOT a flower/petal — the third progress track.
- */
-export function VocabCounter({ count = 0, label = "كلمة متقَنة", variant = "block", pop = false }: { count?: number; label?: string; variant?: "block" | "chip" | "stat"; pop?: boolean }) {
-  const u = variant === "chip" ? 30 / 44 : variant === "stat" ? 34 / 44 : 52 / 44;
-  const stack = (
-    <span style={{ position: "relative", flexShrink: 0, width: 52 * u, height: 44 * u }} aria-hidden="true">
-      <span className="bloom-vocab__gem" style={{ position: "absolute", width: 22 * u, height: 28 * u, left: 2 * u, top: 10 * u, transform: "rotate(-16deg)", background: "var(--ward-purple-300)", borderRadius: 6, boxShadow: "var(--shadow-1)" }} />
-      <span className="bloom-vocab__gem" style={{ position: "absolute", width: 22 * u, height: 28 * u, left: 26 * u, top: 10 * u, transform: "rotate(15deg)", background: "var(--ward-purple-400)", borderRadius: 6, boxShadow: "var(--shadow-1)" }} />
-      <span className={"bloom-vocab__gem" + (pop ? " bloom-vocab__top" : "")} style={{ position: "absolute", width: 26 * u, height: 32 * u, left: 13 * u, top: 6 * u, background: "var(--grad-bloom)", borderRadius: 6, boxShadow: "var(--shadow-1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <svg width={14 * u} height={14 * u} viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9" fill="none" stroke="#F3EDFF" strokeWidth="2.4" strokeLinecap="round" /></svg>
-      </span>
-    </span>
-  );
-  const n = (fs: number) => <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, color: "var(--text-on-soft)", fontVariantNumeric: "tabular-nums", lineHeight: 1, fontSize: fs }}>{count}</span>;
-  const lbl = (fs: number) => <span style={{ fontSize: fs, color: "var(--text-muted)", fontWeight: 600 }}>{label}</span>;
-  if (variant === "chip") {
-    return <span className={pop ? "bloom-vocab--pop" : undefined} style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "var(--brand-soft)", borderRadius: 999, padding: "5px 13px 5px 8px" }}>{stack}{n(18)}{lbl(12)}</span>;
-  }
-  if (variant === "stat") {
-    return <span style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>{stack}<span style={{ display: "flex", flexDirection: "column" }}>{n(22)}{lbl(13)}</span></span>;
-  }
-  return <span className={pop ? "bloom-vocab--pop" : undefined} style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>{stack}<span style={{ display: "flex", flexDirection: "column", gap: 2 }}>{n(34)}{lbl(13)}</span></span>;
 }
 
 /** Honest completion bar — shows the real fraction ("6 of 8"), never an inflated %. For COMPLETION, not mastery. */
