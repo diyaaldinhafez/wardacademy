@@ -210,7 +210,7 @@ export default async function LearnPage() {
             </div>
             <div className="min-w-0 flex-1">
               {/* unit title: educational content (catalog) */}
-              <p className="text-base font-extrabold leading-tight">{currentUnit.title_ar}</p>
+              <p dir="auto" className="text-base font-extrabold leading-tight">{currentUnit.title_ar}</p>
               <p className="mt-1 text-sm" style={{ color: "var(--ward-purple-100)" }}>{t(`unit.stage.${currentUnit.stage}`)}</p>
               <p className="mt-1 text-xs font-bold" style={{ color: "var(--ward-purple-100)", fontVariantNumeric: "tabular-nums" }}>
                 {t("unit.goalsProgress", { done: currentUnit.assessedCount, total: currentUnit.total, value: currentUnit.value.toFixed(1) })}

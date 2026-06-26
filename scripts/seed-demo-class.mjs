@@ -32,14 +32,14 @@ const HW_TITLES = ["ورقة عمل: القاعدة الجديدة", "مطابق
 
 // Generic MCQ bank (skill, prompt, options, answer)
 const QBANK = [
-  ["vocabulary", "She ___ to school every day.", ["goes", "go", "going", "gone"], "goes"],
-  ["vocabulary", "I ___ breakfast at seven o'clock.", ["have", "haves", "having", "had"], "have"],
+  ["reading", "She ___ to school every day.", ["goes", "go", "going", "gone"], "goes"],
+  ["reading", "I ___ breakfast at seven o'clock.", ["have", "haves", "having", "had"], "have"],
   ["reading", "The text says the boy ___ before school.", ["reads", "swims", "cooks", "drives"], "reads"],
   ["reading", "The story is mainly about ___.", ["a daily routine", "a holiday", "a recipe", "a match"], "a daily routine"],
   ["listening", "From the audio, she wakes up at ___.", ["seven", "six", "eight", "nine"], "seven"],
   ["listening", "After breakfast she goes to ___.", ["school", "the park", "bed", "work"], "school"],
   ["writing", "Which word orders events first?", ["first", "fast", "funny", "free"], "first"],
-  ["vocabulary", "My mother's mother is my ___.", ["grandmother", "aunt", "sister", "cousin"], "grandmother"],
+  ["reading", "My mother's mother is my ___.", ["grandmother", "aunt", "sister", "cousin"], "grandmother"],
 ];
 
 // level + how far along (taught objectives) + mastery profile. Levels span A1+A2+B1.

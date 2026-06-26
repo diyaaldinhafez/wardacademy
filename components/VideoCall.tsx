@@ -60,7 +60,7 @@ export default function VideoCall({ sessionId, label, className }: { sessionId: 
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {state !== "in" && (
         <button onClick={join} disabled={state === "loading"} className={className ?? "ward-btn ward-btn--primary ward-btn--sm"}>
-          {state === "loading" ? t("connecting") : `🎥 ${joinLabel}`}
+          {state === "loading" ? t("connecting") : joinLabel}
         </button>
       )}
       {err && <p style={{ fontSize: 12, color: "var(--rose-700, #b4435f)" }}>{err}</p>}

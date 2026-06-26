@@ -121,7 +121,7 @@ const TRUST_LABELS = {
 };
 export function AITrustBadge({
   status = "draft",
-  lang = "ar",
+  lang = "en",
   label,
   compact = false,
 }: {

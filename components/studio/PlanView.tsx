@@ -28,7 +28,7 @@ export default function PlanView({ title, items, skills }: {
       <p style={{ fontWeight: 700, color: "var(--text-strong)" }}>{title}</p>
       {units.map((u, ui) => (
         <div key={ui} style={{ borderRadius: 12, border: "1px solid var(--border-soft)", overflow: "hidden" }}>
-          <div style={{ padding: "8px 10px", background: "var(--surface-soft)", borderBottom: "1px solid var(--ink-100)", fontWeight: 700, color: "var(--brand)" }}>
+          <div dir="auto" style={{ padding: "8px 10px", background: "var(--surface-soft)", borderBottom: "1px solid var(--ink-100)", fontWeight: 700, color: "var(--brand)" }}>
             {u.name}
           </div>
           <ol style={{ display: "flex", flexDirection: "column", gap: 6, padding: 10, margin: 0, listStyle: "none" }}>

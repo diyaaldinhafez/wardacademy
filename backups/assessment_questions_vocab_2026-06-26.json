@@ -1,0 +1,108 @@
+{
+  "takenAt": "2026-06-26T12:56:01.160Z",
+  "count": 17,
+  "rows": [
+    {
+      "id": "907132a7-3fcd-4c68-9d70-8efe03d3cd35",
+      "assessment_id": "79ba2ec6-ba8b-40ee-bc49-f593821319f4",
+      "skill": "vocabulary",
+      "prompt": "She ___ to school every day."
+    },
+    {
+      "id": "71ce674f-758b-4214-8e8d-f509c6a27713",
+      "assessment_id": "79ba2ec6-ba8b-40ee-bc49-f593821319f4",
+      "skill": "vocabulary",
+      "prompt": "I ___ breakfast at seven o'clock."
+    },
+    {
+      "id": "cb4bf0b6-758f-4150-887b-38e4dd5e3169",
+      "assessment_id": "79ba2ec6-ba8b-40ee-bc49-f593821319f4",
+      "skill": "vocabulary",
+      "prompt": "My mother's mother is my ___."
+    },
+    {
+      "id": "a778ecdd-2fcc-45c4-ab35-f76abbcba3a4",
+      "assessment_id": "a7886969-1933-4d19-a430-21ddfa910721",
+      "skill": "vocabulary",
+      "prompt": "My mother's mother is my ___."
+    },
+    {
+      "id": "f9007c28-7ab4-4823-850b-8d7a7b526d6d",
+      "assessment_id": "ee5e797a-254f-4944-b430-978169479ac4",
+      "skill": "vocabulary",
+      "prompt": "She ___ to school every day."
+    },
+    {
+      "id": "9946aae4-6bc7-4e71-a741-f017ae6982e7",
+      "assessment_id": "ee5e797a-254f-4944-b430-978169479ac4",
+      "skill": "vocabulary",
+      "prompt": "I ___ breakfast at seven o'clock."
+    },
+    {
+      "id": "13b91bce-8fd4-4808-92fe-714a61f3383a",
+      "assessment_id": "ee5e797a-254f-4944-b430-978169479ac4",
+      "skill": "vocabulary",
+      "prompt": "My mother's mother is my ___."
+    },
+    {
+      "id": "947eb091-9555-424c-bc49-b95b61ad7880",
+      "assessment_id": "457ba983-cc07-4bf7-a3a8-7a79988190f3",
+      "skill": "vocabulary",
+      "prompt": "My mother's mother is my ___."
+    },
+    {
+      "id": "2f479169-3b85-466e-88ab-69fae161a4d2",
+      "assessment_id": "80386c60-d338-4c68-af9d-f8a55f09f4e0",
+      "skill": "vocabulary",
+      "prompt": "She ___ to school every day."
+    },
+    {
+      "id": "d242124e-fa09-4988-aaa7-b4d0b134956c",
+      "assessment_id": "80386c60-d338-4c68-af9d-f8a55f09f4e0",
+      "skill": "vocabulary",
+      "prompt": "I ___ breakfast at seven o'clock."
+    },
+    {
+      "id": "a149a327-4c38-41c0-af2f-690446eb7672",
+      "assessment_id": "80386c60-d338-4c68-af9d-f8a55f09f4e0",
+      "skill": "vocabulary",
+      "prompt": "My mother's mother is my ___."
+    },
+    {
+      "id": "4dce8ce8-46e8-48b2-bbc0-8b78d7fa9908",
+      "assessment_id": "08b927b9-d214-4bb7-be2e-b2d0e3dcf08d",
+      "skill": "vocabulary",
+      "prompt": "She ___ to school every day."
+    },
+    {
+      "id": "27caa94c-584e-41f8-86f8-d2d78c1456d4",
+      "assessment_id": "08b927b9-d214-4bb7-be2e-b2d0e3dcf08d",
+      "skill": "vocabulary",
+      "prompt": "I ___ breakfast at seven o'clock."
+    },
+    {
+      "id": "e220c49c-34ae-45c0-bf10-45f630ccdfe8",
+      "assessment_id": "08b927b9-d214-4bb7-be2e-b2d0e3dcf08d",
+      "skill": "vocabulary",
+      "prompt": "My mother's mother is my ___."
+    },
+    {
+      "id": "9fe1bd9f-cf14-4ae3-bf37-5d80526c4e54",
+      "assessment_id": "5b19e7a7-21bf-48aa-851b-b7ee1e61864d",
+      "skill": "vocabulary",
+      "prompt": "She ___ to school every day."
+    },
+    {
+      "id": "5de3edd9-7590-4afe-8673-0c284a62c99e",
+      "assessment_id": "5b19e7a7-21bf-48aa-851b-b7ee1e61864d",
+      "skill": "vocabulary",
+      "prompt": "I ___ breakfast at seven o'clock."
+    },
+    {
+      "id": "16c37e72-6edc-4627-8795-f80f83c438bf",
+      "assessment_id": "5b19e7a7-21bf-48aa-851b-b7ee1e61864d",
+      "skill": "vocabulary",
+      "prompt": "My mother's mother is my ___."
+    }
+  ]
+}

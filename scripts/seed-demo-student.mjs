@@ -113,11 +113,11 @@ const main = async () => {
 
   // — Assessments: completed (unit 1, catalog-tied) + draft (unit 2) —
   const u1Title = items[0].unit;
-  const completed = must(await c.from("assessments").insert({ tenant_id: T, learner_id: L, title: `اختبار وحدة: ${u1Title}`, scope: "unit", unit: u1Title, curriculum_unit_id: firstUnit, status: "completed", score: 7, max_score: 8, result: { vocabulary: { correct: 3, total: 3 }, listening: { correct: 2, total: 2 }, reading: { correct: 1, total: 2 }, writing: { correct: 1, total: 1 } }, created_by: I, completed_at: iso("2026-05-02T16:00:00Z") }).select("id").single(), "completed assessment");
+  const completed = must(await c.from("assessments").insert({ tenant_id: T, learner_id: L, title: `اختبار وحدة: ${u1Title}`, scope: "unit", unit: u1Title, curriculum_unit_id: firstUnit, status: "completed", score: 7, max_score: 8, result: { listening: { correct: 2, total: 2 }, reading: { correct: 4, total: 5 }, writing: { correct: 1, total: 1 } }, created_by: I, completed_at: iso("2026-05-02T16:00:00Z") }).select("id").single(), "completed assessment");
   const QB = [
-    ["vocabulary", "She ___ to school every day.", ["goes", "go", "going", "gone"], "goes", true],
-    ["vocabulary", "I ___ breakfast at 7 o'clock.", ["have", "haves", "having", "had"], "have", true],
-    ["vocabulary", "He ___ his teeth in the morning.", ["brushes", "brush", "brushing", "broke"], "brushes", true],
+    ["reading", "She ___ to school every day.", ["goes", "go", "going", "gone"], "goes", true],
+    ["reading", "I ___ breakfast at 7 o'clock.", ["have", "haves", "having", "had"], "have", true],
+    ["reading", "He ___ his teeth in the morning.", ["brushes", "brush", "brushing", "broke"], "brushes", true],
     ["listening", "The girl wakes up at ___ (audio).", ["six", "seven", "eight", "nine"], "seven", true],
     ["listening", "After breakfast she goes to ___.", ["school", "the park", "bed", "work"], "school", true],
     ["reading", "The boy's routine starts with ___.", ["waking up", "lunch", "homework", "sleeping"], "waking up", true],

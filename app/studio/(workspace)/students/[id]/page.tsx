@@ -22,6 +22,7 @@ import { Card, Badge, Avatar, AITrustBadge, Spark } from "@/components/ward/ui";
 import { SKILLS } from "@/lib/skills";
 import { getTranslations } from "next-intl/server";
 import { UnitBloom, FlowerProgress, ScopeChip } from "@/components/bloom/Bloom";
+import ObjectivePetals from "@/components/bloom/ObjectivePetals";
 import { fetchStudentBloom } from "@/lib/progress/bloom";
 import { aggregatePlanItems } from "@/lib/curriculum/aggregatePlan";
 import { FORMAT_LABELS, ITEM_FORMATS, DIFFICULTIES } from "@/lib/items";
@@ -749,7 +750,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             <input type="hidden" name="learnerId" value={id} />
             <select name="curriculumUnitId" required defaultValue="" className={sel} style={{ width: "auto", flex: 1, minWidth: 160, minHeight: 40 }}>
               <option value="" disabled>{t("assessments.unitPlaceholder")}</option>
-              {(curriculumUnits ?? []).map((u: any) => <option key={u.unit_id} value={u.unit_id}>{u.level} · {u.title_ar}</option>)}
+              {(curriculumUnits ?? []).map((u: any) => <option key={u.unit_id} value={u.unit_id}>{u.level} · {`⁨${u.title_ar}⁩`}</option>)}
             </select>
             <select name="count" defaultValue="8" className={sel} style={{ width: "auto", minHeight: 40 }}>
               {[6, 8, 10, 12].map((n) => <option key={n} value={n}>{t("assessments.questionsCount", { n })}</option>)}
@@ -881,13 +882,13 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <UnitBloom value={u.value} size={34} />
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)" }}>{u.title_ar}</div>
+                <div dir="auto" style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)" }}>{u.title_ar}</div>
                 <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{u.level} · {t("progress.unitBloom", { value: u.value.toFixed(1), n: u.assessedCount, total: u.total })}</div>
               </div>
             </div>
             {u.objectives.map((o, i) => (
               <div key={o.objective_id} style={{ display: "flex", alignItems: "center", gap: 10, borderTop: i === 0 ? "none" : "1px solid var(--ink-100)", paddingTop: i === 0 ? 0 : 6 }}>
-                <UnitBloom stage={o.state} size={26} />
+                <ObjectivePetals mode="teacher" layout="row" size={170} objectives={[{ id: o.objective_id, value: o.value, label: o.descriptor_ar, skill: o.skill }]} />
                 <span style={{ fontSize: 12.5, color: o.assessed ? "var(--text-body)" : "var(--text-muted)", flex: 1 }}>{o.descriptor_ar}</span>
                 <Badge tone="neutral">{skillLabel(o.skill)}</Badge>
                 <form action={recordObjectiveAssessment} style={{ display: "flex", alignItems: "center", gap: 4 }}>
