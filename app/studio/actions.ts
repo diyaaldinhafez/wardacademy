@@ -258,6 +258,16 @@ export async function draftReportWithAI(formData: FormData) {
 
   const { data: learner } = await supabase.from("profiles").select("full_name").eq("id", session.learner_id).single();
 
+  // The report is drafted in the parent's saved language (their guardian's
+  // comms_locale via guardianship), falling back to Arabic.
+  const admin = createAdminClient();
+  const { data: gship } = await admin.from("guardianships").select("guardian_id").eq("learner_id", session.learner_id).limit(1).maybeSingle();
+  let parentLocale: "ar" | "en" = "ar";
+  if (gship?.guardian_id) {
+    const { data: gp } = await admin.from("profiles").select("comms_locale").eq("id", gship.guardian_id).maybeSingle();
+    if (gp?.comms_locale === "en") parentLocale = "en";
+  }
+
   const draft = await generateSessionReportDraft({
     learnerName: learner?.full_name ?? "the student",
     lessonTitle: session.lesson_title,
@@ -266,7 +276,7 @@ export async function draftReportWithAI(formData: FormData) {
     behavior: String(formData.get("behavior") ?? "").trim() || undefined,
     focusNext: String(formData.get("focusNext") ?? "").trim() || undefined,
     teacherNote: String(formData.get("teacherNote") ?? "").trim() || undefined,
-  });
+  }, parentLocale);
 
   const { error } = await supabase.from("session_reports").insert({
     session_id: session.id,

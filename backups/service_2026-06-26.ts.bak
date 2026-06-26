@@ -135,17 +135,11 @@ export type ReportInput = {
 };
 export type GeneratedReport = { summary: string; strengths: string; improve: string };
 
-const REPORT_SYSTEM_AR =
+const REPORT_SYSTEM =
   "تكتب تقريراً عربياً موجزاً ودافئاً ومهنياً لوليّ الأمر بعد جلسةٍ فرديةٍ لطفله في أكاديمية وَرد (أعمار 9–13). " +
   "ابنِ التقرير فقط على مُدخَلات المعلّم المُعطاة ولا تختلق وقائع أو أرقاماً أو أحداثاً. يجب أن يُقرأ في أقلّ من دقيقة، بنبرةٍ لطيفةٍ مشجّعةٍ غير تسويقية، بصيغة المخاطب لوليّ الأمر. " +
   "summary: ٢–٣ جُمَلٍ تلخّص الجلسة بإيجابيةٍ وصدق. strengths: جملةٌ واحدةٌ عن أبرز نقطة قوّة. improve: خطوةٌ تاليةٌ لطيفةٌ وعملية. " +
   "أعِد التقرير عبر أداة emit_report فقط.";
-
-const REPORT_SYSTEM_EN =
-  "You write a short, warm, professional post-session report to the guardian after a one-on-one session for their child at Ward Academy (ages 9–13). " +
-  "Build the report only on the teacher's given inputs; never invent facts, numbers, or events. It must read in under a minute, in a kind, encouraging, non-marketing tone, addressed to the guardian. " +
-  "summary: 2–3 sentences summarizing the session honestly and positively. strengths: one sentence on the standout strength. improve: a gentle, practical next step. " +
-  "Return the report via the emit_report tool only.";
 
 const reportTool: Anthropic.Tool = {
   name: "emit_report",
@@ -162,19 +156,15 @@ const reportTool: Anthropic.Tool = {
 };
 
 /** Draft a post-session report from the learner's progress. Teacher edits + approves. */
-export async function generateSessionReportDraft(input: ReportInput, locale: "ar" | "en" = "ar"): Promise<GeneratedReport> {
-  const ar = locale !== "en";
-  const L = ar
-    ? { name: "اسم الطالب", lesson: "درس الجلسة", engagement: "تفاعل الطالب وحضوره", comprehension: "فهم الدرس", behavior: "المشاركة والسلوك", focusNext: "تركيز الجلسة القادمة", teacherNote: "ملاحظة المعلّم", go: "اكتب التقرير الآن." }
-    : { name: "Student name", lesson: "Lesson", engagement: "Engagement and attendance", comprehension: "Comprehension", behavior: "Participation and behavior", focusNext: "Next session's focus", teacherNote: "Teacher note", go: "Write the report now." };
+export async function generateSessionReportDraft(input: ReportInput): Promise<GeneratedReport> {
   const lines = [
-    `${L.name}: ${input.learnerName}`,
-    input.lessonTitle ? `${L.lesson}: ${input.lessonTitle}` : "",
-    input.engagement ? `${L.engagement}: ${input.engagement}` : "",
-    input.comprehension ? `${L.comprehension}: ${input.comprehension}` : "",
-    input.behavior ? `${L.behavior}: ${input.behavior}` : "",
-    input.focusNext ? `${L.focusNext}: ${input.focusNext}` : "",
-    input.teacherNote ? `${L.teacherNote}: ${input.teacherNote}` : "",
+    `اسم الطالب: ${input.learnerName}`,
+    input.lessonTitle ? `درس الجلسة: ${input.lessonTitle}` : "",
+    input.engagement ? `تفاعل الطالب وحضوره: ${input.engagement}` : "",
+    input.comprehension ? `فهم الدرس: ${input.comprehension}` : "",
+    input.behavior ? `المشاركة والسلوك: ${input.behavior}` : "",
+    input.focusNext ? `تركيز الجلسة القادمة: ${input.focusNext}` : "",
+    input.teacherNote ? `ملاحظة المعلّم: ${input.teacherNote}` : "",
   ]
     .filter(Boolean)
     .join("\n");
@@ -182,10 +172,10 @@ export async function generateSessionReportDraft(input: ReportInput, locale: "ar
   const res = await client().messages.create({
     model: MODEL,
     max_tokens: 1000, // Arabic is token-dense; the tool JSON must finish
-    system: ar ? REPORT_SYSTEM_AR : REPORT_SYSTEM_EN,
+    system: REPORT_SYSTEM,
     tools: [reportTool],
     tool_choice: { type: "tool", name: "emit_report" },
-    messages: [{ role: "user", content: `${lines}\n\n${L.go}` }],
+    messages: [{ role: "user", content: `${lines}\n\nاكتب التقرير الآن.` }],
   });
 
   const toolUse = res.content.find(

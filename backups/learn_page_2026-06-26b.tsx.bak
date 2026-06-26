@@ -289,9 +289,9 @@ export default async function LearnPage() {
                   <div className="mt-2 rounded-xl bg-brand-50 p-3 text-sm">
                     <p className="font-bold text-brand-700">{t("sessions.report.title")}</p>
                     {/* report text: teacher/AI content */}
-                    <p dir="auto" className="text-ink">{r.summary}</p>
-                    {r.strengths && <p className="text-ink-soft"><span className="font-medium">{t("sessions.report.strengths")}</span> <span dir="auto">{r.strengths}</span></p>}
-                    {r.improve && <p className="text-ink-soft"><span className="font-medium">{t("sessions.report.improve")}</span> <span dir="auto">{r.improve}</span></p>}
+                    <p className="text-ink">{r.summary}</p>
+                    {r.strengths && <p className="text-ink-soft"><span className="font-medium">{t("sessions.report.strengths")}</span> {r.strengths}</p>}
+                    {r.improve && <p className="text-ink-soft"><span className="font-medium">{t("sessions.report.improve")}</span> {r.improve}</p>}
                   </div>
                 )}
               </li>
