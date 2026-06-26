@@ -765,12 +765,7 @@
   },
   "guardian": {
     "title": "Your children",
-    "addChildTitle": "Add a child",
-    "namePh": "Child's name",
-    "passwordPh": "Set a password",
-    "add": "Add",
-    "adding": "Adding…",
-    "addNote": "Your child gets their own simple login — their email shows below.",
+    "addChildRedirect": "To register a new child, our admissions team handles it after the placement test and intro session.",
     "noChildren": "No children linked yet.",
     "childFallback": "your child",
     "consentGranted": "Consent granted",
