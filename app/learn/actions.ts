@@ -135,12 +135,13 @@ export async function submitAssessment(formData: FormData) {
     const raw = String(formData.get(`q_${q.id}`) ?? "");
     const correct = typeof q.answer === "string" && norm(raw) === norm(q.answer as string);
     await admin.from("assessment_questions").update({ response: { answer: raw }, is_correct: correct }).eq("id", q.id);
+    if (correct) correctTotal += 1;
+    // Per-skill result is one of the four assessed skills only (any legacy
+    // off-list tag still scores toward the total but never gets a skill row).
+    if (!(SKILLS as readonly string[]).includes(q.skill)) continue;
     const s = bySkill.get(q.skill) ?? { correct: 0, total: 0 };
     s.total += 1;
-    if (correct) {
-      s.correct += 1;
-      correctTotal += 1;
-    }
+    if (correct) s.correct += 1;
     bySkill.set(q.skill, s);
   }
 
@@ -153,8 +154,8 @@ export async function submitAssessment(formData: FormData) {
 
   // Auto evidence → the new model: each skill's % → percent key → value →
   // objective_assessments(evidence='auto') for every catalog objective of
-  // (unit, skill). The DB trigger rolls it into the decaying average. Vocabulary
-  // has no curriculum objectives (separate track), so it is skipped.
+  // (unit, skill). The DB trigger rolls it into the decaying average. Only the
+  // four assessed skills exist in the catalog; any off-list tag is skipped.
   if (a.curriculum_unit_id) {
     const { data: catObjs } = await admin
       .from("curriculum_objectives").select("objective_id, skill").eq("unit_id", a.curriculum_unit_id);

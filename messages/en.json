@@ -17,10 +17,6 @@
       "speaking": "Speaking",
       "reading": "Reading",
       "writing": "Writing"
-    },
-    "vocab": {
-      "label": "Building Blocks",
-      "wordsKnown": "words you know"
     }
   },
   "demo": {

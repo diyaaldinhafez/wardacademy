@@ -271,33 +271,40 @@ export async function generateLeadTest(input: {
 
 export type AssessmentQuestion = { skill: string; prompt: string; options: string[]; answer: string };
 
-const assessmentTool: Anthropic.Tool = {
-  name: "emit_assessment",
-  description: "Return original multiple-choice questions that check the given unit's lesson objectives.",
-  input_schema: {
-    type: "object",
-    properties: {
-      questions: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            skill: {
-              type: "string",
-              enum: ["listening", "speaking", "reading", "writing", "vocabulary"],
-              description: "The single primary skill this question tests.",
+// The four assessed skills (catalog reality + the four-skills constitution). Per
+// call, the skill enum is narrowed further to the skills actually present in the
+// unit's objectives — a question can only be tagged with a skill the unit teaches.
+const ASSESSMENT_SKILLS = ["listening", "speaking", "reading", "writing"] as const;
+
+function buildAssessmentTool(skills: readonly string[]): Anthropic.Tool {
+  return {
+    name: "emit_assessment",
+    description: "Return original multiple-choice questions that check the given unit's lesson objectives.",
+    input_schema: {
+      type: "object",
+      properties: {
+        questions: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              skill: {
+                type: "string",
+                enum: [...skills],
+                description: "The single primary skill this question tests — one of the unit's own skills.",
+              },
+              prompt: { type: "string" },
+              options: { type: "array", items: { type: "string" }, description: "Exactly 4 options." },
+              answer: { type: "string", description: "The exact text of the correct option." },
             },
-            prompt: { type: "string" },
-            options: { type: "array", items: { type: "string" }, description: "Exactly 4 options." },
-            answer: { type: "string", description: "The exact text of the correct option." },
+            required: ["skill", "prompt", "options", "answer"],
           },
-          required: ["skill", "prompt", "options", "answer"],
         },
       },
+      required: ["questions"],
     },
-    required: ["questions"],
-  },
-};
+  };
+}
 
 /** Generate a unit assessment: original MCQs that check the unit's lesson objectives, skill-tagged. */
 export async function generateAssessment(opts: {
@@ -307,6 +314,9 @@ export async function generateAssessment(opts: {
   count?: number;
 }): Promise<AssessmentQuestion[]> {
   const count = opts.count ?? 8;
+  // Tag only with skills the unit actually teaches (one of the four assessed skills).
+  const unitSkills = [...new Set(opts.objectives.map((o) => o.skill).filter((s): s is string => !!s && (ASSESSMENT_SKILLS as readonly string[]).includes(s)))];
+  const skills = unitSkills.length ? unitSkills : ["reading"];
   const objLines = opts.objectives
     .map((o, i) => `${i + 1}. ${o.description}${o.skill ? ` [${o.skill}]` : ""}${o.level ? ` (${o.level})` : ""}`)
     .join("\n");
@@ -319,10 +329,10 @@ export async function generateAssessment(opts: {
       `Produce ${count} ORIGINAL multiple-choice questions that CHECK MASTERY of the unit's lesson objectives listed below — ` +
       "test nothing outside them. Spread the questions across the objectives and the skills they build. " +
       "Each question has exactly 4 options, the correct option's exact text as the answer, and the single primary skill it tests " +
-      "(listening | speaking | reading | writing | vocabulary — 'vocabulary' = vocabulary + grammar). " +
-      "Since the test is auto-graded text, prefer reading/writing/vocabulary/listening-via-text and avoid pure speaking tasks. " +
+      `(one of: ${skills.join(" | ")} — only the skills this unit teaches). Tag lexical/grammar-recognition items as reading where reading is available. ` +
+      "Since the test is auto-graded text, prefer reading/writing/listening-via-text and avoid pure speaking tasks. " +
       "Invent fresh, age-appropriate content — never copy published material. Return everything via emit_assessment.",
-    tools: [assessmentTool],
+    tools: [buildAssessmentTool(skills)],
     tool_choice: { type: "tool", name: "emit_assessment" },
     messages: [{ role: "user", content: `Unit: ${opts.unit}\nStudent: ${opts.learnerName}\nObjectives:\n${objLines || "(none listed)"}\n\nWrite ${count} questions.` }],
   });

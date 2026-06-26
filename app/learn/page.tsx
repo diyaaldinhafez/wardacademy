@@ -32,7 +32,7 @@ export default async function LearnPage() {
   const t = await getTranslations({ locale: "en", namespace: "learn" });
   const tc = await getTranslations({ locale: "en", namespace: "common" });
   const skillLabel = (sk: string) =>
-    ["listening", "speaking", "reading", "writing"].includes(sk) ? tc(`skills.${sk}`) : sk === "vocabulary" ? tc("vocab.label") : sk;
+    ["listening", "speaking", "reading", "writing"].includes(sk) ? tc(`skills.${sk}`) : sk;
   const fmtLabel = (f: string) => (FORMATS.includes(f) ? t(`homework.formats.${f}`) : f);
   const answerLabels = {
     trueLabel: t("answer.true"),
@@ -316,7 +316,7 @@ export default async function LearnPage() {
                     <span className="flex-shrink-0 rounded-full bg-leaf/10 px-2.5 py-0.5 text-sm font-bold text-leaf">{a.score}/{a.max_score} · {pct}%</span>
                   </div>
                   <ul className="mt-2 flex flex-col gap-1.5">
-                    {Object.entries(result).map(([sk, v]) => {
+                    {Object.entries(result).filter(([sk]) => ["listening", "speaking", "reading", "writing"].includes(sk)).map(([sk, v]) => {
                       const p = v.total ? Math.round((v.correct / v.total) * 100) : 0;
                       return (
                         <li key={sk} className="flex items-center gap-2 text-sm">

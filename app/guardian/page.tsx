@@ -19,10 +19,9 @@ export default async function GuardianPage() {
   const supabase = await createClient();
   const tg = await getTranslations("guardian");
   const tSkill = await getTranslations("common.skills");
-  const tVocab = await getTranslations("common.vocab");
-  // Petal/track labels follow the active locale (UI labels, not authored content).
+  // Petal/skill labels follow the active locale (UI labels, not authored content).
   const skillLabel = (sk: string) =>
-    sk === "vocabulary" ? tVocab("label") : SKILL_KEYS.includes(sk) ? tSkill(sk) : sk;
+    SKILL_KEYS.includes(sk) ? tSkill(sk) : sk;
 
   const {
     data: { user },

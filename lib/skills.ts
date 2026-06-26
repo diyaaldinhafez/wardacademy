@@ -4,8 +4,7 @@
 // here and passes plain props (value 0–10, fraction 0..1, counts) to the components.
 
 // Four petals = four skills. Vocabulary is NOT a petal — it is a separate,
-// deferred track (the language foundation: vocabulary + grammar), tagged in data
-// but not surfaced as a counter in the MVP.
+// deferred track (the language foundation), out of the MVP and not assessed.
 export const SKILLS = ["listening", "speaking", "reading", "writing"] as const;
 export type Skill = (typeof SKILLS)[number];
 
@@ -16,12 +15,8 @@ export const SKILL_EN: Record<Skill, string> = {
   writing: "Writing",
 };
 
-// Vocabulary — tracked and counted, never a petal.
-export const VOCAB_SKILL = "vocabulary" as const;
-export const VOCAB_EN = "Building Blocks";
-
-// Every objective skill that can exist in the data (the 4 petals + vocabulary).
-export const OBJECTIVE_SKILLS = [...SKILLS, VOCAB_SKILL] as const;
+// Every objective skill that can exist in the assessed data (the four petals).
+export const OBJECTIVE_SKILLS = [...SKILLS] as const;
 
 // ————— The shared lifecycle scale (objective · unit · skill) —————
 // FOUR states on one continuous value 0–10 (computed by the platform, never here).

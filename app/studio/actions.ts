@@ -571,7 +571,7 @@ export async function generateAssessmentTest(formData: FormData) {
   const rows = questions.map((q, i) => ({
     assessment_id: assessment.id,
     tenant_id: tenantId,
-    skill: ["listening", "speaking", "reading", "writing", "vocabulary"].includes(q.skill) ? q.skill : "vocabulary",
+    skill: ["listening", "speaking", "reading", "writing"].includes(q.skill) ? q.skill : "reading",
     format: "multiple_choice",
     prompt: q.prompt,
     content: { options: q.options },

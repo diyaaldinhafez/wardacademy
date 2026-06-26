@@ -66,7 +66,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   // The teacher studio is English by internal decision — force `en` for UI text.
   const t = await getTranslations({ locale: "en", namespace: "studio.student" });
   const tc = await getTranslations({ locale: "en", namespace: "common" });
-  const skillLabel = (sk: string) => (["listening", "speaking", "reading", "writing"].includes(sk) ? tc(`skills.${sk}`) : sk === "vocabulary" ? tc("vocab.label") : sk);
+  const skillLabel = (sk: string) => (["listening", "speaking", "reading", "writing"].includes(sk) ? tc(`skills.${sk}`) : sk);
 
   const { data: pl } = await supabase.from("placement_tests").select("status, suggested_level, created_at").eq("learner_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle();
   const { data: plan } = await supabase.from("study_plans").select("id, title, level, items, status, track, scope_label, milestone_label").eq("learner_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle();
@@ -145,7 +145,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   // Parent-locale translators for the WhatsApp messages (NOT the teacher's forced-en UI).
   const twa = await getTranslations({ locale: guardianLocale, namespace: "comms.whatsapp" });
   const tcwa = await getTranslations({ locale: guardianLocale, namespace: "common" });
-  const waSkillLabel = (sk: string) => (["listening", "speaking", "reading", "writing"].includes(sk) ? tcwa(`skills.${sk}`) : sk === "vocabulary" ? tcwa("vocab.label") : sk);
+  const waSkillLabel = (sk: string) => (["listening", "speaking", "reading", "writing"].includes(sk) ? tcwa(`skills.${sk}`) : sk);
 
   const { data: assessments } = await supabase.from("assessments").select("id, title, scope, status, score, max_score, notes, scheduled_for, completed_at, unit, result").eq("learner_id", id).order("created_at", { ascending: false });
   // Questions for DRAFT assessments, so the teacher can review before approving.
@@ -730,7 +730,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const assessmentWaLink = (a: any, result: Record<string, { correct: number; total: number }>) => {
     if (!guardianPhone) return null;
     const pct = a.max_score ? Math.round((a.score / a.max_score) * 100) : 0;
-    const skillLines = Object.entries(result).map(([sk, v]) => `• ${waSkillLabel(sk)}: ${v.correct}/${v.total}`).join("\n");
+    const skillLines = Object.entries(result).filter(([sk]) => ["listening", "speaking", "reading", "writing"].includes(sk)).map(([sk, v]) => `• ${waSkillLabel(sk)}: ${v.correct}/${v.total}`).join("\n");
     const text = `*${a.title}*\n${name}\n\n${a.score}/${a.max_score} (${pct}%)\n${skillLines}\n\n${tcwa("appName")}`;
     return `https://wa.me/${guardianPhone}?text=${encodeURIComponent(text)}`;
   };
@@ -804,7 +804,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             {a.status === "completed" && result && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  {Object.entries(result).map(([sk, v]) => {
+                  {Object.entries(result).filter(([sk]) => ["listening", "speaking", "reading", "writing"].includes(sk)).map(([sk, v]) => {
                     const p = v.total ? Math.round((v.correct / v.total) * 100) : 0;
                     const lag = v.total > 0 && v.correct / v.total < 0.5;
                     return (
