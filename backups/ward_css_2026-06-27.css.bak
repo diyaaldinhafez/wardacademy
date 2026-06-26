@@ -183,13 +183,6 @@ textarea.ward-field__control { resize:vertical; min-height:96px; line-height:var
   .bloom-unit--balloon .bloom-unit__art { animation: ward-spark-idle 3.4s cubic-bezier(0.65,0,0.35,1) infinite; }
 }
 @media (prefers-reduced-motion: reduce) { .bloom-unit--pop .bloom-unit__art, .bloom-unit--pop svg { animation: none; } }
-/* FlowerProgress: each value petal blooms from bud (0.34) to its value on load.
-   Static transform (below) is the final state — used as-is when motion is reduced. */
-.bloom-petal-grow { transform: rotate(var(--deg)) scale(var(--sc)); transform-box: view-box; transform-origin: 50% 50%; }
-@keyframes ward-petal-bloom { from { transform: rotate(var(--deg)) scale(0.34); } to { transform: rotate(var(--deg)) scale(var(--sc)); } }
-@media (prefers-reduced-motion: no-preference) {
-  .bloom-petal-grow { animation: ward-petal-bloom 800ms cubic-bezier(0.22,0.61,0.36,1) both; animation-delay: calc(var(--i) * 90ms); }
-}
 .app-bottomnav { display:none; }
 .app-bottomnav-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 4px;
   border-radius:10px; text-decoration:none; font-size:11px; font-weight:600; border:none; background:transparent; cursor:pointer; position:relative; font-family:inherit; }
