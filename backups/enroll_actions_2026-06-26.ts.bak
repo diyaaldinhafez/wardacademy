@@ -22,10 +22,8 @@ export async function submitLead(_prev: LeadState | undefined, formData: FormDat
   const guardian_country = get("guardianCountry");
   const guardian_nationality = get("guardianNationality");
   const guardian_relation = get("guardianRelation");
-  // The parent's chosen communication language (explicit field). Falls back to the
-  // UI locale they filled /enroll in if the field is missing (safe, non-breaking).
-  const comms_locale = get("commsLocale");
-  const guardian_locale = comms_locale === "en" || comms_locale === "ar" ? comms_locale : await getLocale();
+  // The language the parent filled /enroll in — their comms language going forward.
+  const guardian_locale = await getLocale();
   const referral_source = get("referralSource");
   const consent = formData.get("consent") === "1";
   const student_name = get("studentName");

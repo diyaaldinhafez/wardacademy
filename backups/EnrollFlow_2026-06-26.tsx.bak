@@ -271,13 +271,6 @@ export default function EnrollFlow({ slots }: { slots: Slot[] }) {
             <label className={labelCls}>{t("whatsapp")}</label>
             <input name="guardianPhone" type="tel" className={field} dir="ltr" placeholder="+9665…" />
           </div>
-          <div>
-            <label className={labelCls}>{t("commsLocaleLabel")}</label>
-            <select name="commsLocale" defaultValue={locale} className={field}>
-              <option value="ar">{t("commsLocaleAr")}</option>
-              <option value="en">{t("commsLocaleEn")}</option>
-            </select>
-          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>{t("country")}</label>
