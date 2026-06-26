@@ -174,7 +174,7 @@ export async function provisionAccounts(
   // (set-password) link — no plaintext password is ever shown or sent.
   const { data: g, error: ge } = await admin.auth.admin.createUser({ email: lead.guardian_email, email_confirm: true });
   if (ge || !g.user) return { error: ge && /already|exists|registered/i.test(ge.message) ? await adminErr("guardianEmailExists") : ge?.message ?? (await adminErr("createFailed")) };
-  await admin.from("profiles").insert({ id: g.user.id, tenant_id: lead.tenant_id, full_name: lead.guardian_name, roles: ["guardian"], login_email: lead.guardian_email, comms_locale: lead.guardian_locale ?? null });
+  await admin.from("profiles").insert({ id: g.user.id, tenant_id: lead.tenant_id, full_name: lead.guardian_name, roles: ["guardian"], login_email: lead.guardian_email });
 
   const slug = (lead.student_name || "learner").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 12) || "learner";
   const sEmail = `${slug}-${Math.random().toString(36).slice(2, 7)}@learner.ward.local`;
@@ -490,29 +490,6 @@ export async function updateLeadContact(formData: FormData) {
     .eq("id", leadId);
   if (error) throw new Error(error.message);
   await logEvent(supabase, profile, leadId, "Contact details updated");
-  revalidatePath(`/admin/registrations/${leadId}`);
-}
-
-/** Correct the guardian's preferred communication language — writes leads, and the
- *  live guardian account (profiles.comms_locale) when already provisioned. */
-export async function updateGuardianLocale(formData: FormData) {
-  const leadId = String(formData.get("leadId") ?? "");
-  const locale = String(formData.get("locale") ?? "");
-  if (locale !== "en" && locale !== "ar") throw new Error(await adminErr("invalidLocale"));
-  const { supabase, profile } = await assertAdmin();
-
-  const { data: lead } = await supabase.from("leads").select("status, guardian_email").eq("id", leadId).single();
-  if (!lead) throw new Error(await adminErr("leadNotFound"));
-
-  const { error } = await supabase.from("leads").update({ guardian_locale: locale }).eq("id", leadId);
-  if (error) throw new Error(error.message);
-
-  // Already provisioned → push it onto the live guardian account too.
-  if (lead.status === "converted" && lead.guardian_email) {
-    const admin = createAdminClient();
-    await admin.from("profiles").update({ comms_locale: locale }).eq("login_email", lead.guardian_email).contains("roles", ["guardian"]);
-  }
-  await logEvent(supabase, profile, leadId, "Communication language updated");
   revalidatePath(`/admin/registrations/${leadId}`);
 }
 
