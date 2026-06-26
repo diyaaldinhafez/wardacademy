@@ -39,7 +39,9 @@ export default function AvailabilityMatrix({ rules }: { rules: Rule[] }) {
         <span style={{ width: 64, flexShrink: 0 }} />
         <div style={{ position: "relative", flex: 1, height: 14 }}>
           {ticks.map((t) => (
-            <span key={t} style={{ position: "absolute", left: `${((t - minMin) / range) * 100}%`, transform: "translateX(-50%)", fontSize: 10, color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>{fmt(t)}</span>
+            // Edge ticks anchor inward (first → left, last → right) so the label
+            // never overflows/clips at the axis ends; middle ticks stay centered.
+            <span key={t} style={{ position: "absolute", left: `${((t - minMin) / range) * 100}%`, transform: t === minMin ? "translateX(0)" : t === maxMin ? "translateX(-100%)" : "translateX(-50%)", fontSize: 10, color: "var(--text-muted)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{fmt(t)}</span>
           ))}
         </div>
       </div>

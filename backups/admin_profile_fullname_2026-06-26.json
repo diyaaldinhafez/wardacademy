@@ -1,0 +1,12 @@
+{
+  "takenAt": "2026-06-26T08:56:39.402Z",
+  "rows": [
+    {
+      "id": "3b48b55f-bb79-4926-a4af-0379ec6bf0bf",
+      "full_name": "الإدارة",
+      "roles": "{admin}",
+      "login_email": "admin@ward.local",
+      "tenant_id": "b0991b81-8017-4876-ae6b-df0c483059b1"
+    }
+  ]
+}
