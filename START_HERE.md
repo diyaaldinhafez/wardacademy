@@ -101,7 +101,7 @@ Each begins with a handling panel explaining its status and ownership:
 - **Role guards (server):** `lib/auth.ts` → `assertAdmin()` / `assertInstructor()` at the head of every action that uses the service role (RLS alone is not enough since the service key bypasses it). The service-role client is in `lib/supabase/admin.ts`.
 - **Email:** Resend (`lib/email.ts`, the `ward.academy` domain DKIM/SPF-verified) — booking confirmation + invite link + intro-session report; it degrades harmlessly if the key is absent. **Dates/time zones:** `luxon` + `tenants.timezone`.
 - **Supabase clients:** `lib/supabase/{client,server,admin}.ts` + `proxy.ts`/`lib/supabase/session.ts` (session refresh and protection of `/studio` `/learn` `/guardian`).
-- **AI:** `lib/generation/service.ts` (server-only) via `@anthropic-ai/sdk` (model `claude-sonnet-4-6`): items/questions, a plan from a level or from an uploaded book index (image/PDF/text, extraction without authoring), a session report from the teacher's inputs, a unit test from the objectives, internal diagnostics. The Anthropic spend cap is set ($5 trial).
+- **AI:** `lib/generation/service.ts` (server-only) via `@anthropic-ai/sdk` (model `claude-sonnet-4-6`): items/questions, a session report from the teacher's inputs, a unit test from the objectives, internal diagnostics. The Anthropic spend cap is set ($5 trial).
 - **Verification:** `npm run build` before any push. `.env.local` is outside Git (Supabase + Anthropic + DB URL).
 
 ## ✅ Assessment-model migration — closed and complete (2026-06-24)
