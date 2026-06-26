@@ -205,7 +205,7 @@ export default async function GuardianPage() {
                             <span className="flex-shrink-0 text-sm font-bold text-leaf">{a.score}/{a.max_score} · {pct}%</span>
                           </div>
                           <div className="mt-1 flex flex-wrap gap-1.5">
-                            {Object.entries(result).map(([sk, v]) => (
+                            {Object.entries(result).filter(([sk]) => SKILL_KEYS.includes(sk)).map(([sk, v]) => (
                               <span key={sk} className="rounded-full bg-white px-2 py-0.5 text-xs text-ink-soft">{skillLabel(sk)}: <b className="text-brand-700">{v.correct}/{v.total}</b></span>
                             ))}
                           </div>
