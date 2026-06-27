@@ -83,7 +83,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const startedUnits = bloom.startedUnits;
   // Catalog units drive AI unit-test generation (auto evidence feeds the new model).
   const { data: curriculumUnits } = await supabase
-    .from("curriculum_units").select("unit_id, level, unit_number, title_ar").order("level").order("unit_number");
+    .from("curriculum_units").select("unit_id, level, unit_number, title_ar, title_en").order("level").order("unit_number");
 
   const { data: sessions } = await supabase
     .from("sessions")
@@ -124,6 +124,27 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   // The Ward Curriculum objectives for the plan's level — the bank the teacher
   // generates homework from (catalog only; works for any approved plan).
   const objectives = plan?.level ? await aggregatePlanItems(supabase, plan.level) : [];
+
+  // Forced-English DISPLAY fallback for catalog text. study_plans.items + aggregatePlan
+  // hold the Arabic snapshot (keyed by objective_id); rather than mutate stored plans we
+  // prefer descriptor_en/title_en from the catalog at render time, keyed by objective_id
+  // (and unit_id derived from it). All filled today; the ?? is a safety net for any future
+  // objective lacking _en. Parent surfaces are untouched.
+  const unitIdOf = (id: string) => id.replace(/-[LRSW]\d+$/, "");
+  let descEn = new Map<string, string | null>();
+  let titleEn = new Map<string, string | null>();
+  if (planItems.length || objectives.length) {
+    const [{ data: oEn }, { data: uEn }] = await Promise.all([
+      supabase.from("curriculum_objectives").select("objective_id, descriptor_en"),
+      supabase.from("curriculum_units").select("unit_id, title_en"),
+    ]);
+    descEn = new Map(((oEn ?? []) as any[]).map((o) => [o.objective_id, o.descriptor_en]));
+    titleEn = new Map(((uEn ?? []) as any[]).map((u) => [u.unit_id, u.title_en]));
+  }
+  const enText = (it: any) => ({ ...it, description: descEn.get(it.id) ?? it.description, unit: titleEn.get(unitIdOf(it.id)) ?? it.unit });
+  const planItemsEn = planItems.map(enText);
+  const objectivesEn = (objectives as any[]).map(enText);
+
   const { data: resources } = await supabase.from("learning_resources").select("id, title, note, file_path, file_name, mime_type, size_bytes, created_at").eq("learner_id", id).order("created_at", { ascending: false });
   // Short-lived signed download URLs for the private resource files.
   const resourceUrls = new Map<string, string>();
@@ -494,7 +515,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             </div>
             <PlanView
               title={plan.title}
-              items={planItems}
+              items={planItemsEn}
               skills={SKILLS.map((s) => ({ value: s, label: tc(`skills.${s}`) }))}
             />
             {plan.status === "draft" && (
@@ -648,7 +669,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           {/* One-off extra session */}
           <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={secTitle}>{t("sessions.extraTitle")}</div>
-            <SessionScheduleForm learnerId={id} planItems={planItems.map((it: any, i: number) => ({ index: i, label: it.description }))} />
+            <SessionScheduleForm learnerId={id} planItems={planItemsEn.map((it: any, i: number) => ({ index: i, label: it.description }))} />
             <p style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("sessions.extraHint")}</p>
           </Card>
         </div>
@@ -671,7 +692,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             <input type="hidden" name="learnerId" value={id} />
             <select name="objectiveId" required defaultValue="" className={sel} style={{ width: "auto", minHeight: 40, flex: 1, minWidth: 160, maxWidth: 280 }}>
               <option value="" disabled>{t("homework.objectivePlaceholder")}</option>
-              {(objectives ?? []).map((o: any) => <option key={o.id} value={o.id}>{o.level ? `${o.level} · ` : ""}{o.description}</option>)}
+              {(objectivesEn ?? []).map((o: any) => <option key={o.id} value={o.id}>{o.level ? `${o.level} · ` : ""}{o.description}</option>)}
             </select>
             <select name="format" defaultValue="multiple_choice" className={sel} style={{ width: "auto", minHeight: 40 }}>
               {ITEM_FORMATS.map((f) => <option key={f} value={f}>{FORMAT_LABELS[f]}</option>)}
@@ -751,7 +772,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             <input type="hidden" name="learnerId" value={id} />
             <select name="curriculumUnitId" required defaultValue="" className={sel} style={{ width: "auto", flex: 1, minWidth: 160, minHeight: 40 }}>
               <option value="" disabled>{t("assessments.unitPlaceholder")}</option>
-              {(curriculumUnits ?? []).map((u: any) => <option key={u.unit_id} value={u.unit_id}>{u.level} · {`⁨${u.title_ar}⁩`}</option>)}
+              {(curriculumUnits ?? []).map((u: any) => <option key={u.unit_id} value={u.unit_id}>{u.level} · {`⁨${u.title_en ?? u.title_ar}⁩`}</option>)}
             </select>
             <select name="count" defaultValue="8" className={sel} style={{ width: "auto", minHeight: 40 }}>
               {[6, 8, 10, 12].map((n) => <option key={n} value={n}>{t("assessments.questionsCount", { n })}</option>)}
@@ -871,14 +892,14 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <UnitBloom value={u.value} size={34} />
               <div style={{ flex: 1 }}>
-                <div dir="auto" style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)" }}>{u.title_ar}</div>
+                <div dir="auto" style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)" }}>{u.title_en ?? u.title_ar}</div>
                 <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{u.level} · {t("progress.unitBloom", { value: u.value.toFixed(1), n: u.assessedCount, total: u.total })}</div>
               </div>
             </div>
             {u.objectives.map((o, i) => (
               <div key={o.objective_id} style={{ display: "flex", alignItems: "center", gap: 10, borderTop: i === 0 ? "none" : "1px solid var(--ink-100)", paddingTop: i === 0 ? 0 : 6 }}>
-                <ObjectivePetals mode="teacher" layout="row" size={170} objectives={[{ id: o.objective_id, value: o.value, label: o.descriptor_ar, skill: o.skill }]} />
-                <span style={{ fontSize: 12.5, color: o.assessed ? "var(--text-body)" : "var(--text-muted)", flex: 1 }}>{o.descriptor_ar}</span>
+                <ObjectivePetals mode="teacher" layout="row" size={170} objectives={[{ id: o.objective_id, value: o.value, label: o.descriptor_en ?? o.descriptor_ar, skill: o.skill }]} />
+                <span dir="auto" style={{ fontSize: 12.5, color: o.assessed ? "var(--text-body)" : "var(--text-muted)", flex: 1 }}>{o.descriptor_en ?? o.descriptor_ar}</span>
                 <Badge tone="neutral">{skillLabel(o.skill)}</Badge>
                 {/* Read-only CURRENT-state indicator (display half) — separate from the input,
                     so the rating control below is a pure event input that never looks "reverted". */}

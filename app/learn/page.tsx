@@ -131,7 +131,7 @@ export default async function LearnPage() {
   // Unit hero + skill flower + garden path — all from the one shared roll-up.
   const currentUnit = bloom.startedUnits.find((u) => u.stage !== "bloom") ?? bloom.startedUnits[0] ?? null;
   const gardenUnits = bloom.startedUnits.map((u) => ({
-    unit: u.title_ar, // educational content (catalog unit title) — left as-is until title_en exists
+    unit: u.title_en ?? u.title_ar, // catalog unit title — English (forced-en child surface), Arabic fallback
     status: (u.stage === "bloom" ? "mastered" : "current") as "mastered" | "current" | "upcoming",
     stage: u.stage as BloomStage,
   }));
@@ -210,7 +210,7 @@ export default async function LearnPage() {
             </div>
             <div className="min-w-0 flex-1">
               {/* unit title: educational content (catalog) */}
-              <p dir="auto" className="text-base font-extrabold leading-tight">{currentUnit.title_ar}</p>
+              <p dir="auto" className="text-base font-extrabold leading-tight">{currentUnit.title_en ?? currentUnit.title_ar}</p>
               <p className="mt-1 text-sm" style={{ color: "var(--ward-purple-100)" }}>{t(`unit.stage.${currentUnit.stage}`)}</p>
               <p className="mt-1 text-xs font-bold" style={{ color: "var(--ward-purple-100)", fontVariantNumeric: "tabular-nums" }}>
                 {t("unit.goalsProgress", { done: currentUnit.assessedCount, total: currentUnit.total, value: currentUnit.value.toFixed(1) })}

@@ -20,6 +20,7 @@ export type ObjectiveBloom = {
   skill: Skill;
   seq: number;
   descriptor_ar: string;
+  descriptor_en: string | null; // audited English rendering; forced-en surfaces prefer it
   value: number; // 0–10 (0 when un-assessed)
   state: BloomStage;
   assessed: boolean;
@@ -30,6 +31,7 @@ export type UnitBloom = {
   level: string;
   unit_number: number;
   title_ar: string;
+  title_en: string | null; // audited English title; forced-en surfaces prefer it
   value: number; // 0–10, simple mean of ALL objectives (un-assessed = 0)
   stage: BloomStage;
   objectives: ObjectiveBloom[];
@@ -53,8 +55,8 @@ export type StudentBloom = {
   assessedObjectives: number;
 };
 
-type CatalogObjective = { objective_id: string; unit_id: string; skill: Skill; seq: number; descriptor_ar: string };
-type CatalogUnit = { unit_id: string; level: string; unit_number: number; title_ar: string };
+type CatalogObjective = { objective_id: string; unit_id: string; skill: Skill; seq: number; descriptor_ar: string; descriptor_en: string | null };
+type CatalogUnit = { unit_id: string; level: string; unit_number: number; title_ar: string; title_en: string | null };
 
 const LEVEL_ORDER = ["A1", "A2", "B1"];
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
@@ -85,7 +87,7 @@ export function computeStudentBloom(
       const objectives: ObjectiveBloom[] = objs.map((o) => {
         const assessed = progress.has(o.objective_id);
         const value = assessed ? (progress.get(o.objective_id) as number) : 0;
-        return { objective_id: o.objective_id, skill: o.skill, seq: o.seq, descriptor_ar: o.descriptor_ar, value, state: stageForValue(value), assessed };
+        return { objective_id: o.objective_id, skill: o.skill, seq: o.seq, descriptor_ar: o.descriptor_ar, descriptor_en: o.descriptor_en ?? null, value, state: stageForValue(value), assessed };
       });
       const value = mean(objectives.map((o) => o.value)); // un-assessed = 0
       return {
@@ -93,6 +95,7 @@ export function computeStudentBloom(
         level: u?.level ?? "",
         unit_number: u?.unit_number ?? 0,
         title_ar: u?.title_ar ?? unit_id,
+        title_en: u?.title_en ?? null,
         value,
         stage: stageForValue(value),
         objectives,
@@ -132,8 +135,8 @@ let _catalogCache: { catalog: CatalogObjective[]; units: CatalogUnit[] } | null 
 async function loadCatalog(supabase: SupabaseClient) {
   if (_catalogCache) return _catalogCache;
   const [{ data: objs }, { data: units }] = await Promise.all([
-    supabase.from("curriculum_objectives").select("objective_id, unit_id, skill, seq, descriptor_ar"),
-    supabase.from("curriculum_units").select("unit_id, level, unit_number, title_ar"),
+    supabase.from("curriculum_objectives").select("objective_id, unit_id, skill, seq, descriptor_ar, descriptor_en"),
+    supabase.from("curriculum_units").select("unit_id, level, unit_number, title_ar, title_en"),
   ]);
   _catalogCache = { catalog: (objs ?? []) as CatalogObjective[], units: (units ?? []) as CatalogUnit[] };
   return _catalogCache;
