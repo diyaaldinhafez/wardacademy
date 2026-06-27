@@ -218,10 +218,9 @@ export default async function GuardianPage({ searchParams }: { searchParams: Pro
               <div className={card}>
                 <p className="text-xs font-bold uppercase tracking-wide text-ink-soft">{tg("nextSession")}</p>
                 {nextSession ? (
-                  // Parents want when + with whom, not the lesson objective — and the
-                  // 48-char truncation chopped titles mid-word. Show date + teacher only.
                   <p className="mt-1 text-sm text-ink">
                     {at(nextSession.scheduled_at)}
+                    {nextSession.lesson_title ? ` · ${short(nextSession.lesson_title)}` : ""}
                     {nextSession.instructor_id && instructorName.get(nextSession.instructor_id) ? ` · ${instructorName.get(nextSession.instructor_id)}` : ""}
                   </p>
                 ) : (
