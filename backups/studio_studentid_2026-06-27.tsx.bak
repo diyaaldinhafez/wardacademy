@@ -19,7 +19,6 @@ import PlanView from "@/components/studio/PlanView";
 import ItemCard from "@/components/studio/ItemCard";
 import VideoCall from "@/components/VideoCall";
 import { Card, Badge, Avatar, AITrustBadge, Spark } from "@/components/ward/ui";
-import { SkillBars } from "@/components/bloom/SkillBars";
 import { SKILLS } from "@/lib/skills";
 import { getTranslations } from "next-intl/server";
 import { UnitBloom, FlowerProgress, ScopeChip } from "@/components/bloom/Bloom";
@@ -849,7 +848,19 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           </div>
           <div style={{ flex: 1, minWidth: 200, display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={secTitle}>{t("progress.skillsTitle")}</div>
-            <SkillBars skills={skillStats.map((s) => ({ key: s.skill, label: skillLabel(s.skill), fraction: s.fraction, value: s.value, total: s.total }))} />
+            {skillStats.map((s) => {
+              const pct = Math.round(s.fraction * 100);
+              const lag = s.total > 0 && s.fraction < 0.5;
+              return (
+                <div key={s.skill} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-strong)", width: 72, flexShrink: 0 }}>{skillLabel(s.skill)}</span>
+                  <div style={{ flex: 1, height: 8, borderRadius: 999, background: "var(--surface-sunken)", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${pct}%`, borderRadius: 999, background: s.total === 0 ? "transparent" : lag ? "var(--apricot-400)" : "var(--brand)" }} />
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-brand)", fontVariantNumeric: "tabular-nums", width: 48, textAlign: "end", flexShrink: 0 }}>{s.value.toFixed(1)}/10</span>
+                </div>
+              );
+            })}
           </div>
         </div>
         <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{t("progress.skillsNote")}</p>
