@@ -362,6 +362,8 @@
         "noAssessments": "No assessments yet — rate the first objective of a unit to start its bloom.",
         "unitBloom": "Unit bloom {value}/10 · rated {n}/{total}",
         "rate": "Rate…",
+        "current": "Current",
+        "notAssessed": "Not yet assessed",
         "stateSeed": "Seed",
         "stateBud": "Bud",
         "stateBalloon": "Balloon",
