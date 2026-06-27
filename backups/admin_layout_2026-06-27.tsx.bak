@@ -32,17 +32,12 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   const t = await getTranslations({ locale: "en", namespace: "admin.nav" });
   const today = new Intl.DateTimeFormat("en", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
 
-  // Admin is English by internal decision — force `en` for all client components,
-  // and pin LTR/en on a wrapper so the alignment stays English-pure even when the
-  // global LOCALE cookie is `ar` (otherwise the root <html dir="rtl"> bleeds in
-  // and right-aligns the English admin UI).
+  // Admin is English by internal decision — force `en` for all client components.
   return (
     <NextIntlClientProvider locale="en" messages={enMessages}>
-      <div dir="ltr" lang="en" className="min-h-screen">
-        <AdminShell adminName={profile?.full_name ?? user.email ?? t("adminFallback")} today={today} leadsCount={leadsCount ?? 0} requestsCount={requestsCount ?? 0}>
-          {children}
-        </AdminShell>
-      </div>
+      <AdminShell adminName={profile?.full_name ?? user.email ?? t("adminFallback")} today={today} leadsCount={leadsCount ?? 0} requestsCount={requestsCount ?? 0}>
+        {children}
+      </AdminShell>
     </NextIntlClientProvider>
   );
 }
