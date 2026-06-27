@@ -191,28 +191,9 @@ export default async function GuardianPage({ searchParams }: { searchParams: Pro
               {/* Flower — the hero of the page */}
               <div className={`${card} flex flex-col items-center gap-2 text-center`}>
                 <p className="self-start font-bold text-ink" dir="auto">{name}</p>
-                <FlowerProgress size={168} skills={(bloom?.skills ?? []).map((s: any) => ({ label: skillLabel(s.skill), value: s.fraction }))} />
+                <FlowerProgress size={168} showLegend skills={(bloom?.skills ?? []).map((s: any) => ({ label: skillLabel(s.skill), value: s.fraction }))} />
                 {motivation && (
                   <p className="rounded-full bg-brand-50 px-3.5 py-1.5 text-sm font-semibold text-brand-700" dir="auto">{motivation}</p>
-                )}
-                {/* Per-skill percentage key — a standalone block (NOT FlowerProgress's
-                    showLegend) so it sits BELOW the motivational line, full-width with
-                    logical alignment, and uses the card's own classes. Dot colours mirror
-                    the petals: brand-500 (full) / brand-400 (growing) / brand-100 (empty). */}
-                {(bloom?.skills?.length ?? 0) > 0 && (
-                  <dl className="mt-1 w-full space-y-1.5">
-                    {(bloom!.skills as any[]).map((s) => {
-                      const frac = Math.max(0, Math.min(1, s.fraction));
-                      const dot = frac >= 1 ? "bg-brand-500" : frac > 0 ? "bg-brand-400" : "bg-brand-100";
-                      return (
-                        <div key={s.skill} className="flex items-center gap-2.5 text-sm">
-                          <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${dot}`} />
-                          <dt className="flex-1 text-start text-ink" dir="auto">{skillLabel(s.skill)}</dt>
-                          <dd className="font-semibold tabular-nums text-ink-soft">{Math.round(frac * 100)}%</dd>
-                        </div>
-                      );
-                    })}
-                  </dl>
                 )}
                 {planLine ? (
                   <p className="text-sm font-medium text-brand-700">{planLine}</p>
