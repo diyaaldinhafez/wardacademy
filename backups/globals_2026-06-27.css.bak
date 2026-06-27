@@ -9,12 +9,7 @@
    =========================================================================== */
 @theme {
   /* Fonts (wired up in app/layout.tsx via next/font) */
-  /* Arabic font is a glyph-level fallback in the default stack: Latin glyphs use
-     Nunito, Arabic glyphs (absent from Nunito) resolve to IBM Plex Sans Arabic in
-     ANY context — so an Arabic name/word inside an English-root UI keeps the Ward
-     Arabic face instead of the system fallback. The html[lang="ar"] override below
-     still makes the Arabic font primary on Arabic surfaces (unchanged). */
-  --font-sans: var(--font-nunito), var(--font-ar);
+  --font-sans: var(--font-nunito);
   --font-display: var(--font-baloo);
 
   /* HERO — Ward Purple (Platycodon) */
