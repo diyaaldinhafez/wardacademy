@@ -772,6 +772,11 @@
     "childFallback": "your child",
     "planGlimpse": "{level} · Unit {current} of {total}",
     "noPlanYet": "No plan yet.",
+    "flowerMotivation": {
+      "low": "Every flower starts as a seed — small steps now grow into confident English.",
+      "mid": "Lovely momentum — the petals are opening. Keep showing up together.",
+      "high": "What a bloom! This steady, confident English is something to be proud of."
+    },
     "nextSession": "Next session",
     "noUpcoming": "No upcoming session.",
     "latestReport": "Latest report",

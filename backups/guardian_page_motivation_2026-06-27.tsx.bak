@@ -97,13 +97,6 @@ export default async function GuardianPage({ searchParams }: { searchParams: Pro
   const pl = placementByLearner.get(selectedId);
   const plan = planByLearner.get(selectedId);
 
-  // One warm, number-free motivational line above the flower's skills key. Derived
-  // (display-only, no storage) from the average of the four existing skill blooms.
-  // Thresholds mirror the petal bud→bloom logic (0.34 / 0.67): low / mid / high.
-  const skillFractions = ((bloom?.skills ?? []) as any[]).map((s) => Math.max(0, Math.min(1, s.fraction ?? 0)));
-  const avgBloom = skillFractions.length ? skillFractions.reduce((a, b) => a + b, 0) / skillFractions.length : 0;
-  const motivation = skillFractions.length ? tg(`flowerMotivation.${avgBloom < 0.34 ? "low" : avgBloom < 0.67 ? "mid" : "high"}`) : null;
-
   // Next session (upcoming, soonest first) — informational, no join button.
   const now = Date.now();
   const upcoming = (sessionsByLearner.get(selectedId) ?? [])
@@ -192,9 +185,6 @@ export default async function GuardianPage({ searchParams }: { searchParams: Pro
               <div className={`${card} flex flex-col items-center gap-2 text-center`}>
                 <p className="self-start font-bold text-ink" dir="auto">{name}</p>
                 <FlowerProgress size={168} skills={(bloom?.skills ?? []).map((s: any) => ({ label: skillLabel(s.skill), value: s.fraction, detail: `${s.value.toFixed(1)}/10` }))} />
-                {motivation && (
-                  <p className="rounded-full bg-brand-50 px-3.5 py-1.5 text-sm font-semibold text-brand-700" dir="auto">{motivation}</p>
-                )}
                 {planLine ? (
                   <p className="text-sm font-medium text-brand-700">{planLine}</p>
                 ) : (
