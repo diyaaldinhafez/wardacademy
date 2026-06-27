@@ -180,7 +180,7 @@ export default async function GuardianPage({ searchParams }: { searchParams: Pro
                   <span className={`flex h-14 w-14 items-center justify-center rounded-full text-xl font-bold transition ${active ? "bg-brand text-white shadow-ward-1 ring-2 ring-brand-200" : "bg-brand-50 text-brand-700"}`}>
                     {(nm.trim().charAt(0) || "?").toUpperCase()}
                   </span>
-                  {active && <span className="line-clamp-2 w-full text-center text-xs font-bold leading-tight text-ink [overflow-wrap:anywhere]" dir="auto">{nm.trim().split(/\s+/)[0] || nm}</span>}
+                  {active && <span className="w-full truncate text-center text-xs font-bold text-ink" dir="auto">{nm}</span>}
                 </Link>
               );
             })}
