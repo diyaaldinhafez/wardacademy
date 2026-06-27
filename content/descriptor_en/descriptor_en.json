@@ -1,0 +1,896 @@
+{
+  "objectives": [
+    {
+      "objective_id": "A1-U01-L1",
+      "descriptor_en": "Recognizes greeting phrases and names when heard, and matches them."
+    },
+    {
+      "objective_id": "A1-U01-R1",
+      "descriptor_en": "Matches written greeting phrases to their meaning."
+    },
+    {
+      "objective_id": "A1-U01-S1",
+      "descriptor_en": "Greets and introduces themselves (name and age) using memorized phrases."
+    },
+    {
+      "objective_id": "A1-U01-W1",
+      "descriptor_en": "Writes their name, age, and a simple greeting (words / a short sentence)."
+    },
+    {
+      "objective_id": "A1-U01-L2",
+      "descriptor_en": "Understands numbers from 1 to 20 when heard, and identifies them."
+    },
+    {
+      "objective_id": "A1-U01-R2",
+      "descriptor_en": "Reads numbers (words and numerals) from 1 to 20, and matches them."
+    },
+    {
+      "objective_id": "A1-U01-S2",
+      "descriptor_en": "Asks about name and age and answers (at least one back-and-forth question and answer)."
+    },
+    {
+      "objective_id": "A1-U02-L1",
+      "descriptor_en": "Understands simple spoken classroom commands and matches them to the action / picture."
+    },
+    {
+      "objective_id": "A1-U02-R1",
+      "descriptor_en": "Matches words for classroom objects and colors to their pictures."
+    },
+    {
+      "objective_id": "A1-U02-S1",
+      "descriptor_en": "Names their classroom objects and their colors (this is a…, it's red)."
+    },
+    {
+      "objective_id": "A1-U02-W1",
+      "descriptor_en": "Writes the names of classroom objects and colors (single words)."
+    },
+    {
+      "objective_id": "A1-U02-L2",
+      "descriptor_en": "Recognizes the names of classroom objects and colors when heard, and matches them."
+    },
+    {
+      "objective_id": "A1-U02-S2",
+      "descriptor_en": "Asks \"What is this?\" and answers (at least one back-and-forth question and answer)."
+    },
+    {
+      "objective_id": "A1-U03-L1",
+      "descriptor_en": "Understands someone naming their family members, and matches them to pictures."
+    },
+    {
+      "objective_id": "A1-U03-R1",
+      "descriptor_en": "Reads a very short text about a family and matches the members."
+    },
+    {
+      "objective_id": "A1-U03-S1",
+      "descriptor_en": "Introduces their family members in simple sentences (This is my…, He is my…)."
+    },
+    {
+      "objective_id": "A1-U03-W1",
+      "descriptor_en": "Writes simple sentences about their family (This is my…)."
+    },
+    {
+      "objective_id": "A1-U03-L2",
+      "descriptor_en": "Distinguishes simple family relationships when listening."
+    },
+    {
+      "objective_id": "A1-U03-R2",
+      "descriptor_en": "Matches family members to their roles based on a simple text."
+    },
+    {
+      "objective_id": "A1-U03-S2",
+      "descriptor_en": "Asks and answers about the family (at least one back-and-forth question and answer)."
+    },
+    {
+      "objective_id": "A1-U04-L1",
+      "descriptor_en": "Understands a simple description of a person's appearance and matches it to a picture."
+    },
+    {
+      "objective_id": "A1-U04-R1",
+      "descriptor_en": "Matches a simple written description to the correct person's picture."
+    },
+    {
+      "objective_id": "A1-U04-S1",
+      "descriptor_en": "Describes their appearance in simple sentences (I have got…)."
+    },
+    {
+      "objective_id": "A1-U04-W1",
+      "descriptor_en": "Writes simple sentences describing their appearance (I have got…)."
+    },
+    {
+      "objective_id": "A1-U04-L2",
+      "descriptor_en": "Recognizes the names of body parts when heard."
+    },
+    {
+      "objective_id": "A1-U04-S2",
+      "descriptor_en": "Asks and answers about appearance in a simple way."
+    },
+    {
+      "objective_id": "A1-U05-L1",
+      "descriptor_en": "Understands a simple description of an animal (what it is and what it does) and matches it."
+    },
+    {
+      "objective_id": "A1-U05-R1",
+      "descriptor_en": "Reads a very short text about an animal and locates one simple piece of information."
+    },
+    {
+      "objective_id": "A1-U05-S1",
+      "descriptor_en": "Talks about their favorite animal and what it can do in simple sentences."
+    },
+    {
+      "objective_id": "A1-U05-W1",
+      "descriptor_en": "Writes one or two sentences about an animal (A cat can…)."
+    },
+    {
+      "objective_id": "A1-U05-L2",
+      "descriptor_en": "Distinguishes what an animal can do when listening (can fly / swim)."
+    },
+    {
+      "objective_id": "A1-U05-R2",
+      "descriptor_en": "Matches animal names to their pictures or to what they do in a simple text."
+    },
+    {
+      "objective_id": "A1-U05-S2",
+      "descriptor_en": "Asks and answers about animals and their abilities (at least one back-and-forth question and answer)."
+    },
+    {
+      "objective_id": "A1-U06-L1",
+      "descriptor_en": "Understands someone stating which foods they like and dislike, and matches it."
+    },
+    {
+      "objective_id": "A1-U06-R1",
+      "descriptor_en": "Reads a simple list or a short text about food and matches it."
+    },
+    {
+      "objective_id": "A1-U06-S1",
+      "descriptor_en": "Talks about which foods they like and dislike (I like…, I don't like…)."
+    },
+    {
+      "objective_id": "A1-U06-W1",
+      "descriptor_en": "Writes simple sentences about their favorite food (I like…)."
+    },
+    {
+      "objective_id": "A1-U06-L2",
+      "descriptor_en": "Recognizes the names of foods and drinks when heard."
+    },
+    {
+      "objective_id": "A1-U06-S2",
+      "descriptor_en": "Asks and answers about food preferences (at least one back-and-forth question and answer)."
+    },
+    {
+      "objective_id": "A1-U07-L1",
+      "descriptor_en": "Understands a simple description of a room and identifies where the things are."
+    },
+    {
+      "objective_id": "A1-U07-R1",
+      "descriptor_en": "Reads a simple description of a room and matches the things to their places."
+    },
+    {
+      "objective_id": "A1-U07-S1",
+      "descriptor_en": "Describes their room, their things, and their places in simple sentences (There is…, It's on…)."
+    },
+    {
+      "objective_id": "A1-U07-W1",
+      "descriptor_en": "Writes simple sentences about the things in their room (There is a…)."
+    },
+    {
+      "objective_id": "A1-U07-L2",
+      "descriptor_en": "Recognizes the names of room objects when heard."
+    },
+    {
+      "objective_id": "A1-U07-R2",
+      "descriptor_en": "Matches object names to their pictures based on a simple text."
+    },
+    {
+      "objective_id": "A1-U07-S2",
+      "descriptor_en": "Asks and answers about the location of things in a simple way (Where is…?)."
+    },
+    {
+      "objective_id": "A1-U08-L1",
+      "descriptor_en": "Understands someone stating which activities they can do, and matches it."
+    },
+    {
+      "objective_id": "A1-U08-R1",
+      "descriptor_en": "Reads a very short text about a child's activities and locates what they can do."
+    },
+    {
+      "objective_id": "A1-U08-S1",
+      "descriptor_en": "Talks about what they can and cannot do (I can…, I can't…)."
+    },
+    {
+      "objective_id": "A1-U08-W1",
+      "descriptor_en": "Writes simple sentences about what they can do (I can…)."
+    },
+    {
+      "objective_id": "A1-U08-L2",
+      "descriptor_en": "Recognizes the names of activities and sports when heard."
+    },
+    {
+      "objective_id": "A1-U08-S2",
+      "descriptor_en": "Asks and answers about abilities and activities (at least one back-and-forth question and answer, Can you…?)."
+    },
+    {
+      "objective_id": "A1-U09-L1",
+      "descriptor_en": "Understands a simple spoken weather report and matches the weather to the picture."
+    },
+    {
+      "objective_id": "A1-U09-R1",
+      "descriptor_en": "Reads a table of days or a simple report and locates the information."
+    },
+    {
+      "objective_id": "A1-U09-S1",
+      "descriptor_en": "Talks about today's weather and what they wear in simple sentences (It's sunny. I wear…)."
+    },
+    {
+      "objective_id": "A1-U09-W1",
+      "descriptor_en": "Writes simple sentences about their days or today's weather."
+    },
+    {
+      "objective_id": "A1-U09-L2",
+      "descriptor_en": "Recognizes the days of the week and weather conditions when heard."
+    },
+    {
+      "objective_id": "A1-U09-R2",
+      "descriptor_en": "Matches weather conditions or clothes to their pictures in a simple text."
+    },
+    {
+      "objective_id": "A1-U09-S2",
+      "descriptor_en": "Asks and answers about the day and the weather (at least one back-and-forth question and answer)."
+    },
+    {
+      "objective_id": "A1-U09-S3",
+      "descriptor_en": "Asks and tells the time simply (o'clock)."
+    },
+    {
+      "objective_id": "A2-U01-L1",
+      "descriptor_en": "Understands someone introducing themselves and their family in a short recording, and identifies the names, ages, and relationships."
+    },
+    {
+      "objective_id": "A2-U01-R1",
+      "descriptor_en": "Reads an ID card or a short text about a person and locates their information."
+    },
+    {
+      "objective_id": "A2-U01-S1",
+      "descriptor_en": "Introduces themselves and their family in several connected sentences (name, age, country, relatives)."
+    },
+    {
+      "objective_id": "A2-U01-W1",
+      "descriptor_en": "Writes a short introduction (5–6 sentences) about themselves or a family member."
+    },
+    {
+      "objective_id": "A2-U01-L2",
+      "descriptor_en": "Distinguishes the description of a person's appearance or personality when listening, and matches it to a picture."
+    },
+    {
+      "objective_id": "A2-U01-R2",
+      "descriptor_en": "Matches descriptions of people to their pictures based on a simple text."
+    },
+    {
+      "objective_id": "A2-U01-S2",
+      "descriptor_en": "Asks and answers about personal information in a short dialogue."
+    },
+    {
+      "objective_id": "A2-U02-L1",
+      "descriptor_en": "Understands someone describing their routine in a short, slow recording, and identifies the activities and their times."
+    },
+    {
+      "objective_id": "A2-U02-R1",
+      "descriptor_en": "Reads a short text about another child's day and locates its key information."
+    },
+    {
+      "objective_id": "A2-U02-S1",
+      "descriptor_en": "Describes their daily routine in 4–6 connected sentences with sufficient accuracy."
+    },
+    {
+      "objective_id": "A2-U02-W1",
+      "descriptor_en": "Writes a paragraph (5–6 sentences) about their weekly routine, using adverbs of frequency accurately."
+    },
+    {
+      "objective_id": "A2-U02-L2",
+      "descriptor_en": "Distinguishes how often an activity is done when listening (always / sometimes / never)."
+    },
+    {
+      "objective_id": "A2-U02-R2",
+      "descriptor_en": "Sequences the events of a day described in a simple text correctly."
+    },
+    {
+      "objective_id": "A2-U02-S2",
+      "descriptor_en": "Asks and answers their classmate about hobbies and free time (at least one back-and-forth question and answer)."
+    },
+    {
+      "objective_id": "A2-U02-W2",
+      "descriptor_en": "Writes short, correct questions to ask a friend about their hobbies."
+    },
+    {
+      "objective_id": "A2-U03-L1",
+      "descriptor_en": "Understands a description of a house or room and identifies what is in it and where."
+    },
+    {
+      "objective_id": "A2-U03-R1",
+      "descriptor_en": "Reads a text describing a neighborhood or city and locates the places and their locations."
+    },
+    {
+      "objective_id": "A2-U03-S1",
+      "descriptor_en": "Describes their house or room (what is in it and where things are) in several sentences."
+    },
+    {
+      "objective_id": "A2-U03-W1",
+      "descriptor_en": "Writes a short description (5–6 sentences) of their house or neighborhood, using there is/are and prepositions of place."
+    },
+    {
+      "objective_id": "A2-U03-L2",
+      "descriptor_en": "Follows simple spoken directions to reach a place on a simplified map."
+    },
+    {
+      "objective_id": "A2-U03-R2",
+      "descriptor_en": "Matches written directions to the correct route on a map."
+    },
+    {
+      "objective_id": "A2-U03-S2",
+      "descriptor_en": "Asks about a place and gives simple directions in a dialogue."
+    },
+    {
+      "objective_id": "A2-U04-L1",
+      "descriptor_en": "Understands an ordering or buying conversation and identifies what was ordered and its price."
+    },
+    {
+      "objective_id": "A2-U04-R1",
+      "descriptor_en": "Reads a menu or a price advertisement and locates the required information."
+    },
+    {
+      "objective_id": "A2-U04-S1",
+      "descriptor_en": "Orders food or buys something and asks about the price in a service dialogue (restaurant / shop)."
+    },
+    {
+      "objective_id": "A2-U04-W1",
+      "descriptor_en": "Writes a shopping list or a description of their favorite meal (5–6 sentences)."
+    },
+    {
+      "objective_id": "A2-U04-L2",
+      "descriptor_en": "Understands someone talking about how they feel health-wise and matches the symptom to the advice."
+    },
+    {
+      "objective_id": "A2-U04-R2",
+      "descriptor_en": "Reads a short text about healthy habits and identifies true and false."
+    },
+    {
+      "objective_id": "A2-U04-S2",
+      "descriptor_en": "Expresses their food preferences and asks about others' preferences."
+    },
+    {
+      "objective_id": "A2-U05-L1",
+      "descriptor_en": "Understands a spoken description of what people are doing now and matches it to the picture."
+    },
+    {
+      "objective_id": "A2-U05-R1",
+      "descriptor_en": "Reads a text describing an ongoing scene and locates the activities."
+    },
+    {
+      "objective_id": "A2-U05-S1",
+      "descriptor_en": "Describes a picture or a scene (who is in it and what they are doing and wearing) in several sentences."
+    },
+    {
+      "objective_id": "A2-U05-W1",
+      "descriptor_en": "Writes a description (5–6 sentences) of a picture, using the present continuous."
+    },
+    {
+      "objective_id": "A2-U05-L2",
+      "descriptor_en": "Distinguishes between a habit (present simple) and an action happening now (continuous) when listening."
+    },
+    {
+      "objective_id": "A2-U05-S2",
+      "descriptor_en": "Asks and answers about what people are doing now in a dialogue."
+    },
+    {
+      "objective_id": "A2-U06-L1",
+      "descriptor_en": "Understands someone recounting what they did in the past and identifies the main events and their order."
+    },
+    {
+      "objective_id": "A2-U06-R1",
+      "descriptor_en": "Reads a short story or diary in the past and locates its events."
+    },
+    {
+      "objective_id": "A2-U06-S1",
+      "descriptor_en": "Narrates what they did on a previous holiday or trip in several sequential sentences."
+    },
+    {
+      "objective_id": "A2-U06-W1",
+      "descriptor_en": "Writes a paragraph (6–8 sentences) about a past day or trip, using the past simple and sequence connectors."
+    },
+    {
+      "objective_id": "A2-U06-L2",
+      "descriptor_en": "Distinguishes past-tense verbs when listening and matches the event to its time."
+    },
+    {
+      "objective_id": "A2-U06-R2",
+      "descriptor_en": "Sequences the scrambled events of a story by relying on the sequence connectors."
+    },
+    {
+      "objective_id": "A2-U06-S2",
+      "descriptor_en": "Asks and answers about past events in a dialogue (What did you do? Where did you go?)."
+    },
+    {
+      "objective_id": "A2-U06-W2",
+      "descriptor_en": "Writes a short message (3–4 sentences) to a friend telling them about something they did recently."
+    },
+    {
+      "objective_id": "A2-U07-L1",
+      "descriptor_en": "Understands a spoken comparison between two things / places and identifies the bigger / better one."
+    },
+    {
+      "objective_id": "A2-U07-R1",
+      "descriptor_en": "Reads a text comparing animals or places and locates the comparative information."
+    },
+    {
+      "objective_id": "A2-U07-S1",
+      "descriptor_en": "Compares two things or places, using comparative forms, in several sentences."
+    },
+    {
+      "objective_id": "A2-U07-W1",
+      "descriptor_en": "Writes a paragraph (5–6 sentences) comparing two things, using comparatives/superlatives."
+    },
+    {
+      "objective_id": "A2-U07-L2",
+      "descriptor_en": "Identifies comparative information (the tallest, the fastest) about animals or places when listening."
+    },
+    {
+      "objective_id": "A2-U07-R2",
+      "descriptor_en": "Locates the \"most / biggest\" information from a table or a simple text."
+    },
+    {
+      "objective_id": "A2-U07-S2",
+      "descriptor_en": "Expresses their opinion on the best / biggest and justifies it simply in a dialogue."
+    },
+    {
+      "objective_id": "A2-U08-L1",
+      "descriptor_en": "Understands someone talking about their upcoming plans and identifies what and when."
+    },
+    {
+      "objective_id": "A2-U08-R1",
+      "descriptor_en": "Reads a message or an advertisement about an upcoming event and locates its details."
+    },
+    {
+      "objective_id": "A2-U08-S1",
+      "descriptor_en": "Talks about their plans for an upcoming holiday or weekend in several sentences."
+    },
+    {
+      "objective_id": "A2-U08-W1",
+      "descriptor_en": "Writes a short message (5–6 sentences) telling a friend about their upcoming plans."
+    },
+    {
+      "objective_id": "A2-U08-L2",
+      "descriptor_en": "Matches people to their future plans when heard."
+    },
+    {
+      "objective_id": "A2-U08-S2",
+      "descriptor_en": "Agrees with their classmate on a shared plan (when / where / what) in a dialogue."
+    },
+    {
+      "objective_id": "A2-U08-S3",
+      "descriptor_en": "Invites someone to an activity and accepts or politely declines an invitation."
+    },
+    {
+      "objective_id": "A2-U09-L1",
+      "descriptor_en": "Understands someone talking about what they can / cannot do and matches it."
+    },
+    {
+      "objective_id": "A2-U09-R1",
+      "descriptor_en": "Reads a list of rules or instructions and distinguishes what is required from what is forbidden."
+    },
+    {
+      "objective_id": "A2-U09-S1",
+      "descriptor_en": "Talks about their abilities and skills (what they are good at and not) in several sentences."
+    },
+    {
+      "objective_id": "A2-U09-W1",
+      "descriptor_en": "Writes a short list of rules or advice (5–6 sentences), using must/should."
+    },
+    {
+      "objective_id": "A2-U09-L2",
+      "descriptor_en": "Understands the spoken rules of a place and distinguishes what is allowed from what is forbidden."
+    },
+    {
+      "objective_id": "A2-U09-R2",
+      "descriptor_en": "Reads a text about a person's / animal's abilities and locates the information."
+    },
+    {
+      "objective_id": "A2-U09-S2",
+      "descriptor_en": "Gives advice or states a rule to their classmate in a short dialogue."
+    },
+    {
+      "objective_id": "A2-U09-S3",
+      "descriptor_en": "Apologizes for a mistake and politely offers an excuse."
+    },
+    {
+      "objective_id": "A2-U10-L1",
+      "descriptor_en": "Understands an announcement or conversation about transport schedules and identifies the time and destination."
+    },
+    {
+      "objective_id": "A2-U10-R1",
+      "descriptor_en": "Reads a timetable or a ticket and locates the information (time, platform, price)."
+    },
+    {
+      "objective_id": "A2-U10-S1",
+      "descriptor_en": "Asks about a route or transport time and handles a ticket-counter interaction (functional dialogue)."
+    },
+    {
+      "objective_id": "A2-U10-W1",
+      "descriptor_en": "Writes a short postcard (5–6 sentences) about a trip (past) or a travel plan (future)."
+    },
+    {
+      "objective_id": "A2-U10-L2",
+      "descriptor_en": "Understands someone describing a trip (how they traveled and where) and identifies the means of transport."
+    },
+    {
+      "objective_id": "A2-U10-R2",
+      "descriptor_en": "Reads a short text about a trip and locates the means of transport and places."
+    },
+    {
+      "objective_id": "A2-U10-S2",
+      "descriptor_en": "Narrates a trip they took (how and where) or plans an upcoming trip in several sentences."
+    },
+    {
+      "objective_id": "A2-U10-S3",
+      "descriptor_en": "Starts a short phone call and ends it politely."
+    },
+    {
+      "objective_id": "B1-U01-L1",
+      "descriptor_en": "Understands the chronological sequence of events in a short spoken story (what happened first / next)."
+    },
+    {
+      "objective_id": "B1-U01-R1",
+      "descriptor_en": "Follows the sequence of events in a short written story and sequences them."
+    },
+    {
+      "objective_id": "B1-U01-S1",
+      "descriptor_en": "Narrates a past experience in chronological order, using the past simple and at least two connectors."
+    },
+    {
+      "objective_id": "B1-U01-W1",
+      "descriptor_en": "Writes a short paragraph (4–5 sentences) narrating a past experience ordered with sequence connectors."
+    },
+    {
+      "objective_id": "B1-U01-L2",
+      "descriptor_en": "Identifies specific details from a narration of a personal experience (when, where, who)."
+    },
+    {
+      "objective_id": "B1-U01-R2",
+      "descriptor_en": "Distinguishes between what happened once and what was habitual (used to) in a narrative text."
+    },
+    {
+      "objective_id": "B1-U01-S2",
+      "descriptor_en": "Describes what they were doing at a particular past time, using the past continuous."
+    },
+    {
+      "objective_id": "B1-U02-L1",
+      "descriptor_en": "Understands a person's future plans from a spoken talk (what they will do, when)."
+    },
+    {
+      "objective_id": "B1-U02-R1",
+      "descriptor_en": "Understands a short text about a person's plans and locates their main goal."
+    },
+    {
+      "objective_id": "B1-U02-S1",
+      "descriptor_en": "Talks about their future plans and ambitions, giving at least one reason."
+    },
+    {
+      "objective_id": "B1-U02-W1",
+      "descriptor_en": "Writes a short paragraph about a future ambition of theirs, with a reason and a step to achieve it."
+    },
+    {
+      "objective_id": "B1-U02-L2",
+      "descriptor_en": "Distinguishes between a definite plan and a possibility (might) in a recording."
+    },
+    {
+      "objective_id": "B1-U02-R2",
+      "descriptor_en": "Links ambitions to their reasons in a text."
+    },
+    {
+      "objective_id": "B1-U02-S2",
+      "descriptor_en": "Asks and answers about future intentions (What will you do in…?)."
+    },
+    {
+      "objective_id": "B1-U03-L1",
+      "descriptor_en": "Understands a speaker's opinion and their reason in an audio clip."
+    },
+    {
+      "objective_id": "B1-U03-R1",
+      "descriptor_en": "Identifies the writer's opinion and stance in a short text."
+    },
+    {
+      "objective_id": "B1-U03-S1",
+      "descriptor_en": "Expresses their opinion on a familiar topic, giving a reason (because…)."
+    },
+    {
+      "objective_id": "B1-U03-W1",
+      "descriptor_en": "Writes a paragraph expressing their opinion with two reasons linked by connectors."
+    },
+    {
+      "objective_id": "B1-U03-L2",
+      "descriptor_en": "Distinguishes between agreement and objection in a dialogue."
+    },
+    {
+      "objective_id": "B1-U03-S2",
+      "descriptor_en": "Agrees or politely objects to an opinion in a short discussion."
+    },
+    {
+      "objective_id": "B1-U03-W2",
+      "descriptor_en": "Writes a short text presenting their opinion and acknowledging an opposing one politely (although/however)."
+    },
+    {
+      "objective_id": "B1-U03-S3",
+      "descriptor_en": "Leads a short discussion, inviting others to give their opinions and taking turns."
+    },
+    {
+      "objective_id": "B1-U04-L1",
+      "descriptor_en": "Understands a spoken description of a place and identifies its features."
+    },
+    {
+      "objective_id": "B1-U04-R1",
+      "descriptor_en": "Understands a short tourist text about a city and locates key information."
+    },
+    {
+      "objective_id": "B1-U04-S1",
+      "descriptor_en": "Describes a place they know, using a relative clause and a comparison."
+    },
+    {
+      "objective_id": "B1-U04-W1",
+      "descriptor_en": "Writes a short description of a place they visited or love, using comparisons and a relative clause."
+    },
+    {
+      "objective_id": "B1-U04-L2",
+      "descriptor_en": "Follows directions to reach a place."
+    },
+    {
+      "objective_id": "B1-U04-R2",
+      "descriptor_en": "Matches the description to the appropriate place in a comparative text."
+    },
+    {
+      "objective_id": "B1-U04-S2",
+      "descriptor_en": "Compares two places and justifies their preference."
+    },
+    {
+      "objective_id": "B1-U05-L1",
+      "descriptor_en": "Understands spoken health advice and identifies the recommendation."
+    },
+    {
+      "objective_id": "B1-U05-R1",
+      "descriptor_en": "Understands a text about healthy habits and locates the advice."
+    },
+    {
+      "objective_id": "B1-U05-S1",
+      "descriptor_en": "Gives health advice, using should/shouldn't."
+    },
+    {
+      "objective_id": "B1-U05-W1",
+      "descriptor_en": "Writes a paragraph of advice for staying healthy, using modal verbs."
+    },
+    {
+      "objective_id": "B1-U05-L2",
+      "descriptor_en": "Identifies symptoms and advice from a dialogue between a patient and a doctor."
+    },
+    {
+      "objective_id": "B1-U05-R2",
+      "descriptor_en": "Distinguishes between what must and what should not be done in an instructional text."
+    },
+    {
+      "objective_id": "B1-U05-S2",
+      "descriptor_en": "Describes a healthy habit and justifies its importance."
+    },
+    {
+      "objective_id": "B1-U06-L1",
+      "descriptor_en": "Understands a talk about using technology and identifies the speaker's experiences."
+    },
+    {
+      "objective_id": "B1-U06-R1",
+      "descriptor_en": "Understands a text about digital safety and locates the guidelines."
+    },
+    {
+      "objective_id": "B1-U06-S1",
+      "descriptor_en": "Asks and answers about experiences (Have you ever…?)."
+    },
+    {
+      "objective_id": "B1-U06-W1",
+      "descriptor_en": "Writes a paragraph about a device they use: what they have done with it and why it is useful."
+    },
+    {
+      "objective_id": "B1-U06-L2",
+      "descriptor_en": "Distinguishes between a past experience (present perfect) and a specific past event in a recording."
+    },
+    {
+      "objective_id": "B1-U06-R2",
+      "descriptor_en": "Identifies the correct information from a text about a device or app."
+    },
+    {
+      "objective_id": "B1-U06-S2",
+      "descriptor_en": "Talks about the benefits and risks of technology, giving an example."
+    },
+    {
+      "objective_id": "B1-U06-W2",
+      "descriptor_en": "Writes an appropriate short post or comment online."
+    },
+    {
+      "objective_id": "B1-U06-S3",
+      "descriptor_en": "Communicates in a text chat to coordinate an activity with digital etiquette."
+    },
+    {
+      "objective_id": "B1-U07-L1",
+      "descriptor_en": "Understands suggestions for helping in an audio clip."
+    },
+    {
+      "objective_id": "B1-U07-R1",
+      "descriptor_en": "Understands a text about a community initiative and locates its goal."
+    },
+    {
+      "objective_id": "B1-U07-S1",
+      "descriptor_en": "Suggests a way to help a person or community, using a suggestion form."
+    },
+    {
+      "objective_id": "B1-U07-W1",
+      "descriptor_en": "Writes a short paragraph suggesting a project to help their neighbors / school, with an expected outcome (conditional)."
+    },
+    {
+      "objective_id": "B1-U07-L2",
+      "descriptor_en": "Identifies a condition and a result from a spoken conditional sentence."
+    },
+    {
+      "objective_id": "B1-U07-S2",
+      "descriptor_en": "Talks about volunteer or charity work and why it is important."
+    },
+    {
+      "objective_id": "B1-U07-W2",
+      "descriptor_en": "Writes a short advertisement / poster inviting their classmates to take part in volunteer work."
+    },
+    {
+      "objective_id": "B1-U08-L1",
+      "descriptor_en": "Understands a talk about school subjects and a speaker's preferences."
+    },
+    {
+      "objective_id": "B1-U08-R1",
+      "descriptor_en": "Understands a text about study skills and locates the advice."
+    },
+    {
+      "objective_id": "B1-U08-S1",
+      "descriptor_en": "Talks about the subjects they like / prefer and why, using verb patterns."
+    },
+    {
+      "objective_id": "B1-U08-W1",
+      "descriptor_en": "Writes a paragraph about their favorite subject and study habits."
+    },
+    {
+      "objective_id": "B1-U08-L2",
+      "descriptor_en": "Identifies study tips from an audio clip."
+    },
+    {
+      "objective_id": "B1-U08-R2",
+      "descriptor_en": "Links each subject to its description in a text."
+    },
+    {
+      "objective_id": "B1-U08-S2",
+      "descriptor_en": "Compares two learning methods and expresses their preference (would rather/prefer)."
+    },
+    {
+      "objective_id": "B1-U09-L1",
+      "descriptor_en": "Understands a spoken explanation of a simple natural phenomenon (cause and effect)."
+    },
+    {
+      "objective_id": "B1-U09-R1",
+      "descriptor_en": "Understands a short informational text about the environment and locates the main idea."
+    },
+    {
+      "objective_id": "B1-U09-S1",
+      "descriptor_en": "Explains a cause and effect in nature, using the conditional (if/when…)."
+    },
+    {
+      "objective_id": "B1-U09-W1",
+      "descriptor_en": "Writes a paragraph about an environmental problem and a proposed solution for it."
+    },
+    {
+      "objective_id": "B1-U09-L2",
+      "descriptor_en": "Identifies environmental steps (such as recycling) from a clip."
+    },
+    {
+      "objective_id": "B1-U09-R2",
+      "descriptor_en": "Understands a process described in the simple passive in a text."
+    },
+    {
+      "objective_id": "B1-U09-S2",
+      "descriptor_en": "Suggests habits for protecting the environment."
+    },
+    {
+      "objective_id": "B1-U10-L1",
+      "descriptor_en": "Understands a description of a person's feelings and their cause in a clip."
+    },
+    {
+      "objective_id": "B1-U10-R1",
+      "descriptor_en": "Understands a text about a friendship or family relationship and locates the values / feelings."
+    },
+    {
+      "objective_id": "B1-U10-S1",
+      "descriptor_en": "Describes their feelings in a situation and justifies them."
+    },
+    {
+      "objective_id": "B1-U10-W1",
+      "descriptor_en": "Writes a paragraph about a friend / family member: their qualities and why they value them."
+    },
+    {
+      "objective_id": "B1-U10-L2",
+      "descriptor_en": "Distinguishes between the feeling (-ed) and the cause (-ing) in a recording."
+    },
+    {
+      "objective_id": "B1-U10-R2",
+      "descriptor_en": "Identifies the person described by a relative clause (who…) in a text."
+    },
+    {
+      "objective_id": "B1-U10-S2",
+      "descriptor_en": "Reports what another person said in a simple form (he said that…)."
+    },
+    {
+      "objective_id": "B1-U10-S3",
+      "descriptor_en": "Expresses sympathy for someone in an appropriate situation."
+    },
+    {
+      "objective_id": "B1-U11-L1",
+      "descriptor_en": "Understands a spoken description of an occasion and identifies its details (when, how it is celebrated)."
+    },
+    {
+      "objective_id": "B1-U11-R1",
+      "descriptor_en": "Understands a text about an occasion / tradition and locates its main elements."
+    },
+    {
+      "objective_id": "B1-U11-S1",
+      "descriptor_en": "Describes an occasion important to them (such as Eid): what they do and how they feel."
+    },
+    {
+      "objective_id": "B1-U11-W1",
+      "descriptor_en": "Writes a paragraph describing an occasion they love and why it is special to them."
+    },
+    {
+      "objective_id": "B1-U11-L2",
+      "descriptor_en": "Compares two traditions based on an audio clip."
+    },
+    {
+      "objective_id": "B1-U11-R2",
+      "descriptor_en": "Reads two short texts about two traditions and identifies a similarity and a difference."
+    },
+    {
+      "objective_id": "B1-U11-S2",
+      "descriptor_en": "Compares their tradition with another politely and respectfully."
+    },
+    {
+      "objective_id": "B1-U11-W2",
+      "descriptor_en": "Writes a short greeting / invitation card appropriate to the event."
+    }
+  ],
+  "titles": {
+    "A1-U01": "Hello!",
+    "A1-U02": "My Classroom",
+    "A1-U03": "My Family",
+    "A1-U04": "My Body",
+    "A1-U05": "Animals",
+    "A1-U06": "My Food",
+    "A1-U07": "My Room and My Things",
+    "A1-U08": "Let's Play!",
+    "A1-U09": "Days and Weather",
+    "A2-U01": "Me and Those Around Me",
+    "A2-U02": "My Day and My Free Time",
+    "A2-U03": "My Home and My City",
+    "A2-U04": "Food, Health, and Shopping",
+    "A2-U05": "Happening Now",
+    "A2-U06": "In the Past",
+    "A2-U07": "Comparing Our World",
+    "A2-U08": "Upcoming Plans",
+    "A2-U09": "Can, Must, Should",
+    "A2-U10": "On the Way",
+    "B1-U01": "Stories and Experiences",
+    "B1-U02": "My Plans and Ambitions",
+    "B1-U03": "Opinions and Reasons",
+    "B1-U04": "Places and Trips",
+    "B1-U05": "Health and Habits",
+    "B1-U06": "Technology and Digital Life",
+    "B1-U07": "Helping and Community",
+    "B1-U08": "Study and Learning",
+    "B1-U09": "Nature and the Environment",
+    "B1-U10": "Feelings and Relationships",
+    "B1-U11": "Occasions and Traditions"
+  }
+}
