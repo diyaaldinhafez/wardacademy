@@ -51,3 +51,15 @@ export function buildAutoEvidence(items: GradedItem[]): AutoEvidence[] {
     value: valueForPercent((g.correct / g.total) * 100), // §2-أ ratio key: <50→0 ·50–69→4 ·70–89→7 ·90+→10
   }));
 }
+
+// ── AE-6: per-OBJECTIVE MANUAL evidence (teacher §12 holistic rubric) ──
+// A teacher's rubric verdict for a manual item → one objective_evidence row shape. The value
+// is one of the four holistic levels {0,4,7,10} (seed/bud/balloon/rose). Returns null (skips,
+// no error) if the objective is missing or the value is not a valid rubric level.
+export type ManualVerdict = { objective_id: string | null; value: number; kind: "homework" | "test" };
+export type ManualEvidence = { objective_id: string; value: number; source: "manual_homework" | "manual_test" };
+
+export function buildManualEvidence(v: ManualVerdict): ManualEvidence | null {
+  if (!v.objective_id || ![0, 4, 7, 10].includes(v.value)) return null;
+  return { objective_id: v.objective_id, value: v.value, source: v.kind === "test" ? "manual_test" : "manual_homework" };
+}

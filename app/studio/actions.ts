@@ -16,7 +16,7 @@ import {
 import { aggregatePlanItems } from "@/lib/curriculum/aggregatePlan";
 import { homePathForRoles } from "@/lib/roles";
 import { type BloomStage } from "@/lib/skills";
-import { valueForState } from "@/lib/progress/evidence";
+import { valueForState, buildManualEvidence } from "@/lib/progress/evidence";
 import type { ItemFormat, Difficulty } from "@/lib/items";
 
 // The teacher studio is English by internal decision — system messages are English.
@@ -451,6 +451,33 @@ async function instructorCtx() {
   const { data: profile } = await supabase.from("profiles").select("tenant_id, roles").eq("id", user.id).single();
   if (!profile || !((profile.roles as string[]) ?? []).includes("instructor")) throw new Error("Only an instructor.");
   return { supabase, user, tenantId: profile.tenant_id as string };
+}
+
+// AE-6 (parallel writer · objective_evidence): persist a teacher's §12-rubric grade of a MANUAL
+// item as ONE per-objective evidence row. This is the replacement for the retired free rating
+// field — it grades a SPECIFIC manual submission (not the read-only progress page; surface
+// wiring is a later gate). Inert log (read by nothing yet); the old model + trigger 0056 are
+// untouched. Behind the instructor auth guard.
+export async function gradeManualSubmission(input: {
+  itemId: string;
+  learnerId: string;
+  objectiveId: string;
+  value: number;
+  kind: "homework" | "test";
+}) {
+  const { tenantId } = await instructorCtx();
+  const ev = buildManualEvidence({ objective_id: input.objectiveId, value: input.value, kind: input.kind });
+  if (!ev) throw new Error("A manual grade must target an objective with a rubric value of 0, 4, 7, or 10.");
+  const admin = createAdminClient();
+  const { error } = await admin.from("objective_evidence").insert({
+    tenant_id: tenantId,
+    learner_id: input.learnerId,
+    objective_id: ev.objective_id,
+    value: ev.value,
+    source: ev.source,
+    item_id: input.itemId,
+  });
+  if (error) throw new Error(error.message);
 }
 
 const RESOURCE_BUCKET = "learning-resources";
