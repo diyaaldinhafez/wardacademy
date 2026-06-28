@@ -1,6 +1,6 @@
 # Start Here — Ward Academy (Single Source of Truth)
 
-**Version:** 16 · **Last updated:** 2026-06-28 (Chat — Assessment Evidence-Model Redesign FULLY SPECIFIED: full design doc + Curriculum Reference §1–§12 amended + Foundation amended; 8-gate build plan AE-1…AE-8 is now the active next action — nothing built yet)
+**Version:** 15 · **Last updated:** 2026-06-28 (Code — descriptor_en complete + Assessment Evidence-Model Redesign decision approved (new active track))
 
 > ## How to work with this document
 > | | |
@@ -58,9 +58,6 @@ Ward Academy — an English-learning platform for children **9–13**, one-on-on
 - **Language policy (English-first · i18n · decision 2026-06-24):** all surfaces are English/LTR by default (the child surface is pure, no toggle); Arabic is an optional layer for the parent surfaces (landing · enrollment · guardian dashboard · reports/communication) via a toggle + one-click translation for reports. **i18n from day one** (`en.json` first · `ar.json` drop-in). (Details: `Foundation §13`.) **✅ i18n fully complete (2026-06-25):** all surfaces (1–7) converted to `next-intl`, the old system retired and deleted, one system (next-intl + the `LOCALE` cookie) — see "Technical facts §Language" and the banner below.
 - **Semantic colors, not purple only:** purple is the hero, but use green (success/completion), apricot (a warm invitation / next step), and rose (gentle errors/deletion, limited, no harsh red).
 - **Design workflow (pinned decision):** Claude Design is for reusable visual identity only (logo · colors · font · icons · the flower/spark) — **no screens**. Screens and pages are built in Claude Code directly. **The deployed code is the source of truth for screens and identity once applied;** code edits are not fed back to Design (Design is a generation tool, not an archive). The new flower (four petals + a seed) and the new logo from Design = the adopted identity that the code must catch up to.
-- **Homework & unit tests are PRE-BUILT in the content repository** (tagged by objective), **not generated live by AI** *(target model — Assessment Evidence-Model Redesign, building via AE-1…AE-8; see ACTIVE TRACK §9)*.
-- **Assessment is EVIDENCE-BASED and BINARY** (auto/manual, no hybrid); the **Progress page is READ-ONLY**; the teacher is an evidence **source**, not a grade editor *(target model — AE gates)*.
-- **AI generative scope in v1 = placement test · study plan/diagnostic · session-report drafts** (no item/grade generation) *(target model — AE-7)*.
 > Full details in: `Ward_Academy_Foundation.md` and `Ward_Academy_Design_System_Brief.md`.
 
 ## 4) Reference documents (final state — four documents)
@@ -109,12 +106,10 @@ Each begins with a handling panel explaining its status and ownership:
 - **Role guards (server):** `lib/auth.ts` → `assertAdmin()` / `assertInstructor()` at the head of every action that uses the service role (RLS alone is not enough since the service key bypasses it). The service-role client is in `lib/supabase/admin.ts`.
 - **Email:** Resend (`lib/email.ts`, the `ward.academy` domain DKIM/SPF-verified) — booking confirmation + invite link + intro-session report; it degrades harmlessly if the key is absent. **Dates/time zones:** `luxon` + `tenants.timezone`.
 - **Supabase clients:** `lib/supabase/{client,server,admin}.ts` + `proxy.ts`/`lib/supabase/session.ts` (session refresh and protection of `/studio` `/learn` `/guardian`).
-- **AI:** `lib/generation/service.ts` (server-only) via `@anthropic-ai/sdk` (model `claude-sonnet-4-6`): items/questions, a session report from the teacher's inputs, a unit test from the objectives, internal diagnostics. The Anthropic spend cap is set ($5 trial). *(SCOPE NARROWING pending AE-7: in the target model the service generates **placement tests, study-plan/diagnostic, and session-report drafts ONLY** — homework/test items come from the content repository, not live generation. **Not yet changed in code.**)*
+- **AI:** `lib/generation/service.ts` (server-only) via `@anthropic-ai/sdk` (model `claude-sonnet-4-6`): items/questions, a session report from the teacher's inputs, a unit test from the objectives, internal diagnostics. The Anthropic spend cap is set ($5 trial).
 - **Verification:** `npm run build` before any push. `.env.local` is outside Git (Supabase + Anthropic + DB URL).
 
 ## ✅ Assessment-model migration — closed and complete (2026-06-24)
-> ⚠️ **SUPERSEDED (2026-06-28)** by the Assessment Evidence-Model Redesign (see ACTIVE TRACK §9). The decaying-at-objective trigger (0056) and the per-skill auto described below are being retired by gates AE-1…AE-8. Kept for history.
->
 > **The deviation item is closed.** The assessment-and-progress model migration completed fully per `Ward_Migration_Plan.md` — five phases, five green gates:
 > - **The catalog** (0055): `curriculum_units`/`curriculum_objectives` — "Ward Curriculum" 30/215 (A1→B1), a shared frozen catalog.
 > - **The assessment model** (0056): `objective_assessments` (a cumulative log) + `objective_progress` (state) + a **65/35 decaying average** via a trigger, and four `ward_stage_for_value` states (0/4/7/10).
@@ -125,8 +120,6 @@ Each begins with a handling panel explaining its status and ownership:
 > **Source of truth for the model:** `Ward_Curriculum_Master_Reference.md`. **Known follow-ups (not a deviation):** per-skill auto accuracy (objective-level accuracy is a future item) · a curriculum picker for the teacher to start the objectives of an un-started unit · `descriptor_en` for English. (The vocabulary track is deferred out of the MVP — see §9.)
 
 ## ✅ Assessment model — verdict (2026-06-27): the 3-layer model is CORRECT and FROZEN
-> ⚠️ **PARTIALLY REVERSED (2026-06-28).** The Layer-3 OPEN QUESTION is now resolved: the cross-unit skill petal IS a DECAYING average across completed units (not simple mean), and the decaying MOVES from objective level to skill level (trigger 0056 retired). The display-bug and history-UI items fold into the redesign. See ACTIVE TRACK §9.
->
 > A **planning** session (no code) diagnosed the `/studio` objective-rating flow and reconciled it against the **frozen** `Ward_Curriculum_Master_Reference.md` (§1–§5). **Verdict: the model is correct and stays frozen — the only issues are a DISPLAY bug + missing history UI + one open Layer-3 question.** (`Ward_Curriculum_Master_Reference.md` was NOT modified — it was confirmed correct.)
 > - **Layer 1 (objective):** the **65/35 decaying average over the objective's repeated assessments is CORRECT and intentional** — an objective is assessed **multiple times** across lessons (teacher + auto-graded homework + unit test), so the decay absorbs fluctuation and allows full recovery. **Do NOT change to last-write/replace.** *(This overturns the earlier instinct to "replace at L1"; the per-objective diagnostic's "accumulation" is the model working — the real fault is the display, see below.)*
 > - **Layer 2 (unit / "unit flower"):** simple average of **ALL** the unit's objective values (skills mixed) — per reference §5. (Currently implemented as such; no per-unit, per-skill value exists, which is fine for the unit flower.)
@@ -187,28 +180,12 @@ Each begins with a handling panel explaining its status and ownership:
 ## 9) Next step
 
 > ### 🔵 ACTIVE TRACK (top priority, 2026-06-28) — Assessment Evidence-Model Redesign
-> **FULLY SPECIFIED and APPROVED (2026-06-28).** A full design document exists (`Ward_Assessment_Model_Redesign_Decision.md`: data model · per-surface UX · 8-gate delete/migration plan · per-level rubric). Both frozen docs were surgically amended (**Curriculum Reference §1–§12**; **Foundation §0/§1/§2/§6/§8/§9/§11**). **NOTHING is built yet.**
-> **NEW PINNED DECISIONS (this round):**
-> - **(a) CONTENT REPOSITORY:** homework + unit tests are **PRE-BUILT and frozen** inside the unit content package, tagged by `objective_id`, called from the repository — **NOT generated live by AI**.
-> - **(b) BINARY grading:** every item is 🤖 **auto** (100%-confident) OR ✍️ **manual** (teacher rubric). The **HYBRID tier is GONE**; any doubt → manual. An assignment is fully-auto or fully-manual (manual items separated from auto).
-> - **(c) MEDIA limits:** items use text (mostly) + image + audio. **NO video in items** (video = teaching sessions only).
-> - **(d) AI generative scope in v1 = THREE uses only:** placement test (personalized) · study plan / diagnostic (personalized) · session-report drafts (recurring). AI **no longer generates homework/test items or grades**. (Placement + plan are a DELIBERATE EXCEPTION — per-learner personalized, unfit for a shared frozen repository.)
-> - **(e) AGGREGATION (reverses the prior L3 simple-mean close):** objective = **simple mean of its evidence** · skill-in-unit = **simple mean** (the unit shows **4 skill petals**) · big-rose skill petal = **DECAYING 65/35 across COMPLETED units** (ordered by completion). **DB trigger 0056 (decaying-at-objective) is to be RETIRED.**
-> - **(f) "Unit completed"** = its unit TEST has been graded (defines the completion timestamp + ordering).
-> - **(g) Progress page is READ-ONLY** (no open rating field); the teacher is an evidence **SOURCE**, not a grade editor; scores from evidence are not editable (**delete-evidence + recompute** is allowed).
-> - **(h) Objectives are NO LONGER petals** — they are click-through diagnostics for the teacher; the **4 petals (unit and big-rose) are the 4 SKILLS**. (The `ObjectivePetals` concept retires.)
->
-> **BUILD PLAN — gate by gate** (each with a verifiable gate + Diya's live visual check):
-> - **AE-1** data model (items carry `objective_id` · grading · media · method · `answer_key`|`rubric_ref`; evidence log with source).
-> - **AE-2** new aggregation in `lib/progress/bloom.ts` (objective simple · skill-in-unit simple · big-rose decaying across completed units · unit-completion celebration).
-> - **AE-3** retire DB trigger 0056 (decaying-at-objective gone; objective computed simple).
-> - **AE-4** auto evidence **PER-OBJECTIVE** via the question's `objective_id` (kills per-skill flattening).
-> - **AE-5** Progress page **READ-ONLY** (remove the open rating field; click-through reveals the evidence log).
-> - **AE-6** in-place **manual grading by rubric** (generates evidence) + separate auto/manual tasks.
-> - **AE-7** retire **live AI generation of items**; serve from the repository; AI generation = placement + plan + session reports only.
-> - **AE-8** **HARD-DELETE** old assessment data (snapshot first): truncate `objective_assessments` + `objective_progress`.
->
-> **UNTIL the AE gates land:** the live Progress page + the 0056 decaying-at-objective model + per-skill auto remain in production **AS-IS** (this round is docs only — nothing built).
+> A deep redesign of the whole assessment model, triggered when wiring `descriptor_en` exposed that the teacher Progress page is a **flat editable copy of the plan** (an open rating field = a tamper risk), **auto overwrites the teacher** (the 65/35 blend has no precedence), and **auto is per-skill, not per-objective** (see GATE AUTO-0). A decision document was authored and **approved by Diya (2026-06-28): `Ward_Assessment_Model_Redesign_Decision.md`.**
+> **CORE decisions (to build):** (1) every assessment is generated from **objective-linked EVIDENCE** (a homework/test question) — **no free manual rating**; (2) **test questions carry `objective_id`** (not skill-only); (3) the Progress page becomes **READ-ONLY** with three distinct surfaces (child abstract / guardian narrative / teacher raw + click-through) — **no open rating field**; (4) **numbers** come from homework/tests, **NARRATIVE** comes from approved session reports (guardian-facing, skill-level); (5) **NO grade editing** — the teacher is an evidence **SOURCE** where the machine can't reach (speaking / free writing), **not an editor**; teachers improve a learner via **NEW evidence**, not by editing old scores.
+> **AGGREGATION (reverses the prior L3 "simple-mean" close):** **simple mean BELOW the skill** (objective level, and objectives-within-a-skill-in-a-unit → the unit's four skill scores); **DECAYING average 65/35 per-skill ACROSS completed units** (recency = compensation). This **reverses §9(12e)/the 2026-06-27 L3 decision** AND **retires DB trigger 0056** (which applies the decaying average at the OBJECTIVE level). Skills are **EQUAL-weighted (CEFR-pure)**; speaking is emphasized by **DISPLAY only**.
+> **DATA:** old assessment data is **HARD-DELETED** (test data, broken model). A **Skill-Measurement Guide (§5-أ)** tags each homework/test method auto/manual/hybrid; a holistic **4-level RUBRIC (§5-ب)** governs manual grading (closes teacher-side subjectivity).
+> **DEFERRED to a future Intelligence Layer:** living narrative/timeline + AI recommendations; temporal-wilt / spaced-repetition (skill decay). Reviewed against best practice (CEFR/Cambridge/Khan/Duolingo).
+> **NEXT STEP:** Ghinwa reviews the Skill-Measurement Guide tables + the rubric → Claude Chat writes the FULL document (data model · per-surface UX · delete/migration plan · retire 0056 · detailed per-level rubric) → amend the **frozen** Curriculum Reference → build gate-by-gate. *(Until built, the current Progress page + the 0056 decaying-at-objective model + per-skill auto remain live as-is.)*
 
 **The backend + the four roles + the complete Admin account + the Teacher account (the full teaching workspace: plan/sessions/video/reports/homework/tests/home) + its reflection onto the Student and Guardian: complete.**
 
