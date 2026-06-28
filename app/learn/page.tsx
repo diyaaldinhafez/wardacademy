@@ -258,21 +258,11 @@ export default async function LearnPage() {
         </div>
       </section>
 
-      {/* Study plan */}
-      {studyPlan && (
-        <section className="mb-8">
-          <h2 className={h2}>{t("plan.heading")}</h2>
-          <div className={card}>
-            {/* plan title + lesson descriptions: educational content (teacher-authored) */}
-            <p className="font-bold text-ink">{studyPlan.title}</p>
-            <ol className="mt-2 list-decimal pl-5 text-sm text-ink-soft">
-              {((studyPlan.items as any[]) ?? []).map((it, i) => (
-                <li key={i}>{it.level ? `${it.level} · ` : ""}{it.description}</li>
-              ))}
-            </ol>
-          </div>
-        </section>
-      )}
+      {/* Constitution (§6.2): the CHILD sees unit-level + their flower ONLY — never the
+          individual objective descriptors. The per-objective "My plan" text list was
+          removed from /learn for that reason. The level/scope stays (ScopeChip on the
+          flower card + the placement result), the current unit + garden path stay, and the
+          teacher's /studio Plan tab still shows the objectives (unchanged). */}
 
       {/* Sessions */}
       <section className="mb-8">
