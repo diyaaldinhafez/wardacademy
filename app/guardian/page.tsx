@@ -65,7 +65,7 @@ export default async function GuardianPage({ searchParams }: { searchParams: Pro
 
   const { data: doneAssess } = await supabase
     .from("assessments")
-    .select("learner_id, title, unit, score, max_score, result, completed_at")
+    .select("learner_id, title, unit, score, max_score, result, completed_at, curriculum_unit_id")
     .eq("status", "completed")
     .order("completed_at", { ascending: false });
   const assessByLearner = new Map<string, any[]>();
@@ -74,6 +74,22 @@ export default async function GuardianPage({ searchParams }: { searchParams: Pro
     arr.push(a);
     assessByLearner.set(a.learner_id, arr);
   }
+
+  // Catalog unit titles for the localized result-card unit (display-time, no mutation).
+  // Bilingual surface: pick by the guardian's active locale; stored a.unit/a.title is the
+  // fallback for manual/non-catalog assessments (no curriculum_unit_id).
+  const assessUnitIds = [...new Set(((doneAssess ?? []) as any[]).map((a) => a.curriculum_unit_id).filter(Boolean))];
+  const { data: assessUnitRows } = assessUnitIds.length
+    ? await supabase.from("curriculum_units").select("unit_id, title_en, title_ar").in("unit_id", assessUnitIds)
+    : { data: [] as any[] };
+  const unitTitleById = new Map<string, { en: string | null; ar: string | null }>(
+    ((assessUnitRows ?? []) as any[]).map((u) => [u.unit_id, { en: u.title_en, ar: u.title_ar }]),
+  );
+  const localizedUnit = (a: any) => {
+    const cat = a.curriculum_unit_id ? unitTitleById.get(a.curriculum_unit_id) : null;
+    const picked = cat ? (locale === "en" ? cat.en ?? cat.ar : cat.ar ?? cat.en) : null;
+    return picked ?? a.unit ?? a.title;
+  };
 
   const { data: placements } = await supabase
     .from("placement_tests")
@@ -140,7 +156,7 @@ export default async function GuardianPage({ searchParams }: { searchParams: Pro
     return (
       <div className="rounded-xl bg-brand-50/60 p-2.5">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-bold text-ink" dir="auto">{a.unit ?? a.title}</span>
+          <span className="text-sm font-bold text-ink" dir="auto">{localizedUnit(a)}</span>
           <span className="flex-shrink-0 text-sm font-bold text-leaf">{a.score}/{a.max_score} · {pct}%</span>
         </div>
         {a.completed_at && <p className="text-xs text-ink-soft">{at(a.completed_at)}</p>}
