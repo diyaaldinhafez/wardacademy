@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { valueForPercent } from "@/lib/progress/evidence";
+import { valueForPercent, buildAutoEvidence } from "@/lib/progress/evidence";
 import { stageForValue, SKILLS } from "@/lib/skills";
 
 // The child surface is English-pure — error messages are always English.
@@ -41,7 +41,7 @@ export async function submitAnswer(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/studio/login");
 
-  const { data: item } = await supabase.from("items").select("id, format").eq("id", itemId).single();
+  const { data: item } = await supabase.from("items").select("id, format, objective_id, grading, tenant_id").eq("id", itemId).single();
   if (!item) throw new Error("Item not available");
 
   const admin = createAdminClient();
@@ -62,6 +62,16 @@ export async function submitAnswer(formData: FormData) {
     graded_at: graded ? new Date().toISOString() : null,
   });
   if (error) throw new Error(error.message);
+
+  // AE-4 (parallel writer · objective_evidence): an auto-graded, objective-tagged repository
+  // homework item → one per-objective evidence row. Current homework items have grading=NULL
+  // → skipped (no-op). The submissions insert above is unchanged.
+  if (graded) {
+    const ev = buildAutoEvidence([{ objective_id: item.objective_id ?? null, grading: item.grading ?? null, correct: isCorrect === true }]);
+    if (ev.length) {
+      await admin.from("objective_evidence").insert({ tenant_id: item.tenant_id, learner_id: user.id, objective_id: ev[0].objective_id, value: ev[0].value, source: "auto_homework", item_id: item.id });
+    }
+  }
 
   revalidatePath("/learn");
 }
@@ -127,14 +137,16 @@ export async function submitAssessment(formData: FormData) {
   if (!a || a.learner_id !== user.id || a.status !== "ready") throw new Error((await learnErrors())("testUnavailable"));
 
   const admin = createAdminClient();
-  const { data: questions } = await admin.from("assessment_questions").select("id, skill, answer").eq("assessment_id", assessmentId).order("position");
+  const { data: questions } = await admin.from("assessment_questions").select("id, skill, answer, objective_id, grading").eq("assessment_id", assessmentId).order("position");
 
   const bySkill = new Map<string, { correct: number; total: number }>();
+  const gradedQuestions: { objective_id: string | null; grading: string | null; correct: boolean }[] = [];
   let correctTotal = 0;
   for (const q of questions ?? []) {
     const raw = String(formData.get(`q_${q.id}`) ?? "");
     const correct = typeof q.answer === "string" && norm(raw) === norm(q.answer as string);
     await admin.from("assessment_questions").update({ response: { answer: raw }, is_correct: correct }).eq("id", q.id);
+    gradedQuestions.push({ objective_id: q.objective_id ?? null, grading: q.grading ?? null, correct });
     if (correct) correctTotal += 1;
     // Per-skill result is one of the four assessed skills only (any legacy
     // off-list tag still scores toward the total but never gets a skill row).
@@ -169,6 +181,17 @@ export async function submitAssessment(formData: FormData) {
       }
     }
     if (rows.length) await admin.from("objective_assessments").insert(rows);
+  }
+
+  // AE-4 (parallel writer · objective_evidence): per-OBJECTIVE auto evidence keyed on each
+  // question's AE-1 objective_id (replaces the per-skill flattening above). Skips
+  // NULL-objective / non-auto questions → no-op on current untagged content. The block above
+  // (objective_assessments + trigger 0056) is unchanged and stays the live source until AE-8.
+  const evidence = buildAutoEvidence(gradedQuestions);
+  if (evidence.length) {
+    await admin.from("objective_evidence").insert(
+      evidence.map((e) => ({ tenant_id: a.tenant_id, learner_id: a.learner_id, objective_id: e.objective_id, value: e.value, source: "auto_test", item_id: null })),
+    );
   }
 
   revalidatePath("/learn");
