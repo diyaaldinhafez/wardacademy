@@ -10,7 +10,6 @@ import {
   addLessonSlot, removeLessonSlot, generateLessonSessions,
   createManualHomework, gradeManualHomework, removeManualHomework,
   generateDiagnosticReport, updateDiagnostic, approveDiagnostic,
-  recordObjectiveAssessment,
 } from "@/app/studio/actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import SessionScheduleForm from "@/components/studio/SessionScheduleForm";
@@ -901,27 +900,14 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                 <ObjectivePetals mode="teacher" layout="row" size={170} objectives={[{ id: o.objective_id, value: o.value, label: o.descriptor_en ?? o.descriptor_ar, skill: o.skill }]} />
                 <span dir="auto" style={{ fontSize: 12.5, color: o.assessed ? "var(--text-body)" : "var(--text-muted)", flex: 1 }}>{o.descriptor_en ?? o.descriptor_ar}</span>
                 <Badge tone="neutral">{skillLabel(o.skill)}</Badge>
-                {/* Read-only CURRENT-state indicator (display half) — separate from the input,
-                    so the rating control below is a pure event input that never looks "reverted". */}
+                {/* Read-only CURRENT-state indicator (evidence model: value = mean of the
+                    objective's evidence). The free rating field was removed in AE-3 — teacher
+                    input is now evidence-based (manual grading → objective_evidence). */}
                 <span style={{ fontSize: 11.5, color: o.assessed ? "var(--text-muted)" : "var(--text-faint)", whiteSpace: "nowrap" }}>
                   {o.assessed
                     ? `${t("progress.current")}: ${t(`progress.state${o.state.charAt(0).toUpperCase()}${o.state.slice(1)}`)} · ${o.value.toFixed(1)}/10`
                     : t("progress.notAssessed")}
                 </span>
-                <form action={recordObjectiveAssessment} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                  <input type="hidden" name="learnerId" value={id} />
-                  <input type="hidden" name="objectiveId" value={o.objective_id} />
-                  {/* Pure event input: always starts at the "Rate…" placeholder (never mirrors
-                      the blended stage), so a save can never look unsaved. */}
-                  <select name="state" defaultValue="" required className={sel} style={{ width: "auto", minHeight: 30, fontSize: 12 }}>
-                    <option value="" disabled>{t("progress.rate")}</option>
-                    <option value="seed">{t("progress.stateSeed")}</option>
-                    <option value="bud">{t("progress.stateBud")}</option>
-                    <option value="balloon">{t("progress.stateBalloon")}</option>
-                    <option value="bloom">{t("progress.stateBloom")}</option>
-                  </select>
-                  <SubmitButton pendingText="…" className={btn("ghost")}>{t("progress.save")}</SubmitButton>
-                </form>
               </div>
             ))}
           </Card>

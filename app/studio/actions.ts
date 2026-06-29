@@ -15,8 +15,7 @@ import {
 } from "@/lib/generation/service";
 import { aggregatePlanItems } from "@/lib/curriculum/aggregatePlan";
 import { homePathForRoles } from "@/lib/roles";
-import { type BloomStage } from "@/lib/skills";
-import { valueForState, buildManualEvidence } from "@/lib/progress/evidence";
+import { buildManualEvidence } from "@/lib/progress/evidence";
 import type { ItemFormat, Difficulty } from "@/lib/items";
 
 // The teacher studio is English by internal decision — system messages are English.
@@ -421,26 +420,9 @@ export async function updateReport(formData: FormData) {
 // — Curriculum resources & assessments (the student detail page) —
 
 /** Tenant + instructor guard for the actions below. */
-// Teacher assessment of a curriculum objective → objective_assessments. The DB
-// trigger rolls it into the decaying average (65/35) and the unit/skill blooms.
-export async function recordObjectiveAssessment(formData: FormData) {
-  const learnerId = String(formData.get("learnerId") ?? "");
-  const objectiveId = String(formData.get("objectiveId") ?? "");
-  const state = String(formData.get("state") ?? "") as BloomStage;
-  if (!learnerId || !objectiveId || !["seed", "bud", "balloon", "bloom"].includes(state)) throw new Error(await studioErr("assessmentDataMissing"));
-  const { supabase, user, tenantId } = await instructorCtx();
-  const { error } = await supabase.from("objective_assessments").insert({
-    tenant_id: tenantId,
-    student_id: learnerId,
-    objective_id: objectiveId,
-    value: valueForState(state),
-    state,
-    evidence: "teacher",
-    assessor: user.id,
-  });
-  if (error) throw new Error(error.message);
-  revalidatePath(`/studio/students/${learnerId}`);
-}
+// (recordObjectiveAssessment — the retired free-rating action that wrote
+// objective_assessments via trigger 0056 — was removed in AE-3. Teacher input is now
+// evidence-based: manual grades go through gradeManualSubmission → objective_evidence.)
 
 async function instructorCtx() {
   const supabase = await createClient();

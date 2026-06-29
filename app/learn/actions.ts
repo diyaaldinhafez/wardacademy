@@ -5,8 +5,8 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { valueForPercent, buildAutoEvidence } from "@/lib/progress/evidence";
-import { stageForValue, SKILLS } from "@/lib/skills";
+import { buildAutoEvidence } from "@/lib/progress/evidence";
+import { SKILLS } from "@/lib/skills";
 
 // The child surface is English-pure — error messages are always English.
 const learnErrors = () => getTranslations({ locale: "en", namespace: "learn.errors" });
@@ -164,29 +164,9 @@ export async function submitAssessment(formData: FormData) {
     .update({ status: "completed", score: correctTotal, max_score: total, result, completed_at: new Date().toISOString() })
     .eq("id", assessmentId);
 
-  // Auto evidence → the new model: each skill's % → percent key → value →
-  // objective_assessments(evidence='auto') for every catalog objective of
-  // (unit, skill). The DB trigger rolls it into the decaying average. Only the
-  // four assessed skills exist in the catalog; any off-list tag is skipped.
-  if (a.curriculum_unit_id) {
-    const { data: catObjs } = await admin
-      .from("curriculum_objectives").select("objective_id, skill").eq("unit_id", a.curriculum_unit_id);
-    const rows: { tenant_id: string; student_id: string; objective_id: string; value: number; state: string; evidence: string }[] = [];
-    for (const skill of SKILLS) {
-      const s = bySkill.get(skill);
-      if (!s || s.total === 0) continue;
-      const value = valueForPercent((s.correct / s.total) * 100);
-      for (const o of (catObjs ?? []).filter((o) => o.skill === skill)) {
-        rows.push({ tenant_id: a.tenant_id, student_id: a.learner_id, objective_id: o.objective_id, value, state: stageForValue(value), evidence: "auto" });
-      }
-    }
-    if (rows.length) await admin.from("objective_assessments").insert(rows);
-  }
-
-  // AE-4 (parallel writer · objective_evidence): per-OBJECTIVE auto evidence keyed on each
-  // question's AE-1 objective_id (replaces the per-skill flattening above). Skips
-  // NULL-objective / non-auto questions → no-op on current untagged content. The block above
-  // (objective_assessments + trigger 0056) is unchanged and stays the live source until AE-8.
+  // Auto evidence (the ONLY model since AE-3): per-OBJECTIVE evidence keyed on each question's
+  // objective_id (AE-1), via the §2-أ ratio key. The old per-skill objective_assessments writer
+  // + trigger 0056 were retired in AE-3. Skips NULL-objective / non-auto questions.
   const evidence = buildAutoEvidence(gradedQuestions);
   if (evidence.length) {
     await admin.from("objective_evidence").insert(
