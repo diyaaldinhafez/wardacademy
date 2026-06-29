@@ -13,6 +13,7 @@
 // The design layer holds no logic: it receives value 0–10 and fraction 0..1.
 
 import { SKILLS, type Skill, stageForValue, type BloomStage } from "@/lib/skills";
+import { objectiveValue, skillInUnit, skillPetalAcrossUnits, unitOverall } from "./evidenceBloom";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type ObjectiveBloom = {
@@ -171,4 +172,84 @@ export async function fetchStudentBlooms(supabase: SupabaseClient, learnerIds: s
   }
   for (const id of learnerIds) out.set(id, computeStudentBloom(catalog, units, byStudent.get(id) ?? new Map()));
   return out;
+}
+
+// ───────────────────────── Assessment Evidence-Model Redesign (read path) ─────────────────────────
+// The SAME StudentBloom shape, computed from objective_evidence via the AE-2 pure functions —
+// built ALONGSIDE the old computeStudentBloom/fetchStudentBloom(s) (kept live until AE-3). Layers:
+//   objective     = simple mean of its evidence (objectiveValue)
+//   skill-in-unit = simple mean of that skill's objective values in the unit (skillInUnit; 0s incl)
+//   big-rose petal= decaying 65/35 across COMPLETED units, ordered by completion (skillPetalAcrossUnits)
+//   unit value    = mean of the 4 skill-in-unit petals (unitOverall)
+// "Unit completed" = the unit has TEST-source evidence (auto_test|manual_test). In-progress units
+// (homework evidence only) do NOT feed the big rose. Component shape is unchanged (value 0–10 / fraction).
+type EvidenceRow = { objective_id: string; value: number; source: string; created_at: string };
+
+export function computeEvidenceBloom(catalog: CatalogObjective[], units: CatalogUnit[], evidence: EvidenceRow[]): StudentBloom {
+  const unitById = new Map(units.map((u) => [u.unit_id, u]));
+  const objUnit = new Map(catalog.map((o) => [o.objective_id, o.unit_id]));
+  const byUnit = new Map<string, CatalogObjective[]>();
+  for (const o of catalog) { const arr = byUnit.get(o.unit_id) ?? []; arr.push(o); byUnit.set(o.unit_id, arr); }
+
+  const evByObj = new Map<string, number[]>();
+  const unitCompletedAt = new Map<string, string>(); // unit → latest TEST evidence timestamp ("completed")
+  for (const e of evidence) {
+    const arr = evByObj.get(e.objective_id) ?? []; arr.push(Number(e.value)); evByObj.set(e.objective_id, arr);
+    if (e.source === "auto_test" || e.source === "manual_test") {
+      const u = objUnit.get(e.objective_id);
+      if (u) { const prev = unitCompletedAt.get(u); if (!prev || e.created_at > prev) unitCompletedAt.set(u, e.created_at); }
+    }
+  }
+  const isAssessed = (oid: string) => evByObj.has(oid);
+  const objVal = (oid: string) => (evByObj.has(oid) ? objectiveValue(evByObj.get(oid)!) : 0);
+  const skillInUnitVal = (unitId: string, skill: Skill) =>
+    skillInUnit((byUnit.get(unitId) ?? []).filter((o) => o.skill === skill).map((o) => objVal(o.objective_id)));
+
+  const startedUnitIds = [...byUnit.entries()].filter(([, objs]) => objs.some((o) => isAssessed(o.objective_id))).map(([uid]) => uid);
+
+  const startedUnits: UnitBloom[] = startedUnitIds
+    .map((unit_id) => {
+      const u = unitById.get(unit_id);
+      const objs = [...(byUnit.get(unit_id) ?? [])].sort((a, b) => a.seq - b.seq);
+      const objectives: ObjectiveBloom[] = objs.map((o) => {
+        const value = objVal(o.objective_id);
+        return { objective_id: o.objective_id, skill: o.skill, seq: o.seq, descriptor_ar: o.descriptor_ar, descriptor_en: o.descriptor_en ?? null, value, state: stageForValue(value), assessed: isAssessed(o.objective_id) };
+      });
+      const value = unitOverall(SKILLS.map((s) => skillInUnitVal(unit_id, s)));
+      return { unit_id, level: u?.level ?? "", unit_number: u?.unit_number ?? 0, title_ar: u?.title_ar ?? unit_id, title_en: u?.title_en ?? null, value, stage: stageForValue(value), objectives, assessedCount: objectives.filter((o) => o.assessed).length, total: objectives.length };
+    })
+    .sort((a, b) => (LEVEL_ORDER.indexOf(a.level) - LEVEL_ORDER.indexOf(b.level)) || a.unit_number - b.unit_number);
+
+  const completed = [...unitCompletedAt.entries()].sort((a, b) => (a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0)); // oldest→newest
+  const completedSet = new Set(unitCompletedAt.keys());
+  const skills: SkillPetal[] = SKILLS.map((skill) => {
+    const series = completed.map(([uid, completedAt]) => ({ unitId: uid, skillScore: skillInUnitVal(uid, skill), completedAt }));
+    const value = skillPetalAcrossUnits(series);
+    const objs = catalog.filter((o) => o.skill === skill && completedSet.has(o.unit_id));
+    return { skill, value, fraction: Math.max(0, Math.min(1, value / 10)), stage: stageForValue(value), assessed: objs.filter((o) => isAssessed(o.objective_id)).length, total: objs.length };
+  });
+
+  return { startedUnits, skills, startedUnitIds, assessedObjectives: evByObj.size };
+}
+
+export async function fetchEvidenceBlooms(supabase: SupabaseClient, learnerIds: string[]): Promise<Map<string, StudentBloom>> {
+  const out = new Map<string, StudentBloom>();
+  if (learnerIds.length === 0) return out;
+  const { catalog, units } = await loadCatalog(supabase);
+  const { data: ev } = await supabase
+    .from("objective_evidence")
+    .select("learner_id, objective_id, value, source, created_at")
+    .in("learner_id", learnerIds);
+  const byLearner = new Map<string, EvidenceRow[]>();
+  for (const r of (ev ?? []) as (EvidenceRow & { learner_id: string })[]) {
+    const arr = byLearner.get(r.learner_id) ?? [];
+    arr.push({ objective_id: r.objective_id, value: Number(r.value), source: r.source, created_at: r.created_at });
+    byLearner.set(r.learner_id, arr);
+  }
+  for (const id of learnerIds) out.set(id, computeEvidenceBloom(catalog, units, byLearner.get(id) ?? []));
+  return out;
+}
+
+export async function fetchEvidenceBloom(supabase: SupabaseClient, learnerId: string): Promise<StudentBloom> {
+  return (await fetchEvidenceBlooms(supabase, [learnerId])).get(learnerId)!;
 }

@@ -24,7 +24,7 @@ import { SKILLS } from "@/lib/skills";
 import { getTranslations } from "next-intl/server";
 import { UnitBloom, FlowerProgress, ScopeChip } from "@/components/bloom/Bloom";
 import ObjectivePetals from "@/components/bloom/ObjectivePetals";
-import { fetchStudentBloom } from "@/lib/progress/bloom";
+import { fetchEvidenceBloom } from "@/lib/progress/bloom";
 import { aggregatePlanItems } from "@/lib/curriculum/aggregatePlan";
 import { FORMAT_LABELS, ITEM_FORMATS, DIFFICULTIES } from "@/lib/items";
 import { WEEKDAY_EN } from "@/lib/availability";
@@ -75,7 +75,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const planItems: any[] = (plan?.items as any[]) ?? [];
 
   // New progress model: unit/skill blooms rolled up from objective_progress (§5).
-  const bloom = await fetchStudentBloom(supabase, id);
+  const bloom = await fetchEvidenceBloom(supabase, id);
   const petals = bloom.skills.map((s) => ({ name: s.skill, label: tc(`skills.${s.skill}`), value: s.fraction }));
   const overall = bloom.skills.length ? Math.round((bloom.skills.reduce((a, s) => a + s.fraction, 0) / bloom.skills.length) * 100) : 0;
   const skillStats = bloom.skills;

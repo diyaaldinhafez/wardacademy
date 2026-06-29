@@ -6,7 +6,7 @@ import WorkspaceHeader from "@/components/studio/WorkspaceHeader";
 import LocaleSwitcher from "@/components/LocaleSwitcher";
 import { FlowerProgress } from "@/components/bloom/Bloom";
 import { SkillBars } from "@/components/bloom/SkillBars";
-import { fetchStudentBlooms } from "@/lib/progress/bloom";
+import { fetchEvidenceBlooms } from "@/lib/progress/bloom";
 import { fmtLocal } from "@/lib/datetime";
 import { guardianEffectiveLocale } from "@/lib/parentLocale";
 
@@ -40,7 +40,7 @@ export default async function GuardianPage({ searchParams }: { searchParams: Pro
     .select("learner_id, profiles!guardianships_learner_id_fkey(full_name, login_email)");
   const kids = (children ?? []) as any[];
   const learnerIds = kids.map((c) => c.learner_id);
-  const bloomByLearner = await fetchStudentBlooms(supabase, learnerIds);
+  const bloomByLearner = await fetchEvidenceBlooms(supabase, learnerIds);
 
   const { data: sessions } = await supabase
     .from("sessions")

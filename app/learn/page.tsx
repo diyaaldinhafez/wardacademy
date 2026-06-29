@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { type BloomStage } from "@/lib/skills";
 import { FlowerProgress, UnitBloom as BloomUnit, ScopeChip } from "@/components/bloom/Bloom";
-import { fetchStudentBloom } from "@/lib/progress/bloom";
+import { fetchEvidenceBloom } from "@/lib/progress/bloom";
 import { submitPlacement, submitManualHomework, submitAssessment } from "./actions";
 import AnswerForm from "@/components/learn/AnswerForm";
 import SubmitButton from "@/components/studio/SubmitButton";
@@ -54,7 +54,7 @@ export default async function LearnPage() {
     .from("submissions")
     .select("item_id, is_correct, graded, created_at")
     .order("created_at", { ascending: false });
-  const bloom = await fetchStudentBloom(supabase, user.id);
+  const bloom = await fetchEvidenceBloom(supabase, user.id);
   const { data: manualHw } = await supabase
     .from("manual_homework")
     .select("id, title, instructions, status, score, max_score, feedback, homework_files(id, kind, file_path)")
