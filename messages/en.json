@@ -354,8 +354,8 @@
         "noWhatsapp": "No WhatsApp number for the guardian to share."
       },
       "progress": {
-        "skillsTitle": "Four skills — average across started units",
-        "skillsNote": "A petal = the average of that skill's objective scores across started units (an un-assessed objective counts as seed). Speaking is rated by the teacher.",
+        "skillsTitle": "Four skills — across your journey",
+        "skillsNote": "Each petal is a skill, built from graded homework & tests (tagged to objectives). The big flower uses a recency-weighted average across completed units; the current unit grows as work is graded.",
         "whereToHelp": "Where should I step in?",
         "weakest": "Weakest now:",
         "weakestHint": " — focus the next session there.",

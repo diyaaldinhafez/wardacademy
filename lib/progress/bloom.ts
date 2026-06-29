@@ -35,6 +35,7 @@ export type UnitBloom = {
   title_en: string | null; // audited English title; forced-en surfaces prefer it
   value: number; // 0–10, simple mean of ALL objectives (un-assessed = 0)
   stage: BloomStage;
+  completed: boolean; // evidence model: the unit's unit-test has graded evidence (§3 "completed")
   objectives: ObjectiveBloom[];
   assessedCount: number;
   total: number;
@@ -99,6 +100,7 @@ export function computeStudentBloom(
         title_en: u?.title_en ?? null,
         value,
         stage: stageForValue(value),
+        completed: false, // old model has no completion marker (unused by surfaces; evidence model sets it)
         objectives,
         assessedCount: objectives.filter((o) => o.assessed).length,
         total: objectives.length,
@@ -216,7 +218,7 @@ export function computeEvidenceBloom(catalog: CatalogObjective[], units: Catalog
         return { objective_id: o.objective_id, skill: o.skill, seq: o.seq, descriptor_ar: o.descriptor_ar, descriptor_en: o.descriptor_en ?? null, value, state: stageForValue(value), assessed: isAssessed(o.objective_id) };
       });
       const value = unitOverall(SKILLS.map((s) => skillInUnitVal(unit_id, s)));
-      return { unit_id, level: u?.level ?? "", unit_number: u?.unit_number ?? 0, title_ar: u?.title_ar ?? unit_id, title_en: u?.title_en ?? null, value, stage: stageForValue(value), objectives, assessedCount: objectives.filter((o) => o.assessed).length, total: objectives.length };
+      return { unit_id, level: u?.level ?? "", unit_number: u?.unit_number ?? 0, title_ar: u?.title_ar ?? unit_id, title_en: u?.title_en ?? null, value, stage: stageForValue(value), completed: unitCompletedAt.has(unit_id), objectives, assessedCount: objectives.filter((o) => o.assessed).length, total: objectives.length };
     })
     .sort((a, b) => (LEVEL_ORDER.indexOf(a.level) - LEVEL_ORDER.indexOf(b.level)) || a.unit_number - b.unit_number);
 

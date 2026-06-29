@@ -128,11 +128,15 @@ export default async function LearnPage() {
     if (!lastByItem.has(s.item_id)) lastByItem.set(s.item_id, { is_correct: s.is_correct, graded: s.graded });
   }
 
-  // Unit hero + skill flower + garden path — all from the one shared roll-up.
-  const currentUnit = bloom.startedUnits.find((u) => u.stage !== "bloom") ?? bloom.startedUnits[0] ?? null;
+  // Unit hero + skill flower + garden path — all from the one shared roll-up. Unit STATE is the
+  // evidence model's completion (a unit-test has graded evidence), NOT the bloom stage:
+  //   completed (test graded) → "mastered" (Done) · the single in-progress unit → "current"
+  //   (Now / You are here) · any other started-but-not-completed → "upcoming" (Next).
+  // currentUnit = the first STARTED unit that is not yet completed (the one being worked on).
+  const currentUnit = bloom.startedUnits.find((u) => !u.completed) ?? bloom.startedUnits[bloom.startedUnits.length - 1] ?? null;
   const gardenUnits = bloom.startedUnits.map((u) => ({
     unit: u.title_en ?? u.title_ar, // catalog unit title — English (forced-en child surface), Arabic fallback
-    status: (u.stage === "bloom" ? "mastered" : "current") as "mastered" | "current" | "upcoming",
+    status: (u.completed ? "mastered" : u.unit_id === currentUnit?.unit_id ? "current" : "upcoming") as "mastered" | "current" | "upcoming",
     stage: u.stage as BloomStage,
   }));
 
