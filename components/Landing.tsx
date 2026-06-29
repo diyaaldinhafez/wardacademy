@@ -227,10 +227,6 @@ export default function Landing() {
             <div className="grid items-center gap-5 pb-12 pt-7 sm:gap-6 sm:py-16 lg:gap-10 lg:grid-cols-[1.1fr_0.9fr]">
               {/* text column — on mobile the flower + card are interleaved here */}
               <div className="flex flex-col items-center gap-4 text-center sm:gap-5 lg:items-start lg:text-start lg:ps-10">
-                <span className="inline-flex items-center gap-2 rounded-full border border-ink/8 bg-white/80 px-3 py-1.5 shadow-ward-1 backdrop-blur">
-                  <Stars />
-                  <b className="text-xs font-bold text-ink">{L.hero.rating}</b>
-                </span>
                 <h1 className="font-display text-[clamp(28px,5.2vw,46px)] font-bold leading-[1.3] text-brand-900">
                   {L.hero.title}
                 </h1>
