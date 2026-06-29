@@ -359,8 +359,15 @@
         "whereToHelp": "Where should I step in?",
         "weakest": "Weakest now:",
         "weakestHint": " — focus the next session there.",
-        "noAssessments": "No assessments yet — rate the first objective of a unit to start its bloom.",
+        "noAssessments": "No evidence yet — graded homework & tests will grow the unit's skill petals.",
         "unitBloom": "Unit bloom {value}/10 · assessed {n}/{total}",
+        "noEvidence": "No evidence yet",
+        "evidenceSource": {
+          "auto_homework": "Auto · homework",
+          "auto_test": "Auto · unit test",
+          "manual_homework": "Teacher-graded · homework",
+          "manual_test": "Teacher-graded · unit test"
+        },
         "rate": "Rate…",
         "current": "Current",
         "notAssessed": "Not yet assessed",

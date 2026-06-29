@@ -19,10 +19,9 @@ import ItemCard from "@/components/studio/ItemCard";
 import VideoCall from "@/components/VideoCall";
 import { Card, Badge, Avatar, AITrustBadge, Spark } from "@/components/ward/ui";
 import { SkillBars } from "@/components/bloom/SkillBars";
-import { SKILLS } from "@/lib/skills";
+import { SKILLS, stageForValue } from "@/lib/skills";
 import { getTranslations } from "next-intl/server";
 import { UnitBloom, FlowerProgress, ScopeChip } from "@/components/bloom/Bloom";
-import ObjectivePetals from "@/components/bloom/ObjectivePetals";
 import { fetchEvidenceBloom } from "@/lib/progress/bloom";
 import { aggregatePlanItems } from "@/lib/curriculum/aggregatePlan";
 import { FORMAT_LABELS, ITEM_FORMATS, DIFFICULTIES } from "@/lib/items";
@@ -73,8 +72,23 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const { data: plan } = await supabase.from("study_plans").select("id, title, level, items, status, track, scope_label, milestone_label").eq("learner_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle();
   const planItems: any[] = (plan?.items as any[]) ?? [];
 
-  // New progress model: unit/skill blooms rolled up from objective_progress (§5).
+  // Evidence model: unit/skill blooms rolled up from objective_evidence (§5/§6.2).
   const bloom = await fetchEvidenceBloom(supabase, id);
+  // Per-objective evidence log (teacher diagnostic · read-only · RLS-scoped). Grouped by objective.
+  const { data: evidenceRows } = await supabase
+    .from("objective_evidence")
+    .select("objective_id, value, source, created_at")
+    .eq("learner_id", id)
+    .order("created_at", { ascending: false });
+  const evidenceByObjective = new Map<string, { value: number; source: string; created_at: string }[]>();
+  for (const e of (evidenceRows ?? []) as any[]) {
+    const arr = evidenceByObjective.get(e.objective_id) ?? [];
+    arr.push(e);
+    evidenceByObjective.set(e.objective_id, arr);
+  }
+  const meanOf = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  const evDate = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
   const petals = bloom.skills.map((s) => ({ name: s.skill, label: tc(`skills.${s.skill}`), value: s.fraction }));
   const overall = bloom.skills.length ? Math.round((bloom.skills.reduce((a, s) => a + s.fraction, 0) / bloom.skills.length) * 100) : 0;
   const skillStats = bloom.skills;
@@ -895,21 +909,58 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                 <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{u.level} · {t("progress.unitBloom", { value: u.value.toFixed(1), n: u.assessedCount, total: u.total })}</div>
               </div>
             </div>
-            {u.objectives.map((o, i) => (
-              <div key={o.objective_id} style={{ display: "flex", alignItems: "center", gap: 10, borderTop: i === 0 ? "none" : "1px solid var(--ink-100)", paddingTop: i === 0 ? 0 : 6 }}>
-                <ObjectivePetals mode="teacher" layout="row" size={170} objectives={[{ id: o.objective_id, value: o.value, label: o.descriptor_en ?? o.descriptor_ar, skill: o.skill }]} />
-                <span dir="auto" style={{ fontSize: 12.5, color: o.assessed ? "var(--text-body)" : "var(--text-muted)", flex: 1 }}>{o.descriptor_en ?? o.descriptor_ar}</span>
-                <Badge tone="neutral">{skillLabel(o.skill)}</Badge>
-                {/* Read-only CURRENT-state indicator (evidence model: value = mean of the
-                    objective's evidence). The free rating field was removed in AE-3 — teacher
-                    input is now evidence-based (manual grading → objective_evidence). */}
-                <span style={{ fontSize: 11.5, color: o.assessed ? "var(--text-muted)" : "var(--text-faint)", whiteSpace: "nowrap" }}>
-                  {o.assessed
-                    ? `${t("progress.current")}: ${t(`progress.state${o.state.charAt(0).toUpperCase()}${o.state.slice(1)}`)} · ${o.value.toFixed(1)}/10`
-                    : t("progress.notAssessed")}
-                </span>
-              </div>
-            ))}
+            {/* §6.2 drill-down: UNIT → 4 SKILL petals → (click) that skill's objectives →
+                (click) the objective's evidence log. Read-only · teacher diagnostic. Values are
+                already computed by evidenceBloom (objective = mean of its evidence; skill-in-unit
+                = simple mean of that skill's objectives). */}
+            {SKILLS.map((skill) => {
+              const skillObjs = u.objectives.filter((o) => o.skill === skill);
+              if (skillObjs.length === 0) return null;
+              const skillVal = meanOf(skillObjs.map((o) => o.value));
+              const skillState = stageForValue(skillVal);
+              return (
+                <details key={skill} style={{ borderTop: "1px solid var(--ink-100)", paddingTop: 6 }}>
+                  <summary style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <SkillBars skills={[{ key: skill, label: skillLabel(skill), fraction: Math.max(0, Math.min(1, skillVal / 10)), value: skillVal, total: skillObjs.length }]} />
+                    </div>
+                    <span style={{ fontSize: 11, color: "var(--text-muted)", whiteSpace: "nowrap" }}>{t(`progress.state${cap(skillState)}`)}</span>
+                  </summary>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: "6px 0 2px 10px" }}>
+                    {skillObjs.map((o) => {
+                      const ev = evidenceByObjective.get(o.objective_id) ?? [];
+                      return (
+                        <details key={o.objective_id} style={{ borderInlineStart: "2px solid var(--ink-100)", paddingInlineStart: 8 }}>
+                          <summary style={{ cursor: "pointer", display: "flex", alignItems: "baseline", gap: 8, fontSize: 12.5 }}>
+                            {/* descriptor shown ONCE (the previous double-render via the petal label was removed) */}
+                            <span dir="auto" style={{ flex: 1, color: o.assessed ? "var(--text-body)" : "var(--text-muted)" }}>{o.descriptor_en ?? o.descriptor_ar}</span>
+                            <span style={{ fontSize: 11.5, color: o.assessed ? "var(--text-muted)" : "var(--text-faint)", whiteSpace: "nowrap" }}>
+                              {o.assessed ? `${t("progress.current")}: ${t(`progress.state${cap(o.state)}`)} · ${o.value.toFixed(1)}/10` : t("progress.notAssessed")}
+                            </span>
+                          </summary>
+                          {ev.length === 0 ? (
+                            <p style={{ fontSize: 11.5, color: "var(--text-faint)", padding: "4px 0 4px 8px", margin: 0 }}>{t("progress.noEvidence")}</p>
+                          ) : (
+                            <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 3, padding: "4px 0 4px 8px", margin: 0 }}>
+                              {ev.map((e, ei) => {
+                                const st = stageForValue(Number(e.value));
+                                return (
+                                  <li key={ei} style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: 11.5, color: "var(--text-muted)" }}>
+                                    <span style={{ fontWeight: 700, color: "var(--text-brand)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{t(`progress.state${cap(st)}`)} · {Number(e.value).toFixed(1)}/10</span>
+                                    <span style={{ flex: 1 }}>{t(`progress.evidenceSource.${e.source}`)}</span>
+                                    <span style={{ fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{evDate(e.created_at)}</span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
+                        </details>
+                      );
+                    })}
+                  </div>
+                </details>
+              );
+            })}
           </Card>
         ))
       )}

@@ -50,6 +50,10 @@ for (const L of targets) {
   for (const o of objByUnit.get(u1.unit_id) ?? []) { const v = U1[o.skill]; if (v != null) push(o.objective_id, v, "auto_test", Date.now() - 30 * DAY); }
   // unit2 in-progress (auto_homework, listening+reading only → no test → not completed)
   for (const o of objByUnit.get(u2.unit_id) ?? []) { const v = U2[o.skill]; if (v != null) push(o.objective_id, v, "auto_homework", Date.now() - 2 * DAY); }
+  // one MANUAL homework grade in the in-progress unit (demonstrates the teacher evidence source
+  // + a per-objective simple mean of >1 evidence: reading = mean(auto_homework 4, manual 7) = 5.5)
+  const u2Reading = (objByUnit.get(u2.unit_id) ?? []).find((o) => o.skill === "reading");
+  if (u2Reading) push(u2Reading.objective_id, 7, "manual_homework", Date.now() - 1 * DAY);
 
   if (rows.length) { const { error } = await c.from("objective_evidence").insert(rows); if (error) { console.log("ERR", L.full_name, error.message); continue; } }
   console.log(`✓ ${L.full_name} (${level}): ${rows.length} evidence rows · completed=[${u0.unit_id}, ${u1.unit_id}] · in-progress=[${u2.unit_id}]`);
