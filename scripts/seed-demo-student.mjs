@@ -28,8 +28,6 @@ const main = async () => {
   // — Clean prior data (new model) —
   await c.from("submissions").delete().eq("learner_id", L);
   await c.from("assignments").delete().eq("learner_id", L);
-  await c.from("objective_assessments").delete().eq("student_id", L);
-  await c.from("objective_progress").delete().eq("student_id", L);
   await c.from("manual_homework").delete().eq("learner_id", L);
   await c.from("assessments").delete().eq("learner_id", L); // cascades assessment_questions
   await c.from("sessions").delete().eq("learner_id", L);     // cascades session_reports
@@ -48,15 +46,9 @@ const main = async () => {
     created_by: I, approved_at: iso("2026-04-01T10:00:00Z"),
   }).select("id").single(), "plan");
 
-  // — Progress: ONE objective_assessments row per taught objective → trigger rolls up —
-  const firstUnit = unitIdOf(items[0].id);
-  const rows = [];
-  for (let i = 0; i < Math.min(TAUGHT, items.length); i++) {
-    const it = items[i];
-    const value = clamp(STRENGTH * 10 - (LAG.includes(it.skill) ? 2.8 : 0) + ((((i * 17) % 7) - 3) * 0.3));
-    rows.push({ tenant_id: T, student_id: L, objective_id: it.id, value, state: stageFor(value), evidence: unitIdOf(it.id) === firstUnit ? "auto" : "teacher", assessed_at: iso("2026-06-14T15:00:00Z") });
-  }
-  must(await c.from("objective_assessments").insert(rows), "objective_assessments");
+  // — Progress is now the evidence model (objective_evidence): seed it via
+  //   scripts/seed-evidence.mjs. The old objective_assessments/objective_progress tables were
+  //   hard-deleted in AE-8. —
 
   // — Sessions: weekly Tuesdays 15:00 UTC, 11 past + 2 future —
   const tuesdays = ["2026-04-07", "2026-04-14", "2026-04-21", "2026-04-28", "2026-05-05", "2026-05-12", "2026-05-19", "2026-05-26", "2026-06-02", "2026-06-09", "2026-06-16", "2026-06-23", "2026-06-30"];

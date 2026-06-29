@@ -84,8 +84,6 @@ async function ensureLearner(persona, ctx) {
 async function clearLearner(L) {
   await c.from("submissions").delete().eq("learner_id", L);
   await c.from("assignments").delete().eq("learner_id", L);
-  await c.from("objective_assessments").delete().eq("student_id", L);
-  await c.from("objective_progress").delete().eq("student_id", L);
   await c.from("manual_homework").delete().eq("learner_id", L);
   await c.from("assessments").delete().eq("learner_id", L);
   await c.from("sessions").delete().eq("learner_id", L);
@@ -105,24 +103,9 @@ async function seed(persona, ctx) {
   const items = await aggregatePlanMirror(c, persona.level);
   const plan = must(await c.from("study_plans").insert({ tenant_id: T, learner_id: L, title: `Ward Curriculum · Level ${persona.level}`, level: persona.level, items, status: "approved", track: "cefr", scope_label: `Ward Curriculum · Level ${persona.level}`, milestone_label: `Level assessment on completing ${persona.level}`, created_by: I, approved_at: iso(Date.now() - 92 * DAY) }).select("id").single(), "plan");
 
-  // Progress: ONE objective_assessments row per taught objective (first assessment =
-  // the value; the trigger rolls it into objective_progress). Values 0–10; the four
-  // states come from ward_stage_for_value, not invented bands.
-  const taught = Math.min(persona.taught, items.length);
-  const firstUnit = items.length ? unitIdOf(items[0].id) : null;
-  const rows = [];
-  for (let i = 0; i < taught; i++) {
-    const it = items[i];
-    const jitter = (((i * 17) % 7) - 3) * 0.3;
-    const value = clamp(persona.strength * 10 - (persona.lag.includes(it.skill) ? 2.8 : 0) + jitter);
-    rows.push({
-      tenant_id: T, student_id: L, objective_id: it.id, value, state: stageFor(value),
-      // unit-1 objectives look auto-graded (as if from a unit test); the rest teacher.
-      evidence: unitIdOf(it.id) === firstUnit ? "auto" : "teacher",
-      assessed_at: iso(Date.now() - (taught - i) * 6 * DAY),
-    });
-  }
-  if (rows.length) must(await c.from("objective_assessments").insert(rows), "objective_assessments");
+  // Progress is now the evidence model (objective_evidence): seed it via
+  // scripts/seed-evidence.mjs. The old objective_assessments/objective_progress tables were
+  // hard-deleted in AE-8.
 
   // Sessions
   const { past, future } = weeklyDates(persona.wd, persona.time, taught);
