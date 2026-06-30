@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import FlowerMark from "@/components/FlowerMark";
-import LocaleSwitcher from "@/components/LocaleSwitcher";
 
 export default function SetPasswordPage() {
   const supabase = createClient();
@@ -46,8 +45,8 @@ export default function SetPasswordPage() {
       <div className="ward-card" style={{ width: "100%", maxWidth: 380 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           <FlowerMark className="h-9 w-9" />
+          {/* PA-2: Arabic-only — switcher hidden (forced ar via the layout provider; component + landing untouched). */}
           <span style={{ fontWeight: 700, color: "var(--ward-purple-800)", flex: 1 }}>{tc("appName")}</span>
-          <LocaleSwitcher />
         </div>
 
         {done ? (

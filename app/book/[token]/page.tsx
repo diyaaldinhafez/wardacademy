@@ -1,21 +1,23 @@
 /* eslint-disable react-hooks/purity -- server component: date math per request is intentional */
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
+import { NextIntlClientProvider } from "next-intl";
+import arMessages from "@/messages/ar.json";
 import { createAdminClient } from "@/lib/supabase/admin";
 import BookFlow from "@/components/enroll/BookFlow";
 import FlowerMark from "@/components/FlowerMark";
-import LocaleSwitcher from "@/components/LocaleSwitcher";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("enrollForm");
+  const t = await getTranslations({ locale: "ar", namespace: "enrollForm" });
   return { title: t("bookMetaTitle"), robots: { index: false, follow: false } };
 }
 
+// PA-2: /book is Arabic-only — force ar (provider locale="ar" wraps the client BookFlow) + own
+// dir="rtl" lang="ar" so the root LOCALE cookie can't flip it.
 export default async function BookPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const locale = await getLocale();
-  const t = await getTranslations("enrollForm");
+  const t = await getTranslations({ locale: "ar", namespace: "enrollForm" });
   const admin = createAdminClient();
 
   const { data: lead } = await admin
@@ -47,10 +49,8 @@ export default async function BookPage({ params }: { params: Promise<{ token: st
     .limit(40);
 
   return (
-    <main dir={locale === "ar" ? "rtl" : "ltr"} lang={locale} className="flex min-h-screen flex-col items-center bg-cream px-5 py-6">
-      <div className="flex w-full max-w-md justify-end">
-        <LocaleSwitcher />
-      </div>
+   <NextIntlClientProvider locale="ar" messages={arMessages}>
+    <main dir="rtl" lang="ar" className="flex min-h-screen flex-col items-center bg-cream px-5 py-6">
       <div className="flex w-full flex-1 items-center justify-center pb-12 pt-4">
         {existing ? (
           <div className="mx-auto w-full max-w-md text-center">
@@ -65,5 +65,6 @@ export default async function BookPage({ params }: { params: Promise<{ token: st
         )}
       </div>
     </main>
+   </NextIntlClientProvider>
   );
 }

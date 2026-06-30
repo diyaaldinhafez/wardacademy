@@ -3,7 +3,6 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import WorkspaceHeader from "@/components/studio/WorkspaceHeader";
-import LocaleSwitcher from "@/components/LocaleSwitcher";
 import { FlowerProgress } from "@/components/bloom/Bloom";
 import { SkillBars } from "@/components/bloom/SkillBars";
 import { fetchEvidenceBlooms } from "@/lib/progress/bloom";
@@ -180,7 +179,9 @@ export default async function GuardianPage({ searchParams }: { searchParams: Pro
 
   return (
     <main className="mx-auto max-w-2xl px-5 py-10">
-      <WorkspaceHeader title={tg("title")} subtitle={profile?.full_name ?? user.email ?? ""} rightSlot={<LocaleSwitcher />} />
+      {/* PA-2: guardian dashboard is Arabic-only — the language switcher is hidden here (the
+          LocaleSwitcher component + its landing usage are untouched; removed fully in PA-4). */}
+      <WorkspaceHeader title={tg("title")} subtitle={profile?.full_name ?? user.email ?? ""} />
 
       {kids.length === 0 ? (
         <p className="text-sm text-ink-soft">{tg("noChildren")}</p>

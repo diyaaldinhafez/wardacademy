@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
+import { NextIntlClientProvider } from "next-intl";
+import arMessages from "@/messages/ar.json";
 import { createAdminClient } from "@/lib/supabase/admin";
 import LeadTestForm from "@/components/LeadTestForm";
 import FlowerMark from "@/components/FlowerMark";
-import LocaleSwitcher from "@/components/LocaleSwitcher";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("placement");
+  const t = await getTranslations({ locale: "ar", namespace: "placement" });
   return { title: t("metaTitle"), robots: { index: false, follow: false } };
 }
 
@@ -14,10 +15,12 @@ function Card({ children }: { children: React.ReactNode }) {
   return <div className="rounded-3xl border border-brand-100 bg-white p-8 text-center text-ink shadow-ward-1">{children}</div>;
 }
 
+// PA-2: /t (placement) is Arabic-only — force ar (provider locale="ar" wraps the client
+// LeadTestForm) + own dir="rtl" lang="ar" so the root LOCALE cookie can't flip it. The CEFR
+// question CONTENT (q.prompt/options) stays as authored — only the UI chrome is forced Arabic.
 export default async function LeadTestPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const locale = await getLocale();
-  const t = await getTranslations("placement");
+  const t = await getTranslations({ locale: "ar", namespace: "placement" });
   const admin = createAdminClient();
   const { data: test } = await admin
     .from("lead_tests")
@@ -36,10 +39,8 @@ export default async function LeadTestPage({ params }: { params: Promise<{ token
   }
 
   return (
-    <main dir={locale === "ar" ? "rtl" : "ltr"} lang={locale} className="flex min-h-screen flex-col items-center bg-cream px-5 py-6">
-      <div className="flex w-full max-w-lg justify-end">
-        <LocaleSwitcher />
-      </div>
+   <NextIntlClientProvider locale="ar" messages={arMessages}>
+    <main dir="rtl" lang="ar" className="flex min-h-screen flex-col items-center bg-cream px-5 py-6">
       <div className="flex w-full flex-1 items-center justify-center pb-12 pt-4">
         <div className="w-full max-w-lg">
           <div className="mb-6 text-center">
@@ -61,5 +62,6 @@ export default async function LeadTestPage({ params }: { params: Promise<{ token
         </div>
       </div>
     </main>
+   </NextIntlClientProvider>
   );
 }

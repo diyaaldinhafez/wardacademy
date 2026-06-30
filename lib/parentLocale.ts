@@ -1,23 +1,13 @@
-import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
-import { LOCALE_COOKIE, type Locale } from "@/i18n/request";
+import { type Locale } from "@/i18n/request";
 
 /**
- * Effective locale for the guardian surface. Priority:
- *   1) an explicit LOCALE cookie (the manual switcher) — wins,
- *   2) the guardian's saved preference profiles.comms_locale,
- *   3) 'ar' (our audience is Arabic-first).
- * So a parent whose comms_locale='ar' opens straight into Arabic with no cookie,
- * yet a deliberate flip of the switcher still takes precedence.
+ * Effective locale for the guardian surface. PA-2: the guardian dashboard — like every
+ * parent-facing surface after the landing — is **Arabic-only**, so this ALWAYS returns "ar".
+ * It no longer reads the LOCALE cookie or profiles.comms_locale, so the landing toggle's cookie
+ * (or a stale "en" cookie) can never flip the guardian surface to English. (Kept async + this
+ * helper so callers/imports are unchanged; profiles.comms_locale stays in the DB as vestigial,
+ * retired in PA-4.)
  */
 export async function guardianEffectiveLocale(): Promise<Locale> {
-  const cookie = (await cookies()).get(LOCALE_COOKIE)?.value;
-  if (cookie === "en" || cookie === "ar") return cookie;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return "ar";
-  const { data } = await supabase.from("profiles").select("comms_locale").eq("id", user.id).maybeSingle();
-  return data?.comms_locale === "en" || data?.comms_locale === "ar" ? data.comms_locale : "ar";
+  return "ar";
 }

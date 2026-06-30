@@ -1,17 +1,19 @@
 /* eslint-disable react-hooks/purity -- server component: date math per request is intentional */
 import type { Metadata } from "next";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
+import { NextIntlClientProvider } from "next-intl";
+import arMessages from "@/messages/ar.json";
 import { createAdminClient } from "@/lib/supabase/admin";
 import EnrollFlow from "@/components/enroll/EnrollFlow";
-import LocaleSwitcher from "@/components/LocaleSwitcher";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("enrollForm");
+  const t = await getTranslations({ locale: "ar", namespace: "enrollForm" });
   return { title: t("metaTitle"), robots: { index: false, follow: false } };
 }
 
+// PA-2: /enroll is Arabic-only — force ar (NextIntlClientProvider locale="ar" wraps the client
+// EnrollFlow) + this subtree OWNS dir="rtl" lang="ar", so the root LOCALE cookie can't flip it.
 export default async function EnrollPage() {
-  const locale = await getLocale();
   const admin = createAdminClient();
   const { data: tenant } = await admin.from("tenants").select("id").eq("is_default", true).single();
 
@@ -32,13 +34,12 @@ export default async function EnrollPage() {
   }
 
   return (
-    <div dir={locale === "ar" ? "rtl" : "ltr"} lang={locale} className="min-h-screen bg-cream">
-      <div className="flex justify-end px-5 pt-5">
-        <LocaleSwitcher />
+    <NextIntlClientProvider locale="ar" messages={arMessages}>
+      <div dir="rtl" lang="ar" className="min-h-screen bg-cream">
+        <main className="flex items-center justify-center px-5 pb-12 pt-4">
+          <EnrollFlow slots={slots} />
+        </main>
       </div>
-      <main className="flex items-center justify-center px-5 pb-12 pt-4">
-        <EnrollFlow slots={slots} />
-      </main>
-    </div>
+    </NextIntlClientProvider>
   );
 }
