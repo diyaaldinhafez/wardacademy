@@ -45,11 +45,17 @@ export default async function LearnPage() {
   };
 
   const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
-  const { data: items } = await supabase
-    .from("items")
-    .select("id, prompt, content, format, difficulty, origin, objective_id, curriculum_objectives(descriptor_ar, level)")
-    .eq("status", "approved")
+  // Auto-practice = the items ASSIGNED to THIS learner (the per-learner `assignments` table,
+  // joined to the approved item it points to). This replaces the old unscoped "all approved
+  // tenant items" read — the child now sees only what is assigned to them. When the learner has
+  // no assignments, this is simply empty (handled by the homework block's empty state).
+  const { data: assignments } = await supabase
+    .from("assignments")
+    .select("id, items!inner(id, prompt, content, format, status)")
+    .eq("learner_id", user.id)
+    .eq("items.status", "approved")
     .order("created_at", { ascending: false });
+  const items = (assignments ?? []).map((a: any) => a.items).filter(Boolean);
   const { data: subs } = await supabase
     .from("submissions")
     .select("item_id, is_correct, graded, created_at")

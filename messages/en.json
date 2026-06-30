@@ -74,7 +74,7 @@
     "results": { "heading": "My tests" },
     "homework": {
       "heading": "My homework",
-      "empty": "No homework yet. Your teacher will add some soon.",
+      "empty": "Nothing to practice right now — your teacher will plant new homework here soon.",
       "approved": "✓ from your teacher",
       "sent": "Sent ✓",
       "correct": "Correct ✓",
