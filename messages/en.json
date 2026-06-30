@@ -28,7 +28,7 @@
   "learn": {
     "header": { "title": "My Garden" },
     "assessment": {
-      "heading": "Test: {unit}",
+      "heading": "Test: ⁨{unit}⁩",
       "intro": "Answer the questions. You can do it!",
       "submit": "Send my test",
       "sending": "Sending…",
@@ -69,17 +69,10 @@
     },
     "plan": { "heading": "My plan" },
     "sessions": {
-      "heading": "My lessons",
       "next": "Your next lesson",
       "noUpcoming": "No lesson scheduled yet — your teacher will set one soon.",
-      "empty": "No lessons yet.",
       "minutes": "{n} min",
-      "join": "Join",
-      "report": {
-        "title": "Lesson report",
-        "strengths": "What you did well:",
-        "improve": "What to practice:"
-      }
+      "join": "Join"
     },
     "results": { "heading": "My tests" },
     "homework": {
@@ -157,7 +150,7 @@
       "heroOngoing": "Session in progress",
       "heroNext": "Next session",
       "minutes": "{n} min",
-      "lessonPrefix": "· {title}",
+      "lessonPrefix": "· ⁨{title}⁩",
       "prepareLesson": "Prepare lesson →",
       "heroNone": "No upcoming sessions. Schedule them from a student's page.",
       "rosterTitle": "Your students",
@@ -175,11 +168,11 @@
       "tasksMore": "+ {n} more",
       "rel": { "now": "Now", "inMinutes": "in {n} min", "inHours": "in {n} h" },
       "task": {
-        "writeReport": "Write session report — {name}",
-        "approveReport": "Approve session report — {name}",
-        "gradeHomework": "Grade homework: {title} — {name}",
-        "approveAssessment": "Approve assessment: {title} — {name}",
-        "reviewItem": "Review a digital task — {name}",
+        "writeReport": "Write session report — ⁨{name}⁩",
+        "approveReport": "Approve session report — ⁨{name}⁩",
+        "gradeHomework": "Grade homework: ⁨{title}⁩ — ⁨{name}⁩",
+        "approveAssessment": "Approve assessment: ⁨{title}⁩ — ⁨{name}⁩",
+        "reviewItem": "Review a digital task — ⁨{name}⁩",
         "studentFallback": "student"
       }
     },
@@ -684,7 +677,7 @@
     "slotsEmpty": "No times available right now — the teacher will contact you to arrange a slot.",
     "localTz": "Times are shown in your local timezone{tz}.",
     "minutes": "{n} min",
-    "bookForName": "Book {name}'s trial session",
+    "bookForName": "Book a trial session for {name}",
     "bookConfirmBody": "We've emailed you a confirmation. See you in the session!",
     "bookMetaTitle": "Book your session — Ward Academy",
     "alreadyBookedTitle": "You already have a booked session",
@@ -734,8 +727,8 @@
         "closing": "See you soon!"
       },
       "intro": {
-        "subject": "{student}'s intro-session report — Ward Academy",
-        "heading": "{student}'s intro session",
+        "subject": "Intro-session report for {student} — Ward Academy",
+        "heading": "Intro session for {student}",
         "greeting": "Dear {name},"
       },
       "invite": {
@@ -814,7 +807,6 @@
     "stageBalloon": "Growing steadily",
     "stageBud": "Just starting",
     "stageSeed": "Not started yet",
-    "bloomSummary": "{name}'s flower spans {units, plural, one {# unit} other {# units}} they've begun, with {objectives} skills checked so far. Honest numbers, no fluff.",
     "petalsNote": "Four petals = four skills. A unit's flower is the average of everything in it. Speaking is judged by the teacher.",
     "testResults": "Test results",
     "sessionNotes": "Session notes",
