@@ -171,14 +171,13 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   }
   // Guardian WhatsApp (leads is admin-gated by RLS; this learner is already authorised, so read the phone via service-role).
   let guardianPhone: string | null = null;
-  let guardianLocale = "ar"; // parent-facing WhatsApp goes out in the guardian's language (fallback Arabic).
+  const guardianLocale = "ar"; // PA-1: parent-facing WhatsApp is Arabic-only (guardian_locale no longer selects EN).
   {
     const admin = createAdminClient();
-    const { data: leadRow } = await admin.from("leads").select("guardian_phone, guardian_locale").eq("converted_learner_id", id).maybeSingle();
+    const { data: leadRow } = await admin.from("leads").select("guardian_phone").eq("converted_learner_id", id).maybeSingle();
     guardianPhone = (leadRow?.guardian_phone ?? "").replace(/\D/g, "") || null;
-    if (leadRow?.guardian_locale === "en") guardianLocale = "en";
   }
-  // Parent-locale translators for the WhatsApp messages (NOT the teacher's forced-en UI).
+  // Arabic translators for the parent-facing WhatsApp messages (NOT the teacher's forced-en UI).
   const twa = await getTranslations({ locale: guardianLocale, namespace: "comms.whatsapp" });
   const tcwa = await getTranslations({ locale: guardianLocale, namespace: "common" });
   const waSkillLabel = (sk: string) => (["listening", "speaking", "reading", "writing"].includes(sk) ? tcwa(`skills.${sk}`) : sk);

@@ -162,8 +162,10 @@ const reportTool: Anthropic.Tool = {
 };
 
 /** Draft a post-session report from the learner's progress. Teacher edits + approves. */
-export async function generateSessionReportDraft(input: ReportInput, locale: "ar" | "en" = "ar"): Promise<GeneratedReport> {
-  const ar = locale !== "en";
+export async function generateSessionReportDraft(input: ReportInput, _locale: "ar" | "en" = "ar"): Promise<GeneratedReport> {
+  // PA-1: parent comms are Arabic-only — the locale arg is accepted for back-compat but IGNORED;
+  // the report always generates in Arabic. (REPORT_SYSTEM_EN is left in place, retired in PA-4.)
+  const ar = true;
   const L = ar
     ? { name: "اسم الطالب", lesson: "درس الجلسة", engagement: "تفاعل الطالب وحضوره", comprehension: "فهم الدرس", behavior: "المشاركة والسلوك", focusNext: "تركيز الجلسة القادمة", teacherNote: "ملاحظة المعلّم", go: "اكتب التقرير الآن." }
     : { name: "Student name", lesson: "Lesson", engagement: "Engagement and attendance", comprehension: "Comprehension", behavior: "Participation and behavior", focusNext: "Next session's focus", teacherNote: "Teacher note", go: "Write the report now." };

@@ -113,9 +113,9 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
   const phone = (lead.guardian_phone ?? "").replace(/[^0-9]/g, "");
   const shareLink = test?.share_token ? `${SITE_URL}/t/${test.share_token}` : "";
-  // PARENT-FACING WhatsApp text → rendered in the guardian's language (twa), not
-  // the admin's forced-en UI. Fallback Arabic when guardian_locale is absent.
-  const guardianLocale = lead.guardian_locale === "en" ? "en" : "ar";
+  // PARENT-FACING WhatsApp text → rendered in Arabic (twa), not the admin's forced-en UI.
+  // PA-1: parent comms are Arabic-only (guardian_locale no longer selects EN).
+  const guardianLocale = "ar";
   const twa = await getTranslations({ locale: guardianLocale, namespace: "comms.whatsapp" });
   const waTest = phone && shareLink ? `https://wa.me/${phone}?text=${encodeURIComponent(twa("test") + shareLink)}` : "";
   const bookUrl = lead.book_token ? `${SITE_URL}/book/${lead.book_token}` : "";

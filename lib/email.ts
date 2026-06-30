@@ -15,9 +15,10 @@ function getResend(): Resend | null {
 
 export type SendResult = { ok: boolean; skipped?: boolean; error?: string };
 
-// Parent-facing comms render in the guardian's language (captured at registration);
-// fall back to Arabic when it's absent (the audience is Arabic).
-const norm = (locale?: string | null) => (locale === "en" ? "en" : "ar");
+// PA-1: parent comms are Arabic-only. `norm` ignores the passed locale and always returns "ar"
+// (the `locale?` args on the send functions are kept for back-compat but no longer select EN; the
+// EN `comms.*` message keys are left in place, retired in PA-4).
+const norm = (_locale?: string | null): "ar" => "ar";
 
 /** Send one email. No-ops gracefully (and logs) when RESEND_API_KEY is unset. */
 export async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }): Promise<SendResult> {
@@ -35,9 +36,9 @@ export async function sendEmail({ to, subject, html }: { to: string; subject: st
   }
 }
 
-function layout(locale: string, brand: string, footer: string, heading: string, bodyHtml: string): string {
-  const dir = locale === "ar" ? "rtl" : "ltr";
-  return `<div dir="${dir}" lang="${locale}" style="font-family:'IBM Plex Sans Arabic',Tahoma,Arial,sans-serif;background:#F9F8FC;padding:24px;color:#221D33">
+function layout(_locale: string, brand: string, footer: string, heading: string, bodyHtml: string): string {
+  // PA-1: parent emails are Arabic-only → always RTL/ar.
+  return `<div dir="rtl" lang="ar" style="font-family:'IBM Plex Sans Arabic',Tahoma,Arial,sans-serif;background:#F9F8FC;padding:24px;color:#221D33">
   <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #E4E1EE;border-radius:16px;overflow:hidden">
     <div style="background:linear-gradient(135deg,#9F7DE7,#6840BD);padding:20px 24px;color:#fff">
       <div style="font-weight:700;font-size:18px">${brand}</div>

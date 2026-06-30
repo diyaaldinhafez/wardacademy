@@ -220,7 +220,7 @@ export async function provisionAccounts(
 
   // The WhatsApp invite text is built here in the GUARDIAN's language (not the
   // admin's forced-en UI), so ProvisionPanel renders it without a client locale.
-  const inviteLocale = lead.guardian_locale === "en" ? "en" : "ar";
+  const inviteLocale = "ar"; // PA-1: parent comms are Arabic-only (guardian_locale no longer selects EN)
   const twa = await getTranslations({ locale: inviteLocale, namespace: "comms.whatsapp.invite" });
   const inviteMessage =
     `${twa("intro")}\n\n${twa("guardianLabel")} (${lead.guardian_email}):\n${guardianLink}\n\n${twa("studentLabel")}:\n${studentLink}`;
