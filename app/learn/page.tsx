@@ -275,7 +275,7 @@ export default async function LearnPage() {
                   </div>
                   <div className="flex-1">
                     {/* unit title: educational content (catalog) */}
-                    <p className="text-sm font-bold" style={{ color: g.status === "upcoming" ? "var(--text-muted)" : "var(--text-strong)" }}>{g.unit}</p>
+                    <p dir="auto" className="text-sm font-bold" style={{ color: g.status === "upcoming" ? "var(--text-muted)" : "var(--text-strong)" }}>{g.unit}</p>
                     <p className="text-xs text-ink-soft">{t(`path.status.${g.status}`)}</p>
                   </div>
                   {g.status === "current" ? <span className="rounded-full px-2 py-0.5 text-xs font-bold" style={{ background: "var(--apricot-100, #ffeedc)", color: "var(--apricot-600, #c97a2b)" }}>{t("path.now")}</span> : g.status === "mastered" ? <span className="text-leaf">✓</span> : null}
@@ -307,7 +307,7 @@ export default async function LearnPage() {
                 <li key={a.id} className={card}>
                   <div className="flex items-center justify-between gap-2">
                     {/* unit/test title: educational content */}
-                    <p className="font-bold text-ink">{a.unit ?? a.title}</p>
+                    <p dir="auto" className="font-bold text-ink">{a.unit ?? a.title}</p>
                     <span className="flex-shrink-0 rounded-full bg-leaf/10 px-2.5 py-0.5 text-sm font-bold text-leaf">{a.score}/{a.max_score} · {pct}%</span>
                   </div>
                   <ul className="mt-2 flex flex-col gap-1.5">
@@ -400,8 +400,8 @@ export default async function LearnPage() {
                     )}
                   </div>
                   {/* homework title + instructions + feedback: teacher-authored content */}
-                  <p className="font-bold text-ink">{h.title}</p>
-                  {h.instructions && <p className="text-sm text-ink-soft">{h.instructions}</p>}
+                  <p dir="auto" className="font-bold text-ink">{h.title}</p>
+                  {h.instructions && <p dir="auto" className="text-sm text-ink-soft">{h.instructions}</p>}
                   <div className="mt-2 flex flex-wrap gap-2">
                     {tFiles.map((f: any) => {
                       const href = hwUrls.get(f.id);
@@ -412,7 +412,7 @@ export default async function LearnPage() {
                       return href ? <a key={f.id} href={href} target="_blank" rel="noreferrer" className="rounded-lg border border-leaf/40 px-2.5 py-1 text-xs font-medium text-leaf">{t("bookHomework.myAnswer")}</a> : null;
                     })}
                   </div>
-                  {h.status === "graded" && h.feedback && <p className="mt-2 text-sm text-ink-soft"><span className="font-medium">{t("bookHomework.teacherNote")}</span> {h.feedback}</p>}
+                  {h.status === "graded" && h.feedback && <p className="mt-2 text-sm text-ink-soft"><span className="font-medium">{t("bookHomework.teacherNote")}</span> <span dir="auto">{h.feedback}</span></p>}
                   {h.status === "assigned" && (
                     <form action={submitManualHomework} className="mt-3 flex flex-wrap items-center gap-2">
                       <input type="hidden" name="manualHomeworkId" value={h.id} />

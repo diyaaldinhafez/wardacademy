@@ -15,7 +15,7 @@ export default function WorkspaceHeader({ title, subtitle, rightSlot }: { title:
         <FlowerMark className="h-10 w-10 shrink-0" />
         <div>
           <h1 className="text-2xl font-bold text-ink">{title}</h1>
-          {subtitle && <p className="text-sm text-ink-soft">{subtitle}</p>}
+          {subtitle && <p dir="auto" className="text-sm text-ink-soft">{subtitle}</p>}
         </div>
       </div>
       <div className="flex items-center gap-2">

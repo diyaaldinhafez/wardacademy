@@ -140,12 +140,12 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         <Avatar name={lead.student_name ?? "?"} size={44} />
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-strong)" }}>
-            {lead.student_name}{" "}
+            <span dir="auto">{lead.student_name}</span>{" "}
             <span style={{ fontSize: 13, fontWeight: 400, color: "var(--text-muted)" }}>
               · {lead.student_age ? t("yearsOld", { n: lead.student_age }) : "—"} · {labelOfEn("level", lead.student_level)}
             </span>
           </div>
-          <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{t("guardianPrefix")} {lead.guardian_name}</div>
+          <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{t("guardianPrefix")} <span dir="auto">{lead.guardian_name}</span></div>
         </div>
         <Badge tone={LEAD_STATUS_TONE[lead.status] ?? "neutral"}>{LEAD_STATUS_EN[lead.status] ?? lead.status}</Badge>
       </div>
@@ -159,7 +159,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
       <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={secTitle}>{t("detailsTitle")}</div>
         <p style={{ fontSize: 13.5, color: "var(--text-body)" }}>
-          {lead.guardian_name}
+          <span dir="auto">{lead.guardian_name}</span>
           {lead.guardian_relation ? ` (${labelOfEn("relation", lead.guardian_relation)})` : ""} · {lead.guardian_email}
           {lead.guardian_phone ? ` · ${lead.guardian_phone}` : ""}
         </p>

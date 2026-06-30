@@ -282,7 +282,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       <div style={{ borderRadius: 10, background: "var(--surface-soft)", padding: 10, display: "flex", flexDirection: "column", gap: 6 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <Badge tone="brand">{t("manualHw.tag")}</Badge>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-strong)", flex: 1 }}>{h.title}</span>
+          <span dir="auto" style={{ fontSize: 13, fontWeight: 600, color: "var(--text-strong)", flex: 1 }}>{h.title}</span>
           <Badge tone={tone}>{label}</Badge>
           <form action={removeManualHomework}><input type="hidden" name="manualHomeworkId" value={h.id} /><input type="hidden" name="learnerId" value={id} /><SubmitButton className={btn("ghost")}>✕</SubmitButton></form>
         </div>
@@ -359,7 +359,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           <span style={{ fontSize: 12, color: "var(--text-muted)" }}>· {t("sched.minutes", { n: s.duration_minutes })}</span>
           {showReport && report?.status === "approved" && <Badge tone="success">{t("report.sent")}</Badge>}
         </div>
-        {s.lesson_title && <div style={{ fontSize: 13, color: "var(--text-body)" }}>{t("report.lessonLabel")} <strong>{s.lesson_title}</strong></div>}
+        {s.lesson_title && <div style={{ fontSize: 13, color: "var(--text-body)" }}>{t("report.lessonLabel")} <strong dir="auto">{s.lesson_title}</strong></div>}
         {showJoin && s.status === "scheduled" && <VideoCall sessionId={s.id} />}
 
         {showReport && (
@@ -805,7 +805,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         return (
           <Card key={a.id} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ fontWeight: 700, color: "var(--text-strong)", flex: 1 }}>{a.title}</span>
+              <span dir="auto" style={{ fontWeight: 700, color: "var(--text-strong)", flex: 1 }}>{a.title}</span>
               {a.status === "draft" && <Badge tone="warning">{t("assessments.draftBadge")}</Badge>}
               {a.status === "ready" && <Badge tone="brand">{t("assessments.readyBadge")}</Badge>}
               {a.status === "completed" && <Badge tone="success">{t("assessments.completedBadge", { score: a.score, max: a.max_score, pct })}</Badge>}

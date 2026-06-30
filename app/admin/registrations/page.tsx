@@ -146,13 +146,13 @@ export default async function RegistrationsPage({
                     <Avatar name={l.student_name ?? "?"} size={40} />
                     <div>
                       <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>
-                        {l.student_name}{" "}
+                        <span dir="auto">{l.student_name}</span>{" "}
                         <span style={{ fontWeight: 400, fontSize: 13, color: "var(--text-muted)" }}>
                           · {l.student_age ? t("yearsOld", { n: l.student_age }) : "—"} · {labelOfEn("level", l.student_level)}
                         </span>
                       </div>
                       <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
-                        {l.guardian_name} {booked ? t("leadAppt", { time: fmtUTC(booked) }) : t("leadNoBooking")}
+                        <span dir="auto">{l.guardian_name}</span> {booked ? t("leadAppt", { time: fmtUTC(booked) }) : t("leadNoBooking")}
                       </div>
                     </div>
                   </Link>
