@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("enrollForm");
+  const t = await getTranslations({ locale: "ar", namespace: "enrollForm" }); // PA-4: parent-facing → Arabic
   return { title: t("metaTitle"), robots: { index: false } };
 }
 

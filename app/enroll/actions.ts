@@ -1,6 +1,6 @@
 "use server";
 
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendBookingConfirmation } from "@/lib/email";
 import { ENROLL_SKILLS } from "@/lib/enrollOptions";
@@ -22,10 +22,9 @@ export async function submitLead(_prev: LeadState | undefined, formData: FormDat
   const guardian_country = get("guardianCountry");
   const guardian_nationality = get("guardianNationality");
   const guardian_relation = get("guardianRelation");
-  // The parent's chosen communication language (explicit field). Falls back to the
-  // UI locale they filled /enroll in if the field is missing (safe, non-breaking).
-  const comms_locale = get("commsLocale");
-  const guardian_locale = comms_locale === "en" || comms_locale === "ar" ? comms_locale : await getLocale();
+  // PA-4: parent comms are Arabic-only — guardian_locale is always "ar" (the "preferred comms
+  // language" dropdown was removed; the column stays for back-compat). Captured for the record only.
+  const guardian_locale = "ar";
   const referral_source = get("referralSource");
   const consent = formData.get("consent") === "1";
   const student_name = get("studentName");

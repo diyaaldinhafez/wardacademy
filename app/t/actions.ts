@@ -6,8 +6,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 type TakeState = { error?: string; result?: { level: string; correct: number; total: number } };
 
 const norm = (s: string) => s.trim().toLowerCase();
-// Parent/child-facing test errors follow the active locale (bilingual surface 5).
-const tErr = async (key: string) => (await getTranslations("placement.errors"))(key);
+// PA-4: the placement test is parent/child-facing → Arabic-only (no longer cookie-driven).
+const tErr = async (key: string) => (await getTranslations({ locale: "ar", namespace: "placement.errors" }))(key);
 
 /**
  * A lead's student takes the placement test via the signed link. Access is by
@@ -24,7 +24,7 @@ export async function submitLeadTest(_prev: TakeState | undefined, formData: For
     .select("id, status, lead_id")
     .eq("share_token", token)
     .single();
-  if (!test) return { error: (await getTranslations("placement"))("invalidLink") };
+  if (!test) return { error: (await getTranslations({ locale: "ar", namespace: "placement" }))("invalidLink") };
   if (test.status === "completed") return { error: await tErr("alreadyDone") };
   if (test.status !== "shared") return { error: await tErr("notAvailable") };
 

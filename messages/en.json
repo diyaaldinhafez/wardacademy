@@ -19,14 +19,10 @@
       "writing": "Writing"
     }
   },
-  "demo": {
-    "title": "i18n infrastructure is live",
-    "greeting": "Hello from Ward Academy — the i18n layer works.",
-    "localeLabel": "Active locale",
-    "switchHint": "Use the switcher to flip EN / ع — this text re-renders from the message catalog."
-  },
   "learn": {
-    "header": { "title": "My Garden" },
+    "header": {
+      "title": "My Garden"
+    },
     "assessment": {
       "heading": "Test: ⁨{unit}⁩",
       "intro": "Answer the questions. You can do it!",
@@ -55,7 +51,11 @@
     },
     "path": {
       "heading": "My garden path",
-      "status": { "mastered": "Done", "current": "You are here", "upcoming": "Next" },
+      "status": {
+        "mastered": "Done",
+        "current": "You are here",
+        "upcoming": "Next"
+      },
       "now": "Now"
     },
     "flower": {
@@ -67,14 +67,18 @@
         "high": "Wow, your flower is blooming! You should be so proud."
       }
     },
-    "plan": { "heading": "My plan" },
+    "plan": {
+      "heading": "My plan"
+    },
     "sessions": {
       "next": "Your next lesson",
       "noUpcoming": "No lesson scheduled yet — your teacher will set one soon.",
       "minutes": "{n} min",
       "join": "Join"
     },
-    "results": { "heading": "My tests" },
+    "results": {
+      "heading": "My tests"
+    },
     "homework": {
       "heading": "My homework",
       "empty": "Nothing to practice right now — your teacher will plant new homework here soon.",
@@ -166,7 +170,11 @@
       "tasksBlurb": "Everything awaiting your action, in one place — nothing reaches the student before you approve it.",
       "tasksEmpty": "All caught up.",
       "tasksMore": "+ {n} more",
-      "rel": { "now": "Now", "inMinutes": "in {n} min", "inHours": "in {n} h" },
+      "rel": {
+        "now": "Now",
+        "inMinutes": "in {n} min",
+        "inHours": "in {n} h"
+      },
       "task": {
         "writeReport": "Write session report — ⁨{name}⁩",
         "approveReport": "Approve session report — ⁨{name}⁩",
@@ -281,10 +289,40 @@
         "noWhatsapp": "No WhatsApp number for the guardian"
       },
       "reportFields": {
-        "engagement": { "label": "Engagement & attendance", "opts": ["Engaged and eager", "Good", "Quiet", "Needs encouragement"] },
-        "comprehension": { "label": "Lesson comprehension", "opts": ["Exceeded expectations", "Met the lesson goal", "Partially met it", "Needs a redo"] },
-        "behavior": { "label": "Participation & behavior", "opts": ["Cooperative and organized", "Good", "Needs follow-up"] },
-        "focusNext": { "label": "Next session focus", "opts": ["Continue the curriculum", "Review the lesson", "More skill practice"] }
+        "engagement": {
+          "label": "Engagement & attendance",
+          "opts": [
+            "Engaged and eager",
+            "Good",
+            "Quiet",
+            "Needs encouragement"
+          ]
+        },
+        "comprehension": {
+          "label": "Lesson comprehension",
+          "opts": [
+            "Exceeded expectations",
+            "Met the lesson goal",
+            "Partially met it",
+            "Needs a redo"
+          ]
+        },
+        "behavior": {
+          "label": "Participation & behavior",
+          "opts": [
+            "Cooperative and organized",
+            "Good",
+            "Needs follow-up"
+          ]
+        },
+        "focusNext": {
+          "label": "Next session focus",
+          "opts": [
+            "Continue the curriculum",
+            "Review the lesson",
+            "More skill practice"
+          ]
+        }
       },
       "sessions": {
         "heroNext": "Next session",
@@ -438,7 +476,11 @@
       "secondaryCta": "See how it works"
     },
     "brand": "Ward Academy",
-    "nav": ["How it works", "Pricing", "FAQ"],
+    "nav": [
+      "How it works",
+      "Pricing",
+      "FAQ"
+    ],
     "cta": "Book a free trial",
     "login": "Log in",
     "menu": "Menu",
@@ -447,7 +489,9 @@
       "title": "Your child's English journey, blooming step by step",
       "sub": "We grow your child's English through a journey designed for them alone — the Ward Curriculum, measured by the global CEFR standard. A dedicated teacher in live 1:1 sessions, and a plan built from a real diagnosis of their level and goal. Ages 9–13.",
       "note": "Free trial session · no commitment",
-      "peek": { "student": "Layan" }
+      "peek": {
+        "student": "Layan"
+      }
     },
     "assurances": [
       "Parental consent for every account",
@@ -457,9 +501,18 @@
     "how": {
       "title": "How it works",
       "steps": [
-        { "t": "A precise diagnosis", "d": "We build a clear picture from the sign-up form, a gentle placement test, the trial session, and the expert teacher's notes — where they are now, where we're heading, and how long it takes." },
-        { "t": "A personal plan on the Ward Curriculum (CEFR)", "d": "AI drafts a detailed plan around their goal and timeframe — an intensive summer goal or a longer path — sequencing the content and number of sessions, all under the teacher's supervision and approval." },
-        { "t": "1:1 sessions & an honest Bloom Report", "d": "The same dedicated teacher week by week, and real numbers reach you: what they truly mastered, and what still needs care." }
+        {
+          "t": "A precise diagnosis",
+          "d": "We build a clear picture from the sign-up form, a gentle placement test, the trial session, and the expert teacher's notes — where they are now, where we're heading, and how long it takes."
+        },
+        {
+          "t": "A personal plan on the Ward Curriculum (CEFR)",
+          "d": "AI drafts a detailed plan around their goal and timeframe — an intensive summer goal or a longer path — sequencing the content and number of sessions, all under the teacher's supervision and approval."
+        },
+        {
+          "t": "1:1 sessions & an honest Bloom Report",
+          "d": "The same dedicated teacher week by week, and real numbers reach you: what they truly mastered, and what still needs care."
+        }
       ]
     },
     "trust": {
@@ -475,9 +528,18 @@
       "title": "Smart support that makes every session go further",
       "sub": "Behind your child's teacher is thoughtful AI — and your child gets a helping hand too. By supporting both the teacher and the student, it turns every session into more real progress.",
       "points": [
-        { "t": "Support for the teacher", "d": "AI helps the teacher build personalized lessons, practice and progress reports in a fraction of the time — so their energy stays on teaching your child." },
-        { "t": "Support for your child", "d": "Between sessions, your child gets practice matched to their exact level, and instant, friendly help the moment they need it." },
-        { "t": "A faster journey", "d": "When a dedicated teacher and smart tools work together, progress compounds — and your child reaches their goals sooner." }
+        {
+          "t": "Support for the teacher",
+          "d": "AI helps the teacher build personalized lessons, practice and progress reports in a fraction of the time — so their energy stays on teaching your child."
+        },
+        {
+          "t": "Support for your child",
+          "d": "Between sessions, your child gets practice matched to their exact level, and instant, friendly help the moment they need it."
+        },
+        {
+          "t": "A faster journey",
+          "d": "When a dedicated teacher and smart tools work together, progress compounds — and your child reaches their goals sooner."
+        }
       ]
     },
     "showcase": {
@@ -486,15 +548,36 @@
       "previewLabel": "Preview",
       "comingSoon": "Real screens coming soon",
       "items": [
-        { "tag": "For parents", "title": "Your child's progress, always in view", "desc": "Open your account to a living progress report, a short summary after every session, and what's coming next.", "points": ["A short report after every session", "Live progress you can actually read", "Your next session at a glance"] },
-        { "tag": "For your child", "title": "One tap into a live 1:1 lesson", "desc": "A calm, friendly space with their own teacher — no clutter, no distractions, just the two of them.", "points": ["The same teacher, face to face", "Playful, focused exercises", "Gentle help the moment they need it"] }
+        {
+          "tag": "For parents",
+          "title": "Your child's progress, always in view",
+          "desc": "Open your account to a living progress report, a short summary after every session, and what's coming next.",
+          "points": [
+            "A short report after every session",
+            "Live progress you can actually read",
+            "Your next session at a glance"
+          ]
+        },
+        {
+          "tag": "For your child",
+          "title": "One tap into a live 1:1 lesson",
+          "desc": "A calm, friendly space with their own teacher — no clutter, no distractions, just the two of them.",
+          "points": [
+            "The same teacher, face to face",
+            "Playful, focused exercises",
+            "Gentle help the moment they need it"
+          ]
+        }
       ]
     },
     "screens": {
       "parent": {
         "greeting": "Good morning",
         "approved": "Everything here is approved by the teacher",
-        "tabs": ["Layan", "Omar"],
+        "tabs": [
+          "Layan",
+          "Omar"
+        ],
         "childSeason": "Season 2 · A2",
         "childTeacher": "with Ms. Sara",
         "streak": "7-session streak",
@@ -522,20 +605,50 @@
         "moreWhen": "Tomorrow"
       },
       "teacher": {
-        "nav": ["Today", "AI reviews", "Students", "Homework", "Reports"],
+        "nav": [
+          "Today",
+          "AI reviews",
+          "Students",
+          "Homework",
+          "Reports"
+        ],
         "reviewTitle": "Awaiting your review",
         "reviewNote": "Nothing reaches the student before you approve",
         "reviewItems": [
-          { "t": "Homework · Unit 4 — Reading", "s": "Multiple choice · 30 questions" },
-          { "t": "Feelings vocabulary exercise", "s": "Match · 8 words" },
-          { "t": "Tuesday session summary", "s": "Parent report" }
+          {
+            "t": "Homework · Unit 4 — Reading",
+            "s": "Multiple choice · 30 questions"
+          },
+          {
+            "t": "Feelings vocabulary exercise",
+            "s": "Match · 8 words"
+          },
+          {
+            "t": "Tuesday session summary",
+            "s": "Parent report"
+          }
         ],
         "reviewCta": "Review & approve",
         "todayTitle": "Today's sessions",
         "sessions": [
-          { "name": "Layan", "detail": "Season 2 · Unit 4 — Reading", "time": "4:00", "cta": "Start session" },
-          { "name": "Omar", "detail": "Season 1 · Unit 2 — Vocabulary", "time": "5:00", "cta": "Prepare" },
-          { "name": "Nour", "detail": "Season 3 · Speaking session", "time": "6:30", "cta": "Prepare" }
+          {
+            "name": "Layan",
+            "detail": "Season 2 · Unit 4 — Reading",
+            "time": "4:00",
+            "cta": "Start session"
+          },
+          {
+            "name": "Omar",
+            "detail": "Season 1 · Unit 2 — Vocabulary",
+            "time": "5:00",
+            "cta": "Prepare"
+          },
+          {
+            "name": "Nour",
+            "detail": "Season 3 · Speaking session",
+            "time": "6:30",
+            "cta": "Prepare"
+          }
         ]
       }
     },
@@ -547,10 +660,26 @@
       "streak": "7-session streak",
       "season": "Season 2 · A2",
       "skills": [
-        { "name": "Listening", "value": 75, "tag": "6 of 8" },
-        { "name": "Speaking", "value": 46, "tag": "developing" },
-        { "name": "Reading", "value": 90, "tag": "9 of 10" },
-        { "name": "Writing", "value": 38, "tag": "3 of 8" }
+        {
+          "name": "Listening",
+          "value": 75,
+          "tag": "6 of 8"
+        },
+        {
+          "name": "Speaking",
+          "value": 46,
+          "tag": "developing"
+        },
+        {
+          "name": "Reading",
+          "value": 90,
+          "tag": "9 of 10"
+        },
+        {
+          "name": "Writing",
+          "value": 38,
+          "tag": "3 of 8"
+        }
       ]
     },
     "session": {
@@ -568,10 +697,22 @@
       "title": "Families are already seeing the difference",
       "sub": "Real momentum, from the very first weeks.",
       "stats": [
-        { "value": "9 in 10", "label": "parents see more confidence within 6 weeks" },
-        { "value": "4.9/5", "label": "average parent rating" },
-        { "value": "1,000+", "label": "live 1:1 sessions taught" },
-        { "value": "12+", "label": "countries across Europe" }
+        {
+          "value": "9 in 10",
+          "label": "parents see more confidence within 6 weeks"
+        },
+        {
+          "value": "4.9/5",
+          "label": "average parent rating"
+        },
+        {
+          "value": "1,000+",
+          "label": "live 1:1 sessions taught"
+        },
+        {
+          "value": "12+",
+          "label": "countries across Europe"
+        }
       ]
     },
     "stickyCta": "Book a free trial",
@@ -591,30 +732,78 @@
       ],
       "note": "Prices in USD · No card needed for the trial",
       "plans": [
-        { "name": "Essential", "price": "$76", "cadence": "1 session a week", "sessions": "4 sessions a month", "featured": false },
-        { "name": "Steady", "price": "$144", "cadence": "2 sessions a week", "sessions": "8 sessions a month", "featured": true },
-        { "name": "Intensive", "price": "$204", "cadence": "3 sessions a week", "sessions": "12 sessions a month", "featured": false }
+        {
+          "name": "Essential",
+          "price": "$76",
+          "cadence": "1 session a week",
+          "sessions": "4 sessions a month",
+          "featured": false
+        },
+        {
+          "name": "Steady",
+          "price": "$144",
+          "cadence": "2 sessions a week",
+          "sessions": "8 sessions a month",
+          "featured": true
+        },
+        {
+          "name": "Intensive",
+          "price": "$204",
+          "cadence": "3 sessions a week",
+          "sessions": "12 sessions a month",
+          "featured": false
+        }
       ]
     },
     "testimonials": {
       "title": "Parents see the difference",
       "sub": "Real families, real change — confidence first.",
       "items": [
-        { "quote": "My son used to freeze up in English. One-to-one with the same teacher every week, he's finally speaking with confidence.", "name": "Mona A.", "city": "Berlin" },
-        { "quote": "I get a short report after every single session, so I always know what my daughter learned and what's coming next. No guessing.", "name": "Yusuf K.", "city": "Vienna" },
-        { "quote": "Every lesson is built around my son — his level, his interests. The extra practice between sessions keeps him moving faster than I expected.", "name": "Layla H.", "city": "Zürich" }
+        {
+          "quote": "My son used to freeze up in English. One-to-one with the same teacher every week, he's finally speaking with confidence.",
+          "name": "Mona A.",
+          "city": "Berlin"
+        },
+        {
+          "quote": "I get a short report after every single session, so I always know what my daughter learned and what's coming next. No guessing.",
+          "name": "Yusuf K.",
+          "city": "Vienna"
+        },
+        {
+          "quote": "Every lesson is built around my son — his level, his interests. The extra practice between sessions keeps him moving faster than I expected.",
+          "name": "Layla H.",
+          "city": "Zürich"
+        }
       ]
     },
     "faq": {
       "title": "Questions parents ask",
       "sub": "Everything you want to know before the first session.",
       "items": [
-        { "q": "How long is each session?", "a": "Live 1:1 sessions are 45 minutes — long enough to grow, short enough to stay fun and focused." },
-        { "q": "What ages do you teach?", "a": "We teach children ages 9 to 13, matched to the right level after a gentle placement test." },
-        { "q": "What if my child is shy?", "a": "That's exactly who we're built for. One steady teacher, one child, and no class to perform in front of — confidence grows session by session." },
-        { "q": "What do we need to start?", "a": "Just a laptop or tablet with a camera and internet. We send a simple link — nothing to install." },
-        { "q": "Can I cancel anytime?", "a": "Yes. Plans are monthly — you can pause or cancel whenever you like, with no long contracts." },
-        { "q": "Who teaches my child?", "a": "A real, qualified teacher — the same one every week. They plan each lesson, guide your child personally, and check their homework and progress themselves." }
+        {
+          "q": "How long is each session?",
+          "a": "Live 1:1 sessions are 45 minutes — long enough to grow, short enough to stay fun and focused."
+        },
+        {
+          "q": "What ages do you teach?",
+          "a": "We teach children ages 9 to 13, matched to the right level after a gentle placement test."
+        },
+        {
+          "q": "What if my child is shy?",
+          "a": "That's exactly who we're built for. One steady teacher, one child, and no class to perform in front of — confidence grows session by session."
+        },
+        {
+          "q": "What do we need to start?",
+          "a": "Just a laptop or tablet with a camera and internet. We send a simple link — nothing to install."
+        },
+        {
+          "q": "Can I cancel anytime?",
+          "a": "Yes. Plans are monthly — you can pause or cancel whenever you like, with no long contracts."
+        },
+        {
+          "q": "Who teaches my child?",
+          "a": "A real, qualified teacher — the same one every week. They plan each lesson, guide your child personally, and check their homework and progress themselves."
+        }
       ]
     },
     "final": {
@@ -626,131 +815,6 @@
       "exploreTitle": "Explore",
       "accountTitle": "Account",
       "copyright": "Ward Academy © 2026 · Parental consent required for every account"
-    }
-  },
-  "enrollForm": {
-    "metaTitle": "Register your child — Ward Academy",
-    "confirmTitle": "Booking confirmed",
-    "confirmSlotLabel": "Your trial session:",
-    "confirmBody": "We've received your request and emailed you a confirmation. The teacher will prepare a short placement test and send it to you on WhatsApp before the session; afterwards they'll set up both accounts and send you the login link.",
-    "bookTitle": "Book a free trial session",
-    "bookSub": "Pick a time that works for you from the teacher's openings.",
-    "bookConfirm": "Confirm booking",
-    "booking": "Booking…",
-    "steps": ["Student", "Guardian", "Booking"],
-    "regTitle": "Register your child at Ward Academy",
-    "regSub": "A three-step form, then book a free trial — no account needed yet.",
-    "studentHeading": "Student details",
-    "guardianHeading": "Guardian details",
-    "fullName": "Full name",
-    "studentNamePh": "First and last name",
-    "age": "Age",
-    "choose": "Choose…",
-    "ageOption": "{n} years",
-    "schoolType": "Current schooling",
-    "homeLang": "Main language(s) at home (choose one or more)",
-    "englishUse": "English in daily life",
-    "goal": "Your goal in joining",
-    "level": "Overall English level",
-    "rateSkills": "Rate each skill (a rough estimate)",
-    "priorStudy": "Have they studied English outside school?",
-    "notes": "Goals or notes (optional)",
-    "notesPh": "e.g. needs more speaking practice.",
-    "next": "Next →",
-    "guardianNamePh": "e.g. Sarah Mohammed",
-    "relation": "Relationship",
-    "email": "Email",
-    "whatsapp": "WhatsApp number",
-    "commsLocaleLabel": "Preferred communication language",
-    "commsLocaleAr": "Arabic",
-    "commsLocaleEn": "English",
-    "country": "Country of residence",
-    "nationality": "Nationality",
-    "typeToSearch": "Start typing…",
-    "referral": "How did you hear about us?",
-    "consent": "I agree to my child's data being processed for registration and teaching, per the privacy policy.",
-    "back": "← Back",
-    "continueBooking": "Continue to booking →",
-    "submitting": "Submitting…",
-    "haveAccount": "Already have an account?",
-    "login": "Log in",
-    "slotsEmpty": "No times available right now — the teacher will contact you to arrange a slot.",
-    "localTz": "Times are shown in your local timezone{tz}.",
-    "minutes": "{n} min",
-    "bookForName": "Book a trial session for {name}",
-    "bookConfirmBody": "We've emailed you a confirmation. See you in the session!",
-    "bookMetaTitle": "Book your session — Ward Academy",
-    "alreadyBookedTitle": "You already have a booked session",
-    "alreadyBookedNote": "To change the time, get in touch.",
-    "childFallback": "your child",
-    "errors": {
-      "sendFailed": "Couldn't submit. Please try again.",
-      "fillRequired": "Please fill in your name, email, and your child's name.",
-      "consentRequired": "Please agree to data processing to continue.",
-      "enrollClosed": "Enrollment isn't available right now.",
-      "slotTaken": "This slot is no longer available — please pick another.",
-      "slotJustTaken": "This slot was just booked — please pick another.",
-      "pickSlot": "Please choose an available time.",
-      "badLink": "This booking link isn't valid.",
-      "alreadyDone": "Your registration is already complete."
-    }
-  },
-  "placement": {
-    "metaTitle": "Placement test — Ward Academy",
-    "heading": "Placement test",
-    "invalidLink": "Invalid or expired link.",
-    "notReady": "The test isn't ready yet — the teacher will send it soon.",
-    "suggestedLevel": "Suggested level:",
-    "completedNote": "This test is done — the result is with the teacher.",
-    "doneTitle": "Done — great work!",
-    "resultScore": "{correct} of {total} correct.",
-    "resultNote": "The result has reached the teacher, who'll be fully ready for the intro session.",
-    "instruction": "Ask your child to answer the following questions on their own:",
-    "grading": "Grading…",
-    "submit": "Submit answers",
-    "errors": {
-      "invalid": "Invalid link.",
-      "alreadyDone": "This test was already completed.",
-      "notAvailable": "The test isn't available yet."
-    }
-  },
-  "comms": {
-    "brand": "Ward Academy",
-    "footer": "Ward Academy · joyful English learning",
-    "email": {
-      "booking": {
-        "subject": "Trial session confirmed — Ward Academy",
-        "heading": "Your free trial session is confirmed",
-        "greeting": "Hi {name},",
-        "body": "The free trial session for {student} is confirmed:",
-        "note": "We'll send the placement test before the session on WhatsApp. To change the time, just get in touch.",
-        "closing": "See you soon!"
-      },
-      "intro": {
-        "subject": "Intro-session report for {student} — Ward Academy",
-        "heading": "Intro session for {student}",
-        "greeting": "Dear {name},"
-      },
-      "invite": {
-        "subject": "Your account is ready — Ward Academy",
-        "heading": "Your Ward Academy account is ready",
-        "greeting": "Hi {name},",
-        "bodyGuardian": "Your guardian account on Ward Academy is set up. Tap the button to set your password and sign in:",
-        "bodyStudent": "Your child's student account on Ward Academy is set up. Tap the button to set the password and sign in:",
-        "button": "Set password and sign in",
-        "fallbackNote": "If the button doesn't work, copy this link:"
-      }
-    },
-    "whatsapp": {
-      "report": { "title": "Lesson report", "strengths": "Strengths", "nextStep": "Next step" },
-      "test": "Your child's placement test: ",
-      "book": "Book your child's free trial session: ",
-      "payment": "Payment link to complete your child's registration at Ward Academy:",
-      "invite": {
-        "intro": "Welcome to Ward Academy! Both accounts are ready. Set the password and sign in via the links below:",
-        "guardianLabel": "Guardian",
-        "studentLabel": "Student"
-      }
     }
   },
   "video": {
@@ -765,53 +829,6 @@
       "sessionNotFound": "Session not found.",
       "notParticipant": "You're not part of this session."
     }
-  },
-  "setPassword": {
-    "title": "Set your password",
-    "newPw": "New password",
-    "confirmPw": "Confirm password",
-    "save": "Save and sign in",
-    "saving": "Saving…",
-    "done": "Password set ✓ Taking you to sign in…",
-    "invalidLink": "This link is invalid or expired. Ask the team to send you a new one.",
-    "tooShort": "Password must be at least 8 characters.",
-    "mismatch": "The passwords don't match."
-  },
-  "guardian": {
-    "title": "Your children",
-    "noChildren": "No children linked yet.",
-    "childFallback": "your child",
-    "planGlimpse": "{level} · Unit {current} of {total}",
-    "noPlanYet": "No plan yet.",
-    "flowerMotivation": {
-      "low": "Every flower starts as a seed — small steps now grow into confident English.",
-      "mid": "Lovely momentum — the petals are opening. Keep showing up together.",
-      "high": "What a bloom! This steady, confident English is something to be proud of."
-    },
-    "nextSession": "Next session",
-    "noUpcoming": "No upcoming session.",
-    "latestReport": "Latest report",
-    "viewAllReports": "View all reports",
-    "latestResult": "Latest result",
-    "viewAllResults": "View all results",
-    "consentGranted": "Consent granted",
-    "consentPending": "Consent pending",
-    "giveConsent": "Give consent",
-    "savingConsent": "Saving…",
-    "loginLabel": "Login:",
-    "levelLabel": "Level: {level}",
-    "planLabel": "Plan: {title}",
-    "unitFallback": "Lessons",
-    "noActivity": "No activity yet — the bloom report begins as soon as we have a first result.",
-    "stageBloom": "Blooming — strong work",
-    "stageBalloon": "Growing steadily",
-    "stageBud": "Just starting",
-    "stageSeed": "Not started yet",
-    "petalsNote": "Four petals = four skills. A unit's flower is the average of everything in it. Speaking is judged by the teacher.",
-    "testResults": "Test results",
-    "sessionNotes": "Session notes",
-    "strengths": "Strengths:",
-    "nextStep": "Next step:"
   },
   "admin": {
     "brand": "Ward Academy",

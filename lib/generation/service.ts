@@ -141,12 +141,6 @@ const REPORT_SYSTEM_AR =
   "summary: ٢–٣ جُمَلٍ تلخّص الجلسة بإيجابيةٍ وصدق. strengths: جملةٌ واحدةٌ عن أبرز نقطة قوّة. improve: خطوةٌ تاليةٌ لطيفةٌ وعملية. " +
   "أعِد التقرير عبر أداة emit_report فقط.";
 
-const REPORT_SYSTEM_EN =
-  "You write a short, warm, professional post-session report to the guardian after a one-on-one session for their child at Ward Academy (ages 9–13). " +
-  "Build the report only on the teacher's given inputs; never invent facts, numbers, or events. It must read in under a minute, in a kind, encouraging, non-marketing tone, addressed to the guardian. " +
-  "summary: 2–3 sentences summarizing the session honestly and positively. strengths: one sentence on the standout strength. improve: a gentle, practical next step. " +
-  "Return the report via the emit_report tool only.";
-
 const reportTool: Anthropic.Tool = {
   name: "emit_report",
   description: "Return a short post-session report based on the progress data.",
@@ -161,14 +155,9 @@ const reportTool: Anthropic.Tool = {
   },
 };
 
-/** Draft a post-session report from the learner's progress. Teacher edits + approves. */
-export async function generateSessionReportDraft(input: ReportInput, _locale: "ar" | "en" = "ar"): Promise<GeneratedReport> {
-  // PA-1: parent comms are Arabic-only — the locale arg is accepted for back-compat but IGNORED;
-  // the report always generates in Arabic. (REPORT_SYSTEM_EN is left in place, retired in PA-4.)
-  const ar = true;
-  const L = ar
-    ? { name: "اسم الطالب", lesson: "درس الجلسة", engagement: "تفاعل الطالب وحضوره", comprehension: "فهم الدرس", behavior: "المشاركة والسلوك", focusNext: "تركيز الجلسة القادمة", teacherNote: "ملاحظة المعلّم", go: "اكتب التقرير الآن." }
-    : { name: "Student name", lesson: "Lesson", engagement: "Engagement and attendance", comprehension: "Comprehension", behavior: "Participation and behavior", focusNext: "Next session's focus", teacherNote: "Teacher note", go: "Write the report now." };
+/** Draft a post-session report from the learner's progress (Arabic-only — PA-1/PA-4). Teacher edits + approves. */
+export async function generateSessionReportDraft(input: ReportInput): Promise<GeneratedReport> {
+  const L = { name: "اسم الطالب", lesson: "درس الجلسة", engagement: "تفاعل الطالب وحضوره", comprehension: "فهم الدرس", behavior: "المشاركة والسلوك", focusNext: "تركيز الجلسة القادمة", teacherNote: "ملاحظة المعلّم", go: "اكتب التقرير الآن." };
   const lines = [
     `${L.name}: ${input.learnerName}`,
     input.lessonTitle ? `${L.lesson}: ${input.lessonTitle}` : "",
@@ -184,7 +173,7 @@ export async function generateSessionReportDraft(input: ReportInput, _locale: "a
   const res = await client().messages.create({
     model: MODEL,
     max_tokens: 1000, // Arabic is token-dense; the tool JSON must finish
-    system: ar ? REPORT_SYSTEM_AR : REPORT_SYSTEM_EN,
+    system: REPORT_SYSTEM_AR,
     tools: [reportTool],
     tool_choice: { type: "tool", name: "emit_report" },
     messages: [{ role: "user", content: `${lines}\n\n${L.go}` }],
