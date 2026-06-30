@@ -1,6 +1,6 @@
 # Start Here — Ward Academy (Single Source of Truth)
 
-**Version:** 17 · **Last updated:** 2026-06-29 (Chat+Code — Assessment Evidence-Model Redesign COMPLETE: all 8 gates shipped & Diya-verified; evidence model is the sole model)
+**Version:** 18 · **Last updated:** 2026-06-30 (Code — /learn assignment-source fix + child polish DONE; Yousef (dev) = full-coverage demo login; approved /learn journey vision recorded as a deferred content-dependent track)
 
 > ## How to work with this document
 > | | |
@@ -200,6 +200,23 @@ The whole assessment model was rebuilt to evidence-based, gate by gate (connect-
 Net: numbers come only from objective-tagged evidence (auto ratio-key OR manual rubric); decaying moved objective→skill-across-completed-units; Progress is read-only; the teacher sees the evidence behind every value. Reference §1–§12 + Foundation + this file are consistent with the code.
 
 **Remaining (not part of the cut, separate tracks):** (1) **AE-7** — retire the generation service's LIVE item generation so homework/tests are served from the content repository (the binary auto/manual repository content) — pending real content production (deferred). (2) The **`/studio` + `/learn` full visual redesign (§9)** — objective drill-down works functionally; icons/unit-lifecycle/state aesthetics + the guardian report EN/AR template-mixing sweep remain. (3) **A2/B1 rubric descriptors** — with Ghinwa at content-build time. (4) Optional **delete-evidence + recompute** control. None block the evidence model, which is complete and live.
+
+## ✅ `/learn` (child surface) — assignment-source fix + polish — DONE (2026-06-29)
+**(A) Child-surface polish (read-source + presentation, no evidence-model change):**
+- **Homework now reads per-learner `assignments`** (joined to the approved item) instead of the old unscoped "all approved tenant items" query — the child sees only what is assigned to them; empty-tolerant. Commit `85e3120`.
+- **Flower → top + enlarged + number-free motivational line** (low/mid/high from the avg skill bloom, same pattern as `/guardian`, child-facing copy; `showLegend` OFF). Commit `7fd054b`.
+- **"Your next lesson" + Join under the flower** — always renders: the single next upcoming session, OR a quiet empty line ("No lesson scheduled yet…", `sessions.noUpcoming`). Commit `7fd054b`/`ccfef06`.
+- **Full "My lessons" list REMOVED** — a lesson + Join appears once (the hero). Commit `ccfef06`.
+- **Session report REMOVED from the child surface** (it is parent-facing → `/guardian`; also closed a teacher/AI Arabic-content leak). Commit `7fd054b`.
+- **§6.2 number leak removed from the unit hero** — dropped "{done}/{total} goals · {value}/10"; the unit title + stage sentence ("Your bud is growing — keep going!") + stage icon remain (the abstract stage is not a number). Commit `7fd054b`.
+- **"My tests" block added** — ready unit assessments (status='ready') → a "Start" action launching the existing assessment-taking form (the `#my-test` takeover); empty state otherwise; NO scores in it. Commit `ccfef06`.
+- Forced-English, child-simple, mobile-first preserved. (Known §6.2 spot still open by design: the assessment-RESULTS numbers block — separate presentation pass.)
+
+**(B) Demo: "Yousef (dev)" is now the full-coverage test account.** `scripts/seed-demo-yousef.mjs` (idempotent, relative-dated) gives Yousef ONE upcoming session, ONE ready unit test (+2 questions), and ONE homework assignment → every `/learn` state (positive + empty) is checkable on the one available test login. (Diya's only test login is Yousef; سارة's positive states were previously data-verified only.) Run: `node --env-file=.env.local scripts/seed-demo-yousef.mjs`.
+
+**(C) APPROVED `/learn` VISION (Diya, 2026-06-29) — NOT built; its own track WITH content.** The in-progress unit becomes a **JOURNEY/TIMELINE** — lessons in sequence, each lesson's homework nested under it, the unit **TEST at the end**; completed units stay collapsed. Realizes the §9 "plan as a journey" goal. **DEPENDENCIES (why deferred):** (a) a structured **"lesson" entity within a unit doesn't exist** yet (the curriculum is 215 objectives / 30 units — no sequenced lesson carrying its own homework + an end-of-unit test); (b) **real unit content** in the repository (deferred). → an architecture- **and** content-dependent redesign, to open on its own **diagnostic-first** track. **Interim (now):** the flat garden path + separate homework/tests blocks.
+
+**(D) Orphaned i18n keys (harmless, future cleanup):** `learn.sessions.{heading,empty,report.title,report.strengths,report.improve}` — their only consumers (the lessons list + the child session-report block) were removed; left in place, flagged for a future i18n sweep.
 
 **The backend + the four roles + the complete Admin account + the Teacher account (the full teaching workspace: plan/sessions/video/reports/homework/tests/home) + its reflection onto the Student and Guardian: complete.**
 
