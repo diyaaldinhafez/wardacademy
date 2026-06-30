@@ -31,7 +31,10 @@
       "heading": "Test: {unit}",
       "intro": "Answer the questions. You can do it!",
       "submit": "Send my test",
-      "sending": "Sending…"
+      "sending": "Sending…",
+      "myTests": "My tests",
+      "start": "Start",
+      "emptyTests": "No tests to take right now."
     },
     "placement": {
       "heading": "Let's find your level",
@@ -68,6 +71,7 @@
     "sessions": {
       "heading": "My lessons",
       "next": "Your next lesson",
+      "noUpcoming": "No lesson scheduled yet — your teacher will set one soon.",
       "empty": "No lessons yet.",
       "minutes": "{n} min",
       "join": "Join",

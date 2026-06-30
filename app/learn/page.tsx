@@ -157,9 +157,10 @@ export default async function LearnPage() {
     <main lang="en" dir="ltr" className="mx-auto max-w-2xl px-5 py-10">
       <WorkspaceHeader title={t("header.title")} subtitle={profile?.full_name ?? user.email ?? ""} />
 
-      {/* A ready unit assessment (takes over until taken) */}
+      {/* A ready unit assessment (takes over until taken). `id` = the "Start" anchor target from
+          the "My assessments" block below. */}
       {readyAssessment && (
-        <section className={`mb-10 ${card}`}>
+        <section id="my-test" className={`mb-10 ${card}`}>
           {/* {unit} is the catalog unit title (educational content) */}
           <h2 className="mb-1 text-lg font-bold text-ink">{t("assessment.heading", { unit: readyAssessment.unit })}</h2>
           <p className="mb-4 text-sm text-ink-soft">{t("assessment.intro")}</p>
@@ -230,16 +231,19 @@ export default async function LearnPage() {
         </div>
       </section>
 
-      {/* Your next lesson — the immediate "join your next lesson" action, high on the page. */}
-      {nextSession && (
-        <section className="mb-8">
-          <h2 className={h2}>{t("sessions.next")}</h2>
+      {/* Your next lesson — the immediate "join your next lesson" action, high on the page.
+          Always renders: the single next upcoming session + Join, or a quiet empty line. */}
+      <section className="mb-8">
+        <h2 className={h2}>{t("sessions.next")}</h2>
+        {nextSession ? (
           <div className={`${card} flex flex-wrap items-center justify-between gap-3`}>
             <p className="text-sm font-medium text-ink">{fmtUTC(nextSession.scheduled_at)} · {t("sessions.minutes", { n: nextSession.duration_minutes })}</p>
             <VideoCall sessionId={nextSession.id} label={t("sessions.join")} />
           </div>
-        </section>
-      )}
+        ) : (
+          <p className="text-sm text-ink-soft">{t("sessions.noUpcoming")}</p>
+        )}
+      </section>
 
       {/* Daily hero: the current unit bud -> balloon -> bloom */}
       {currentUnit && (
@@ -288,19 +292,8 @@ export default async function LearnPage() {
           flower card + the placement result), the current unit + garden path stay, and the
           teacher's /studio Plan tab still shows the objectives (unchanged). */}
 
-      {/* Sessions */}
-      <section className="mb-8">
-        <h2 className={h2}>{t("sessions.heading")}</h2>
-        {(sessions ?? []).length === 0 && <p className="text-sm text-ink-soft">{t("sessions.empty")}</p>}
-        <ul className="flex flex-col gap-2">
-          {(sessions ?? []).map((s: any) => (
-            <li key={s.id} className={card}>
-              <p className="text-sm font-medium text-ink">{fmtUTC(s.scheduled_at)} · {t("sessions.minutes", { n: s.duration_minutes })}</p>
-              <div className="mt-2"><VideoCall sessionId={s.id} label={t("sessions.join")} /></div>
-            </li>
-          ))}
-        </ul>
-      </section>
+      {/* (The full "My lessons" schedule list was removed — the child needs only their NEXT
+          lesson, shown in the hero under the flower above.) */}
 
       {/* Assessment results */}
       {(doneAssessments ?? []).length > 0 && (
@@ -335,6 +328,22 @@ export default async function LearnPage() {
           </ul>
         </section>
       )}
+
+      {/* My assessments — the READY unit test(s) to take. Reuses the already-fetched
+          `readyAssessment` (no new query). "Start" jumps to the existing assessment-taking form
+          (the takeover above, #my-test). NO scores here — past results live in their own block. */}
+      <section className="mb-8">
+        <h2 className={h2}>{t("assessment.myTests")}</h2>
+        {readyAssessment ? (
+          <div className={`${card} flex flex-wrap items-center justify-between gap-3`}>
+            {/* test title: educational content (catalog) */}
+            <p className="font-bold text-ink" dir="auto">{readyAssessment.unit ?? readyAssessment.title}</p>
+            <a href="#my-test" className="inline-flex h-9 items-center justify-center rounded-full bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-600">{t("assessment.start")}</a>
+          </div>
+        ) : (
+          <p className="text-sm text-ink-soft">{t("assessment.emptyTests")}</p>
+        )}
+      </section>
 
       {/* Homework */}
       <section>
