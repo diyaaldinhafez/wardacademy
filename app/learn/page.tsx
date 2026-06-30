@@ -78,9 +78,7 @@ export default async function LearnPage() {
     }
   }
   const { data: sessions } = await supabase.from("sessions").select("id, scheduled_at, duration_minutes").order("scheduled_at");
-  const { data: reports } = await supabase.from("session_reports").select("session_id, summary, strengths, improve");
-  const reportBySession = new Map<string, any>();
-  for (const r of (reports ?? []) as any[]) reportBySession.set(r.session_id, r);
+  // (Lesson reports are parent-facing — shown on /guardian, not on the child surface.)
   const { data: placement } = await supabase
     .from("placement_tests")
     .select("id, status, suggested_level")
@@ -146,6 +144,15 @@ export default async function LearnPage() {
     stage: u.stage as BloomStage,
   }));
 
+  // Number-free motivational line under the flower — same low/mid/high pattern as /guardian
+  // (avg of the four skill blooms; thresholds mirror the petal bud→bloom 0.34 / 0.67), but
+  // child-facing copy. No per-skill numbers anywhere.
+  const skillFractions = bloom.skills.map((s) => Math.max(0, Math.min(1, s.fraction ?? 0)));
+  const avgBloom = skillFractions.length ? skillFractions.reduce((a, b) => a + b, 0) / skillFractions.length : 0;
+  const flowerMotivation = skillFractions.length ? t(`flower.motivation.${avgBloom < 0.34 ? "low" : avgBloom < 0.67 ? "mid" : "high"}`) : t("flower.blurb");
+  // The single next upcoming lesson — surfaced high (with Join) so the child can jump straight in.
+  const nextSession = (sessions ?? []).find((s: any) => new Date(s.scheduled_at).getTime() >= Date.now()) ?? null;
+
   return (
     <main lang="en" dir="ltr" className="mx-auto max-w-2xl px-5 py-10">
       <WorkspaceHeader title={t("header.title")} subtitle={profile?.full_name ?? user.email ?? ""} />
@@ -210,6 +217,30 @@ export default async function LearnPage() {
         </section>
       )}
 
+      {/* The flower LEADS the page — the child's identity/achievement. Larger (hero size), centred,
+          with a number-free motivational line beneath. showLegend stays OFF (no per-skill numbers). */}
+      <section className="mb-8">
+        <div className="mb-3 flex items-center justify-center gap-2 lg:justify-start">
+          <h2 className="text-lg font-bold text-ink">{t("flower.heading")}</h2>
+          {studyPlan?.scope_label && <ScopeChip>{studyPlan.scope_label}</ScopeChip>}
+        </div>
+        <div className={`${card} flex flex-col items-center gap-3 text-center`}>
+          <FlowerProgress size={184} skills={bloom.skills.map((s) => ({ label: skillLabel(s.skill), value: s.fraction }))} />
+          <p className="text-sm font-medium text-ink" style={{ lineHeight: 1.7, maxWidth: "42ch" }}>{flowerMotivation}</p>
+        </div>
+      </section>
+
+      {/* Your next lesson — the immediate "join your next lesson" action, high on the page. */}
+      {nextSession && (
+        <section className="mb-8">
+          <h2 className={h2}>{t("sessions.next")}</h2>
+          <div className={`${card} flex flex-wrap items-center justify-between gap-3`}>
+            <p className="text-sm font-medium text-ink">{fmtUTC(nextSession.scheduled_at)} · {t("sessions.minutes", { n: nextSession.duration_minutes })}</p>
+            <VideoCall sessionId={nextSession.id} label={t("sessions.join")} />
+          </div>
+        </section>
+      )}
+
       {/* Daily hero: the current unit bud -> balloon -> bloom */}
       {currentUnit && (
         <section className="mb-8">
@@ -222,9 +253,6 @@ export default async function LearnPage() {
               {/* unit title: educational content (catalog) */}
               <p dir="auto" className="text-base font-extrabold leading-tight">{currentUnit.title_en ?? currentUnit.title_ar}</p>
               <p className="mt-1 text-sm" style={{ color: "var(--ward-purple-100)" }}>{t(`unit.stage.${currentUnit.stage}`)}</p>
-              <p className="mt-1 text-xs font-bold" style={{ color: "var(--ward-purple-100)", fontVariantNumeric: "tabular-nums" }}>
-                {t("unit.goalsProgress", { done: currentUnit.assessedCount, total: currentUnit.total, value: currentUnit.value.toFixed(1) })}
-              </p>
             </div>
           </div>
         </section>
@@ -254,20 +282,6 @@ export default async function LearnPage() {
         </section>
       )}
 
-      {/* The skill flower (slower snapshot) */}
-      <section className="mb-8">
-        <div className="mb-3 flex items-center gap-2">
-          <h2 className="text-lg font-bold text-ink">{t("flower.heading")}</h2>
-          {studyPlan?.scope_label && <ScopeChip>{studyPlan.scope_label}</ScopeChip>}
-        </div>
-        <div className={card}>
-          <div className="flex items-center gap-4">
-            <FlowerProgress size={104} skills={bloom.skills.map((s) => ({ label: skillLabel(s.skill), value: s.fraction, detail: `${s.value.toFixed(1)}/10` }))} />
-            <p className="flex-1 text-sm text-ink-soft" style={{ lineHeight: 1.8 }}>{t("flower.blurb")}</p>
-          </div>
-        </div>
-      </section>
-
       {/* Constitution (§6.2): the CHILD sees unit-level + their flower ONLY — never the
           individual objective descriptors. The per-objective "My plan" text list was
           removed from /learn for that reason. The level/scope stays (ScopeChip on the
@@ -279,24 +293,12 @@ export default async function LearnPage() {
         <h2 className={h2}>{t("sessions.heading")}</h2>
         {(sessions ?? []).length === 0 && <p className="text-sm text-ink-soft">{t("sessions.empty")}</p>}
         <ul className="flex flex-col gap-2">
-          {(sessions ?? []).map((s: any) => {
-            const r = reportBySession.get(s.id);
-            return (
-              <li key={s.id} className={card}>
-                <p className="text-sm font-medium text-ink">{fmtUTC(s.scheduled_at)} · {t("sessions.minutes", { n: s.duration_minutes })}</p>
-                <div className="mt-2"><VideoCall sessionId={s.id} label={t("sessions.join")} /></div>
-                {r && (
-                  <div className="mt-2 rounded-xl bg-brand-50 p-3 text-sm">
-                    <p className="font-bold text-brand-700">{t("sessions.report.title")}</p>
-                    {/* report text: teacher/AI content */}
-                    <p dir="auto" className="text-ink">{r.summary}</p>
-                    {r.strengths && <p className="text-ink-soft"><span className="font-medium">{t("sessions.report.strengths")}</span> <span dir="auto">{r.strengths}</span></p>}
-                    {r.improve && <p className="text-ink-soft"><span className="font-medium">{t("sessions.report.improve")}</span> <span dir="auto">{r.improve}</span></p>}
-                  </div>
-                )}
-              </li>
-            );
-          })}
+          {(sessions ?? []).map((s: any) => (
+            <li key={s.id} className={card}>
+              <p className="text-sm font-medium text-ink">{fmtUTC(s.scheduled_at)} · {t("sessions.minutes", { n: s.duration_minutes })}</p>
+              <div className="mt-2"><VideoCall sessionId={s.id} label={t("sessions.join")} /></div>
+            </li>
+          ))}
         </ul>
       </section>
 

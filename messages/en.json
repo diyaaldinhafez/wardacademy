@@ -57,11 +57,17 @@
     },
     "flower": {
       "heading": "My flower",
-      "blurb": "Four petals = four skills. They grow when you learn!"
+      "blurb": "Four petals = four skills. They grow when you learn!",
+      "motivation": {
+        "low": "Your flower is just starting — every lesson helps it grow!",
+        "mid": "Look at your petals opening — keep going, you're doing great!",
+        "high": "Wow, your flower is blooming! You should be so proud."
+      }
     },
     "plan": { "heading": "My plan" },
     "sessions": {
       "heading": "My lessons",
+      "next": "Your next lesson",
       "empty": "No lessons yet.",
       "minutes": "{n} min",
       "join": "Join",
