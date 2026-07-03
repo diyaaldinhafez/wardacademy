@@ -11,7 +11,6 @@ import {
   sendIntroReportAction,
   setPaymentStatus,
   updateLeadContact,
-  updateGuardianLocale,
   cancelBooking,
   rebookByAdmin,
   updateOpsNote,
@@ -198,15 +197,10 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             <SubmitButton pendingText="…" className={btn("secondary", "md")}>{t("saveEdits")}</SubmitButton>
           </form>
         </details>
-        <form action={updateGuardianLocale} style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, marginTop: 10, borderTop: "1px solid var(--border-soft)", paddingTop: 10 }}>
-          <input type="hidden" name="leadId" value={lead.id} />
-          <label style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-muted)" }}>{t("commsLocaleLabel")}</label>
-          <select name="locale" defaultValue={guardianLocale} className={ctl} style={{ width: "auto" }}>
-            <option value="ar">{t("commsLocaleAr")}</option>
-            <option value="en">{t("commsLocaleEn")}</option>
-          </select>
-          <SubmitButton pendingText="…" className={btn("secondary", "md")}>{t("commsLocaleSave")}</SubmitButton>
-        </form>
+        {/* PA-1: parent comms are Arabic-only (locked policy). The "Communication language"
+            control was removed as no-effect; updateGuardianLocale action + the
+            guardian_locale/comms_locale columns are kept vestigial. Orphaned i18n keys
+            admin.registrations.commsLocale{Label,Ar,En,Save} left in place (not chased). */}
       </Card>
 
       {/* Booking */}

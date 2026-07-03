@@ -105,7 +105,16 @@ function avatarHash(str: string) {
   return h;
 }
 export function Avatar({ name = "", size = 40 }: { name?: string; size?: number }) {
-  const initials = name.trim().split(/\s+/).slice(0, 2).map((w) => w[0] || "").join("");
+  // First letter of the first up-to-two word tokens that START with a letter, so
+  // parenthetical suffixes ("(dev)"), numbers and punctuation are skipped. Unicode-aware
+  // so Arabic names keep the first letter of the first word.
+  const initials = name
+    .trim()
+    .split(/\s+/)
+    .filter((w) => /^\p{L}/u.test(w))
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("");
   const [bg, fg] = AVATAR_PALETTES[avatarHash(name) % AVATAR_PALETTES.length];
   return (
     <span className="ward-avatar" title={name} style={{ width: size, height: size, fontSize: size * 0.38, background: bg, color: fg }}>

@@ -939,7 +939,7 @@
       "engagementLabel": "Child's engagement",
       "strengthsLabel": "Top strengths",
       "focusLabel": "Focus priorities",
-      "confirmedLevelLabel": "Confirmed level",
+      "confirmedLevelLabel": "Level impression (for the intro report)",
       "decisionLabel": "Enrollment decision",
       "teacherNotePh": "A note to enrich the report (optional)",
       "regenReport": "Regenerate report",
@@ -980,7 +980,7 @@
       "searchPh": "Search by name or phone…",
       "search": "Search",
       "noMatch": "No matching requests.",
-      "leadAppt": "· appt: {time}",
+      "leadAppt": "· appt: {time} · {tz}",
       "leadNoBooking": "· no booking",
       "viewLeadTitle": "View all request data",
       "view": "View"
@@ -1074,7 +1074,7 @@
     "teachers": {
       "listIntro": "Teachers and their profiles. (Additional teachers can be added in a later version.)",
       "listEmpty": "No teachers yet.",
-      "studentsCount": "{n} students",
+      "studentsCount": "{n, plural, one {# student} other {# students}}",
       "active": "Active",
       "inactive": "Inactive",
       "manage": "Manage",

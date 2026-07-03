@@ -42,34 +42,6 @@ async function defaultInstructorId(tenantId: string): Promise<string> {
   return teacher.id;
 }
 
-/** Admin opens an intro-session time slot for booking. */
-export async function addSlot(formData: FormData) {
-  const startsAt = String(formData.get("startsAt") ?? "");
-  const duration = Number(formData.get("duration") ?? 30);
-  if (!startsAt) throw new Error(await adminErr("pickTime"));
-
-  const { supabase, profile } = await assertAdmin();
-  const instructorId = await defaultInstructorId(profile.tenant_id);
-
-  const { error } = await supabase.from("availability_slots").insert({
-    tenant_id: profile.tenant_id,
-    instructor_id: instructorId,
-    starts_at: startsAt,
-    duration_minutes: duration,
-    status: "open",
-  });
-  if (error) throw new Error(error.code === "23505" ? await adminErr("slotExists") : error.message);
-  revalidatePath("/admin/teachers", "layout");
-}
-
-export async function removeSlot(formData: FormData) {
-  const id = String(formData.get("slotId") ?? "");
-  const { supabase } = await assertAdmin();
-  const { error } = await supabase.from("availability_slots").delete().eq("id", id).eq("status", "open");
-  if (error) throw new Error(error.message);
-  revalidatePath("/admin/teachers", "layout");
-}
-
 /** Generate a tailored placement test for a lead (draft → admin reviews → approves). */
 export async function generateLeadTestAction(formData: FormData) {
   const leadId = String(formData.get("leadId") ?? "");

@@ -10,7 +10,7 @@ import { getTranslations } from "next-intl/server";
 import { labelOfEn } from "@/lib/enrollOptions";
 import { WEEKDAY_EN, sessionsPerRule } from "@/lib/availability";
 import { PIPELINE, PIPELINE_EN, ACTION_LABEL_EN, computePipeline } from "@/lib/leads";
-import { fmtUTC } from "@/lib/datetime";
+import { fmtLocal } from "@/lib/datetime";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -32,8 +32,9 @@ export default async function RegistrationsPage({
   const { data: tests } = await supabase.from("lead_tests").select("lead_id, status, created_at").order("created_at", { ascending: false });
   const { data: intros } = await supabase.from("intro_reports").select("lead_id, status");
   const { data: introRules } = await supabase.from("intro_availability_rules").select("id, weekday, start_time, end_time, slot_minutes").order("weekday");
-  const { data: introTenant } = await supabase.from("tenants").select("slot_break_minutes").maybeSingle();
+  const { data: introTenant } = await supabase.from("tenants").select("slot_break_minutes, timezone").maybeSingle();
   const introBrk = introTenant?.slot_break_minutes ?? 15;
+  const tz = introTenant?.timezone ?? "Asia/Riyadh";
 
   const bookedByLead = new Map<string, string>();
   for (const s of (slots ?? []) as any[]) if (s.lead_id && s.status === "booked") bookedByLead.set(s.lead_id, s.starts_at);
@@ -65,7 +66,7 @@ export default async function RegistrationsPage({
     <>
       {/* Intro/trial session availability — admin-owned, independent of any teacher */}
       <Card style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-        <details>
+        <details open>
           <summary style={{ cursor: "pointer", fontSize: 14.5, fontWeight: 700, color: "var(--text-strong)", listStyle: "none", display: "flex", alignItems: "center", gap: 8 }}>
             {t("introSlotsTitle")}
             <span style={{ fontSize: 12, fontWeight: 400, color: "var(--text-muted)" }}>{t("introSlotsHint")}</span>
@@ -152,7 +153,7 @@ export default async function RegistrationsPage({
                         </span>
                       </div>
                       <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
-                        <span dir="auto">{l.guardian_name}</span> {booked ? t("leadAppt", { time: fmtUTC(booked) }) : t("leadNoBooking")}
+                        <span dir="auto">{l.guardian_name}</span> {booked ? t("leadAppt", { time: fmtLocal(booked, tz), tz }) : t("leadNoBooking")}
                       </div>
                     </div>
                   </Link>
