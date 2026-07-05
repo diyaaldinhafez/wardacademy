@@ -34,9 +34,12 @@ export default async function TodayPage() {
     data: { user },
   } = await supabase.auth.getUser();
   const { data: people } = await supabase.from("profiles").select("id, full_name, roles, assigned_instructor_id");
+  // Ownership rule (multi-teacher): a learner is MINE iff assigned_instructor_id === me.
+  // (No null-inclusive fallback — unassigned learners belong to no teacher.)
   const learners = (people ?? []).filter(
-    (p: any) => ((p.roles as string[]) ?? []).includes("learner") && (!p.assigned_instructor_id || p.assigned_instructor_id === user?.id),
+    (p: any) => ((p.roles as string[]) ?? []).includes("learner") && p.assigned_instructor_id === user?.id,
   );
+  const myLearnerIds = learners.map((l: any) => l.id as string);
   const nameOf = new Map<string, string>();
   for (const l of learners) nameOf.set(l.id, (l.full_name as string) ?? l.id);
   const nm = (id: string | null) => (id ? nameOf.get(id) ?? t("task.studentFallback") : t("task.studentFallback"));
@@ -45,12 +48,14 @@ export default async function TodayPage() {
   const { data: todaySessions } = await supabase
     .from("sessions")
     .select("id, scheduled_at, duration_minutes, learner_id, lesson_title")
+    .eq("instructor_id", user?.id ?? "")
     .gte("scheduled_at", dayStart.toISOString())
     .lt("scheduled_at", dayEnd.toISOString())
     .order("scheduled_at");
   const { data: nextSessions } = await supabase
     .from("sessions")
     .select("id, scheduled_at, duration_minutes, learner_id, lesson_title")
+    .eq("instructor_id", user?.id ?? "")
     .gte("scheduled_at", new Date(nowMs - 2 * 3600 * 1000).toISOString())
     .order("scheduled_at")
     .limit(8);
@@ -73,6 +78,7 @@ export default async function TodayPage() {
   const { data: pastSessions } = await supabase
     .from("sessions")
     .select("id, scheduled_at, learner_id, session_reports(status)")
+    .eq("instructor_id", user?.id ?? "")
     .lt("scheduled_at", now.toISOString())
     .gte("scheduled_at", since)
     .order("scheduled_at", { ascending: false });
@@ -83,13 +89,15 @@ export default async function TodayPage() {
     else if (rep.status === "draft") tasks.push({ key: `repd-${s.id}`, label: t("task.approveReport", { name: nm(s.learner_id) }), learnerId: s.learner_id, tone: "warning", href: to });
   }
 
-  const { data: toGrade } = await supabase.from("manual_homework").select("id, learner_id, title").eq("status", "submitted").order("submitted_at", { ascending: false });
+  const { data: toGrade } = await supabase.from("manual_homework").select("id, learner_id, title").eq("instructor_id", user?.id ?? "").eq("status", "submitted").order("submitted_at", { ascending: false });
   for (const h of (toGrade ?? []) as any[]) tasks.push({ key: `hw-${h.id}`, label: t("task.gradeHomework", { title: h.title, name: nm(h.learner_id) }), learnerId: h.learner_id, tone: "brand", href: `/studio/students/${h.learner_id}?tab=homework` });
 
-  const { data: assessmentDrafts } = await supabase.from("assessments").select("id, learner_id, title").eq("status", "draft");
+  const { data: assessmentDrafts } = myLearnerIds.length
+    ? await supabase.from("assessments").select("id, learner_id, title").eq("status", "draft").in("learner_id", myLearnerIds)
+    : { data: [] as any[] };
   for (const a of (assessmentDrafts ?? []) as any[]) tasks.push({ key: `as-${a.id}`, label: t("task.approveAssessment", { title: a.title, name: nm(a.learner_id) }), learnerId: a.learner_id, tone: "neutral", href: `/studio/students/${a.learner_id}?tab=assessments` });
 
-  const { data: itemDrafts } = await supabase.from("items").select("id, target_learner_id").eq("status", "draft").order("created_at", { ascending: false }).limit(30);
+  const { data: itemDrafts } = await supabase.from("items").select("id, target_learner_id").eq("created_by", user?.id ?? "").eq("status", "draft").order("created_at", { ascending: false }).limit(30);
   for (const it of (itemDrafts ?? []) as any[]) tasks.push({ key: `it-${it.id}`, label: t("task.reviewItem", { name: nm(it.target_learner_id) }), learnerId: it.target_learner_id, tone: "neutral", href: it.target_learner_id ? `/studio/students/${it.target_learner_id}?tab=homework` : "/studio/students" });
 
   const attention = new Set(tasks.map((task) => task.learnerId).filter(Boolean) as string[]);

@@ -97,6 +97,9 @@ try {
   await pg.query(upsertProfile, [guardian.id, tenantId, "Parent (dev)", "{guardian}", false, GUARDIAN_EMAIL]);
   await pg.query(upsertProfile, [learner.id, tenantId, "Yousef (dev)", "{learner}", true, LEARNER_EMAIL]);
   await pg.query(upsertProfile, [adminUser.id, tenantId, "Admin", "{admin}", false, ADMIN_EMAIL]);
+  // Assign the dev learner to the dev teacher — owner-scoped RLS (0069) + the studio
+  // task list key off assigned_instructor_id; an unassigned learner belongs to no teacher.
+  await pg.query("update public.profiles set assigned_instructor_id = $1 where id = $2", [user.id, learner.id]);
   await pg.query(
     `insert into public.guardianships(tenant_id, guardian_id, learner_id, relationship, consent_granted, consent_at)
        values ($1, $2, $3, 'parent', true, now())
