@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
+import { fmtTime } from "@/lib/datetime";
 import { Card, Badge, Avatar, Spark } from "@/components/ward/ui";
 import VideoCall from "@/components/VideoCall";
 
@@ -8,10 +9,6 @@ import VideoCall from "@/components/VideoCall";
 const secTitle = { fontSize: 15, fontWeight: 700, color: "var(--text-strong)", marginBottom: 12 } as const;
 const row = { display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid var(--ink-100)" } as const;
 const btnSm = "ward-btn ward-btn--ghost ward-btn--sm";
-
-function timeOf(iso: string) {
-  return new Intl.DateTimeFormat("en", { hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
-}
 
 export default async function TodayPage() {
   const supabase = await createClient();
@@ -34,6 +31,8 @@ export default async function TodayPage() {
     data: { user },
   } = await supabase.auth.getUser();
   const { data: people } = await supabase.from("profiles").select("id, full_name, roles, assigned_instructor_id");
+  const { data: tenantRow } = await supabase.from("tenants").select("timezone").maybeSingle();
+  const tz = tenantRow?.timezone ?? "Asia/Riyadh";
   // Ownership rule (multi-teacher): a learner is MINE iff assigned_instructor_id === me.
   // (No null-inclusive fallback — unassigned learners belong to no teacher.)
   const learners = (people ?? []).filter(
@@ -137,7 +136,7 @@ export default async function TodayPage() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-strong)" }}>{nm(hero.learner_id)}</div>
                   <div style={{ fontSize: 12.5, color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>
-                    {timeOf(hero.scheduled_at)} · {t("minutes", { n: hero.duration_minutes })}{hero.lesson_title ? ` ${t("lessonPrefix", { title: hero.lesson_title })}` : ""}
+                    {fmtTime(hero.scheduled_at, tz)} · {t("minutes", { n: hero.duration_minutes })}{hero.lesson_title ? ` ${t("lessonPrefix", { title: hero.lesson_title })}` : ""}
                   </div>
                 </div>
               </div>
@@ -178,7 +177,7 @@ export default async function TodayPage() {
               const state = nowMs > sEnd(s) ? "ended" : st <= nowMs ? "ongoing" : "upcoming";
               return (
                 <div key={s.id} style={{ ...row, ...(i === (todaySessions ?? []).length - 1 ? { borderBottom: "none" } : {}), opacity: state === "ended" ? 0.6 : 1 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: state === "ongoing" ? "var(--rose-600, #c0392b)" : "var(--text-brand)", width: 52, flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>{timeOf(s.scheduled_at)}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: state === "ongoing" ? "var(--rose-600, #c0392b)" : "var(--text-brand)", width: 52, flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>{fmtTime(s.scheduled_at, tz)}</span>
                   <Avatar name={nm(s.learner_id)} size={32} />
                   <span style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-strong)" }}>{nm(s.learner_id)}</span>

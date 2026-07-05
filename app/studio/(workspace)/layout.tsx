@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import enMessages from "@/messages/en.json";
 import { createClient } from "@/lib/supabase/server";
+import { fmtDateNow } from "@/lib/datetime";
 import TeacherShell from "@/components/studio/TeacherShell";
 
 export default async function WorkspaceLayout({ children }: { children: ReactNode }) {
@@ -14,9 +15,11 @@ export default async function WorkspaceLayout({ children }: { children: ReactNod
   if (!user) redirect("/studio/login");
 
   const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
+  const { data: tenantRow } = await supabase.from("tenants").select("timezone").maybeSingle();
+  const tz = tenantRow?.timezone ?? "Asia/Riyadh";
   const t = await getTranslations({ locale: "en", namespace: "studio.nav" });
 
-  const today = new Intl.DateTimeFormat("en", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
+  const today = fmtDateNow(tz);
 
   // The teacher studio is English by internal decision — force `en` for every
   // client component beneath the shell, regardless of the global LOCALE cookie.

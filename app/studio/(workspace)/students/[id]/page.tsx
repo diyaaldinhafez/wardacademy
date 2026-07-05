@@ -26,7 +26,7 @@ import { fetchEvidenceBloom } from "@/lib/progress/bloom";
 import { aggregatePlanItems } from "@/lib/curriculum/aggregatePlan";
 import { FORMAT_LABELS, ITEM_FORMATS, DIFFICULTIES } from "@/lib/items";
 import { WEEKDAY_EN } from "@/lib/availability";
-import { fmtUTC } from "@/lib/datetime";
+import { fmtLocal } from "@/lib/datetime";
 
 const one = (o: any) => (Array.isArray(o) ? o[0] : o);
 const btn = (v: string, s = "sm") => `ward-btn ward-btn--${v} ward-btn--${s}`;
@@ -196,8 +196,9 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   }
   const { data: lessonSlots } = await supabase.from("lesson_schedules").select("id, weekday, time_of_day, duration_minutes").eq("learner_id", id).order("weekday");
   const { data: availRules } = await supabase.from("availability_rules").select("weekday, start_time, end_time, slot_minutes").eq("active", true);
-  const { data: tenantRow } = await supabase.from("tenants").select("slot_break_minutes").maybeSingle();
+  const { data: tenantRow } = await supabase.from("tenants").select("slot_break_minutes, timezone").maybeSingle();
   const lessonBreak = tenantRow?.slot_break_minutes ?? 15;
+  const tz = tenantRow?.timezone ?? "Asia/Riyadh";
   // Discrete bookable times per weekday, inside the teacher's availability windows.
   const toMinT = (t: string) => { const [h, m] = String(t).split(":").map(Number); return h * 60 + (m || 0); };
   const fmtT = (min: number) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
@@ -341,7 +342,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const reportWaLink = (s: any, report: any) => {
     if (!guardianPhone) return null;
     const text =
-      `*${name} — ${twa("report.title")}*\n${fmtUTC(s.scheduled_at)}${s.lesson_title ? ` — ${s.lesson_title}` : ""}\n\n${report.summary}` +
+      `*${name} — ${twa("report.title")}*\n${fmtLocal(s.scheduled_at, tz)}${s.lesson_title ? ` — ${s.lesson_title}` : ""}\n\n${report.summary}` +
       (report.strengths ? `\n\n${twa("report.strengths")}: ${report.strengths}` : "") +
       (report.improve ? `\n${twa("report.nextStep")}: ${report.improve}` : "") +
       `\n\n${tcwa("appName")}`;
@@ -354,7 +355,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     return (
       <div style={{ borderRadius: 12, border: "1px solid var(--border-soft)", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-strong)", fontVariantNumeric: "tabular-nums" }}>{fmtUTC(s.scheduled_at)}</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-strong)", fontVariantNumeric: "tabular-nums" }}>{fmtLocal(s.scheduled_at, tz)}</span>
           <span style={{ fontSize: 12, color: "var(--text-muted)" }}>· {t("sched.minutes", { n: s.duration_minutes })}</span>
           {showReport && report?.status === "approved" && <Badge tone="success">{t("report.sent")}</Badge>}
         </div>
@@ -429,7 +430,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     return (
       <div style={{ borderRadius: 12, border: "1px solid var(--border-soft)", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-strong)", fontVariantNumeric: "tabular-nums" }}>{fmtUTC(s.scheduled_at)}</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-strong)", fontVariantNumeric: "tabular-nums" }}>{fmtLocal(s.scheduled_at, tz)}</span>
           {s.lesson_title && <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{s.lesson_title}</span>}
           <Badge tone={s.status === "completed" ? "success" : s.status === "scheduled" ? "brand" : "neutral"}>{s.status}</Badge>
         </div>
@@ -479,7 +480,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         <div style={secTitle}>{t("overview.nextSessionTitle")}</div>
         {nextSession ? (
           <div style={{ fontSize: 13.5, color: "var(--text-body)" }}>
-            <strong style={{ fontVariantNumeric: "tabular-nums" }}>{fmtUTC(nextSession.scheduled_at)}</strong>
+            <strong style={{ fontVariantNumeric: "tabular-nums" }}>{fmtLocal(nextSession.scheduled_at, tz)}</strong>
             {nextSession.lesson_title ? <> · {nextSession.lesson_title}</> : null}
           </div>
         ) : (
@@ -604,7 +605,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         <Card style={{ display: "flex", flexDirection: "column", gap: 10, background: "linear-gradient(135deg, var(--brand-50, #f1ecff), var(--surface-card))", border: "1.5px solid var(--brand-200, #d8ccff)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--brand)" }}>{t("sessions.heroNext")}</span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-strong)", fontVariantNumeric: "tabular-nums" }}>{fmtUTC(nextSession.scheduled_at)}</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-strong)", fontVariantNumeric: "tabular-nums" }}>{fmtLocal(nextSession.scheduled_at, tz)}</span>
             <span style={{ fontSize: 12, color: "var(--text-muted)" }}>· {t("sched.minutes", { n: nextSession.duration_minutes })}</span>
             {nextSession.lesson_title && <Badge tone="neutral">{nextSession.lesson_title}</Badge>}
           </div>
@@ -998,7 +999,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         </div>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", borderTop: "1px solid var(--ink-100)", paddingTop: 10 }}>
           <span style={{ fontSize: 12.5, color: nextSession ? "var(--leaf-700)" : "var(--text-muted)" }}>
-            {nextSession ? t("nextLabel", { time: fmtUTC(nextSession.scheduled_at) }) : t("noUpcoming")}
+            {nextSession ? t("nextLabel", { time: fmtLocal(nextSession.scheduled_at, tz) }) : t("noUpcoming")}
           </span>
           {alerts.map((a, i) => <Badge key={i} tone={a.tone}>{a.label}</Badge>)}
         </div>
