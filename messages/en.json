@@ -181,6 +181,7 @@
         "gradeHomework": "Grade homework: ⁨{title}⁩ — ⁨{name}⁩",
         "approveAssessment": "Approve assessment: ⁨{title}⁩ — ⁨{name}⁩",
         "reviewItem": "Review a digital task — ⁨{name}⁩",
+        "reviewItemGeneric": "Review a digital task",
         "studentFallback": "student"
       }
     },

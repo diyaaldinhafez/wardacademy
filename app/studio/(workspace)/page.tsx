@@ -42,7 +42,7 @@ export default async function TodayPage() {
   const myLearnerIds = learners.map((l: any) => l.id as string);
   const nameOf = new Map<string, string>();
   for (const l of learners) nameOf.set(l.id, (l.full_name as string) ?? l.id);
-  const nm = (id: string | null) => (id ? nameOf.get(id) ?? t("task.studentFallback") : t("task.studentFallback"));
+  const nm = (id: string | null) => (id ? nameOf.get(id) ?? t("task.studentFallback") : "");
 
   // Today's sessions (for the timeline) + the next/ongoing one (for the hero).
   const { data: todaySessions } = await supabase
@@ -98,7 +98,7 @@ export default async function TodayPage() {
   for (const a of (assessmentDrafts ?? []) as any[]) tasks.push({ key: `as-${a.id}`, label: t("task.approveAssessment", { title: a.title, name: nm(a.learner_id) }), learnerId: a.learner_id, tone: "neutral", href: `/studio/students/${a.learner_id}?tab=assessments` });
 
   const { data: itemDrafts } = await supabase.from("items").select("id, target_learner_id").eq("created_by", user?.id ?? "").eq("status", "draft").order("created_at", { ascending: false }).limit(30);
-  for (const it of (itemDrafts ?? []) as any[]) tasks.push({ key: `it-${it.id}`, label: t("task.reviewItem", { name: nm(it.target_learner_id) }), learnerId: it.target_learner_id, tone: "neutral", href: it.target_learner_id ? `/studio/students/${it.target_learner_id}?tab=homework` : "/studio/students" });
+  for (const it of (itemDrafts ?? []) as any[]) tasks.push({ key: `it-${it.id}`, label: it.target_learner_id ? t("task.reviewItem", { name: nm(it.target_learner_id) }) : t("task.reviewItemGeneric"), learnerId: it.target_learner_id, tone: "neutral", href: it.target_learner_id ? `/studio/students/${it.target_learner_id}?tab=homework` : "/studio/students" });
 
   const attention = new Set(tasks.map((task) => task.learnerId).filter(Boolean) as string[]);
   const remainingToday = (todaySessions ?? []).filter((s: any) => sEnd(s) > nowMs).length;
