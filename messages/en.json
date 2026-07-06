@@ -130,9 +130,23 @@
       "today": "Today",
       "students": "Students",
       "availability": "Availability",
+      "curriculum": "Curriculum",
       "logout": "Log out",
       "fallbackTitle": "Teacher Studio",
       "teacherFallback": "Teacher"
+    },
+    "curriculum": {
+      "subtitle": "The full Ward Curriculum — A1 to B1 · 30 units · 215 objectives.",
+      "levelLabel": "Level",
+      "unit": "Unit {n}",
+      "unitsCount": "{n, plural, one {# unit} other {# units}}",
+      "objectivesCount": "{n, plural, one {# objective} other {# objectives}}",
+      "openLesson": "Open lesson",
+      "back": "Back to curriculum",
+      "cefr": "CEFR {level}",
+      "lessonSlotTitle": "Lesson content — coming soon",
+      "lessonSlotBlurb": "A visual, slide-based lesson for this objective will live here.",
+      "empty": "No curriculum found."
     },
     "login": {
       "title": "Ward Academy",
@@ -210,7 +224,7 @@
       "planDraft": "Plan draft",
       "tabs": {
         "overview": "Overview",
-        "curriculum": "Curriculum",
+        "curriculum": "Resources",
         "plan": "Plan",
         "sessions": "Sessions",
         "homework": "Homework",
