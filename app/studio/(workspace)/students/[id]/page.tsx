@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   startPlacement, startPlanFromCatalog, approvePlan, draftReportWithAI, assignItem,
-  addResource, removeResource, generateAssessmentTest, approveAssessment, removeAssessment,
+  generateAssessmentTest, approveAssessment, removeAssessment,
   generateDraft, approveItem, rejectItem, updateReport, approveReport,
   addLessonSlot, removeLessonSlot, generateLessonSessions,
   createManualHomework, gradeManualHomework, removeManualHomework,
@@ -34,16 +34,6 @@ const ctl = "ward-field__control";
 const sel = "ward-select__control";
 const secTitle = { fontSize: 14.5, fontWeight: 700, color: "var(--text-strong)" } as const;
 
-const fmtSize = (n?: number | null) => (n == null ? "" : n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
-function fileKind(name?: string | null, mime?: string | null): string {
-  const ext = (name ?? "").split(".").pop()?.toLowerCase() ?? "";
-  if (ext === "pdf" || mime?.includes("pdf")) return "PDF";
-  if (["doc", "docx"].includes(ext) || mime?.includes("word")) return "Word";
-  if (["ppt", "pptx"].includes(ext) || mime?.includes("presentation") || mime?.includes("powerpoint")) return "PowerPoint";
-  if (["xls", "xlsx"].includes(ext) || mime?.includes("sheet") || mime?.includes("excel")) return "Excel";
-  if (ext === "txt") return "Text";
-  return "File";
-}
 
 function subStatus(sub: any) {
   if (!sub) return { tone: "neutral" as const, key: "notSubmitted" };
@@ -158,17 +148,6 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const planItemsEn = planItems.map(enText);
   const objectivesEn = (objectives as any[]).map(enText);
 
-  const { data: resources } = await supabase.from("learning_resources").select("id, title, note, file_path, file_name, mime_type, size_bytes, created_at").eq("learner_id", id).order("created_at", { ascending: false });
-  // Short-lived signed download URLs for the private resource files.
-  const resourceUrls = new Map<string, string>();
-  const withFiles = (resources ?? []).filter((r: any) => r.file_path);
-  if (withFiles.length) {
-    const admin = createAdminClient();
-    await Promise.all(withFiles.map(async (r: any) => {
-      const { data } = await admin.storage.from("learning-resources").createSignedUrl(r.file_path, 3600);
-      if (data?.signedUrl) resourceUrls.set(r.id, data.signedUrl);
-    }));
-  }
   // Guardian WhatsApp (leads is admin-gated by RLS; this learner is already authorised, so read the phone via service-role).
   let guardianPhone: string | null = null;
   const guardianLocale = "ar"; // PA-1: parent-facing WhatsApp is Arabic-only (guardian_locale no longer selects EN).
@@ -562,41 +541,6 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     </div>
   );
 
-  const Curriculum = (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <div style={secTitle}>{t("curriculum.title")}</div>
-        {(resources ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("curriculum.empty")}</p>}
-        {(resources ?? []).map((r: any) => {
-          const href = resourceUrls.get(r.id);
-          return (
-            <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, borderBottom: "1px solid var(--ink-100)", paddingBottom: 6 }}>
-              <Badge tone="neutral">{fileKind(r.file_name, r.mime_type)}</Badge>
-              <span style={{ flex: 1, minWidth: 0 }}>
-                {href ? (
-                  <a href={href} target="_blank" rel="noreferrer" style={{ color: "var(--brand)", textDecoration: "none", fontWeight: 600 }}>{r.title ?? r.file_name} ↓</a>
-                ) : (
-                  <span style={{ color: "var(--text-body)" }}>{r.title ?? r.file_name}</span>
-                )}
-                {r.size_bytes != null && <span style={{ color: "var(--text-muted)" }}> · {fmtSize(r.size_bytes)}</span>}
-                {r.note && <span style={{ color: "var(--text-muted)" }}> — {r.note}</span>}
-              </span>
-              <form action={removeResource}><input type="hidden" name="resourceId" value={r.id} /><input type="hidden" name="learnerId" value={id} /><SubmitButton className={btn("ghost")}>✕</SubmitButton></form>
-            </div>
-          );
-        })}
-        <form action={addResource} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end", borderTop: "1px solid var(--ink-100)", paddingTop: 10 }}>
-          <input type="hidden" name="learnerId" value={id} />
-          <input name="file" type="file" required accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt" className={ctl} style={{ width: "auto", flex: 1, minWidth: 200 }} />
-          <input name="title" placeholder={t("curriculum.titlePlaceholder")} className={ctl} style={{ width: "auto" }} />
-          <input name="note" placeholder={t("curriculum.notePlaceholder")} className={ctl} style={{ width: "auto" }} />
-          <SubmitButton pendingText={t("curriculum.uploading")} className={btn("secondary")}>{t("curriculum.upload")}</SubmitButton>
-        </form>
-        <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{t("curriculum.formats")}</p>
-      </Card>
-    </div>
-  );
-
   const restUpcoming = upcoming.slice(1);
   const Sessions = (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -969,7 +913,6 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
   const tabs: StudentTab[] = [
     { key: "overview", label: t("tabs.overview"), content: Overview },
-    { key: "curriculum", label: t("tabs.curriculum"), content: Curriculum },
     { key: "plan", label: t("tabs.plan"), content: Plan },
     { key: "sessions", label: t("tabs.sessions"), badge: upcoming.length || undefined, content: Sessions },
     { key: "homework", label: t("tabs.homework"), content: Homework },
