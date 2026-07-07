@@ -5,8 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   startPlacement, startPlanFromCatalog, approvePlan, draftReportWithAI, assignItem,
-  generateAssessmentTest, approveAssessment, removeAssessment,
-  generateDraft, approveItem, rejectItem, updateReport, approveReport,
+  assembleUnitTest, approveAssessment, removeAssessment,
+  approveItem, rejectItem, updateReport, approveReport,
   addLessonSlot, removeLessonSlot, generateLessonSessions,
   createManualHomework, gradeManualHomework, removeManualHomework,
   generateDiagnosticReport, updateDiagnostic, approveDiagnostic,
@@ -24,7 +24,7 @@ import { getTranslations } from "next-intl/server";
 import { UnitBloom, FlowerProgress, ScopeChip } from "@/components/bloom/Bloom";
 import { fetchEvidenceBloom } from "@/lib/progress/bloom";
 import { aggregatePlanItems } from "@/lib/curriculum/aggregatePlan";
-import { FORMAT_LABELS, ITEM_FORMATS, DIFFICULTIES } from "@/lib/items";
+import { FORMAT_LABELS } from "@/lib/items";
 import { WEEKDAY_EN } from "@/lib/availability";
 import { fmtLocal } from "@/lib/datetime";
 
@@ -116,8 +116,9 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     } else looseAssigns.push(a);
   }
 
-  // Approved items relevant to this learner (targeted to them, or untargeted/shared).
-  const { data: approvedItems } = await supabase.from("items").select("id, prompt, format").eq("status", "approved").or(`target_learner_id.eq.${id},target_learner_id.is.null`).order("created_at", { ascending: false });
+  // Approved BANK items relevant to this learner (targeted to them, or untargeted/shared).
+  // AE-7: the pre-built bank IS `items`; kind tags homework vs test (NULL = usable as either).
+  const { data: approvedItems } = await supabase.from("items").select("id, prompt, format, objective_id, kind").eq("status", "approved").or(`target_learner_id.eq.${id},target_learner_id.is.null`).order("created_at", { ascending: false });
   // This learner's own AI homework drafts (await teacher approval).
   const { data: draftItems } = await supabase
     .from("items")
@@ -146,7 +147,20 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   }
   const enText = (it: any) => ({ ...it, description: descEn.get(it.id) ?? it.description, unit: titleEn.get(unitIdOf(it.id)) ?? it.unit });
   const planItemsEn = planItems.map(enText);
-  const objectivesEn = (objectives as any[]).map(enText);
+
+  // AE-7 bank grouping. objLabel/unitLabel resolve any objective_id → EN label / unit title.
+  const objLabel = (oid: string | null) => (oid ? descEn.get(oid) ?? oid : "—");
+  const unitLabel = (oid: string | null) => (oid ? titleEn.get(unitIdOf(oid)) ?? unitIdOf(oid) : "—");
+  const homeworkBank = (approvedItems ?? []).filter((it: any) => it.kind === "homework" || it.kind == null);
+  // Test bank grouped by curriculum unit (only objective-tagged items can seed a unit test).
+  const testByUnit = new Map<string, { unitId: string; unit: string; items: any[] }>();
+  for (const it of (approvedItems ?? []) as any[]) {
+    if (!(it.kind === "test" || it.kind == null) || !it.objective_id) continue;
+    const uid = unitIdOf(it.objective_id);
+    const g = testByUnit.get(uid) ?? { unitId: uid, unit: unitLabel(it.objective_id), items: [] };
+    g.items.push(it);
+    testByUnit.set(uid, g);
+  }
 
   // Guardian WhatsApp (leads is admin-gated by RLS; this learner is already authorised, so read the phone via service-role).
   let guardianPhone: string | null = null;
@@ -238,14 +252,29 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     );
   };
 
+  // Assign a pre-built BANK homework item to a session, grouped by objective (AE-7).
+  const homeworkByObjective = (() => {
+    const m = new Map<string, { label: string; items: any[] }>();
+    for (const it of homeworkBank) {
+      const oid = it.objective_id ?? "—";
+      const g = m.get(oid) ?? { label: it.objective_id ? objLabel(it.objective_id) : t("homework.bankUntagged"), items: [] };
+      g.items.push(it);
+      m.set(oid, g);
+    }
+    return [...m.values()];
+  })();
   const AssignToSession = ({ sessionId }: { sessionId: string }) =>
-    (approvedItems ?? []).length === 0 ? null : (
+    homeworkBank.length === 0 ? null : (
       <form action={assignItem} style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
         <input type="hidden" name="learnerId" value={id} />
         <input type="hidden" name="sessionId" value={sessionId} />
         <select name="itemId" required defaultValue="" className={sel} style={{ width: "auto", minHeight: 34, maxWidth: 220, fontSize: 12.5 }}>
           <option value="" disabled>{t("homework.assignPlaceholder")}</option>
-          {(approvedItems ?? []).map((it: any) => <option key={it.id} value={it.id}>{it.prompt.slice(0, 40)}</option>)}
+          {homeworkByObjective.map((g, gi) => (
+            <optgroup key={gi} label={g.label}>
+              {g.items.map((it: any) => <option key={it.id} value={it.id}>{it.prompt.slice(0, 40)}</option>)}
+            </optgroup>
+          ))}
         </select>
         <SubmitButton pendingText="…" className={btn("ghost")}>{t("homework.add")}</SubmitButton>
       </form>
@@ -636,29 +665,14 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
   const Homework = (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      {/* Create a digital homework with AI → approve → assign to a session below */}
-      <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={secTitle}>{t("homework.createTitle")}</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}><Spark size={13} /> {t("homework.createBadge")}</span>
-        </div>
-        {(objectives ?? []).length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("homework.needPlan")}</p>
+      {/* AE-7: homework is SELECTED from the pre-built objective-tagged bank (no AI generation).
+          Assignment happens per-session below (AssignToSession), grouped by objective. */}
+      <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={secTitle}>{t("homework.bankTitle")}</div>
+        {homeworkBank.length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("homework.bankEmpty")}</p>
         ) : (
-          <form action={generateDraft} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
-            <input type="hidden" name="learnerId" value={id} />
-            <select name="objectiveId" required defaultValue="" className={sel} style={{ width: "auto", minHeight: 40, flex: 1, minWidth: 160, maxWidth: 280 }}>
-              <option value="" disabled>{t("homework.objectivePlaceholder")}</option>
-              {(objectivesEn ?? []).map((o: any) => <option key={o.id} value={o.id}>{o.level ? `${o.level} · ` : ""}{o.description}</option>)}
-            </select>
-            <select name="format" defaultValue="multiple_choice" className={sel} style={{ width: "auto", minHeight: 40 }}>
-              {ITEM_FORMATS.map((f) => <option key={f} value={f}>{FORMAT_LABELS[f]}</option>)}
-            </select>
-            <select name="difficulty" defaultValue="easy" className={sel} style={{ width: "auto", minHeight: 40 }}>
-              {DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}
-            </select>
-            <SubmitButton pendingText="…" className={btn("soft")}>{t("homework.generateDraft")}</SubmitButton>
-          </form>
+          <p style={{ fontSize: 13, color: "var(--text-body)" }}>{t("homework.bankReady", { n: homeworkBank.length })}</p>
         )}
       </Card>
 
@@ -717,27 +731,30 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
   const Assessments = (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={secTitle}>{t("assessments.genTitle")}</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}><Spark size={13} /> {t("assessments.genBadge")}</span>
-        </div>
-        {(curriculumUnits ?? []).length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("assessments.noCurriculum")}</p>
+      {/* AE-7: a unit test is ASSEMBLED by hand-picking pre-built bank items (no AI generation).
+          One form per unit that has approved test-bank items → assembleUnitTest snapshots them. */}
+      <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={secTitle}>{t("assessments.assembleTitle")}</div>
+        {testByUnit.size === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("assessments.bankEmpty")}</p>
         ) : (
-          <form action={generateAssessmentTest} style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "end" }}>
-            <input type="hidden" name="learnerId" value={id} />
-            <select name="curriculumUnitId" required defaultValue="" className={sel} style={{ width: "auto", flex: 1, minWidth: 160, minHeight: 40 }}>
-              <option value="" disabled>{t("assessments.unitPlaceholder")}</option>
-              {(curriculumUnits ?? []).map((u: any) => <option key={u.unit_id} value={u.unit_id}>{u.level} · {`⁨${u.title_en ?? u.title_ar}⁩`}</option>)}
-            </select>
-            <select name="count" defaultValue="8" className={sel} style={{ width: "auto", minHeight: 40 }}>
-              {[6, 8, 10, 12].map((n) => <option key={n} value={n}>{t("assessments.questionsCount", { n })}</option>)}
-            </select>
-            <SubmitButton pendingText="…" className={btn("soft")}><Spark size={14} /> {t("assessments.generate")}</SubmitButton>
-          </form>
+          [...testByUnit.values()].map((g) => (
+            <form key={g.unitId} action={assembleUnitTest} style={{ display: "flex", flexDirection: "column", gap: 8, border: "1px solid var(--border-soft)", borderRadius: 12, padding: 12 }}>
+              <input type="hidden" name="learnerId" value={id} />
+              <input type="hidden" name="curriculumUnitId" value={g.unitId} />
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-strong)" }} dir="auto">{g.unit}</div>
+              {g.items.map((it: any) => (
+                <label key={it.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
+                  <input type="checkbox" name="itemIds" value={it.id} />
+                  <span style={{ flex: 1 }} dir="auto">{it.prompt}</span>
+                  <Badge tone="neutral">{FORMAT_LABELS[it.format as keyof typeof FORMAT_LABELS] ?? it.format}</Badge>
+                </label>
+              ))}
+              <SubmitButton pendingText="…" className={btn("soft")}>{t("assessments.assemble")}</SubmitButton>
+            </form>
+          ))
         )}
-        <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{t("assessments.genHint")}</p>
+        <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{t("assessments.assembleHint")}</p>
       </Card>
 
       {(assessments ?? []).length === 0 && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("assessments.empty")}</p>}

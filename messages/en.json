@@ -355,6 +355,10 @@
         "extraHint": "Entered in your local time, shown in UTC."
       },
       "homework": {
+        "bankTitle": "Assign homework from the bank",
+        "bankEmpty": "No homework bank items for this student yet — content is being authored.",
+        "bankReady": "{n} bank items available — assign them to a session below.",
+        "bankUntagged": "Untagged",
         "createTitle": "Create a digital homework with AI",
         "createBadge": "A draft you review before sending",
         "needPlan": "Approve a study plan first (from the Plan tab) so its objectives can generate homework.",
@@ -391,6 +395,10 @@
         "notePrefix": "Note:"
       },
       "assessments": {
+        "assembleTitle": "Assemble a unit test from the bank",
+        "bankEmpty": "No unit-test bank items yet — content is being authored.",
+        "assemble": "Create test",
+        "assembleHint": "Pick pre-built bank questions for a unit → you approve the draft → the student takes it and it's auto-graded (per-objective evidence).",
         "genTitle": "Generate a unit test with AI",
         "genBadge": "From the unit's objectives",
         "noCurriculum": "Curriculum isn't loaded yet.",
@@ -456,6 +464,8 @@
       "chooseUnit": "Select the unit.",
       "unknownUnit": "Unknown curriculum unit.",
       "noObjectivesInUnit": "No objectives in this unit.",
+      "pickQuestions": "Pick at least one question.",
+      "noBankItems": "No bank items were found for the selection.",
       "createTestFailed": "Couldn't create the test.",
       "slotDataMissing": "Slot data is incomplete.",
       "slotOutsideAvailability": "This slot is outside your set availability (Availability page).",

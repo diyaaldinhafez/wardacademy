@@ -7,16 +7,13 @@ import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  generateItem,
   generateSessionReportDraft,
   generatePlacementQuestions,
   generateDiagnostic,
-  generateAssessment,
 } from "@/lib/generation/service";
 import { aggregatePlanItems } from "@/lib/curriculum/aggregatePlan";
 import { homePathForRoles } from "@/lib/roles";
 import { buildManualEvidence } from "@/lib/progress/evidence";
-import type { ItemFormat, Difficulty } from "@/lib/items";
 
 // The teacher studio is English by internal decision — system messages are English.
 const studioErr = async (key: string) => (await getTranslations({ locale: "en", namespace: "studio.errors" }))(key);
@@ -39,72 +36,6 @@ export async function logout() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/studio/login");
-}
-
-/** Instructor: generate an original draft item for an objective (server-side Claude call). */
-export async function generateDraft(formData: FormData) {
-  const objectiveId = String(formData.get("objectiveId") ?? "");
-  const format = String(formData.get("format") ?? "") as ItemFormat;
-  const difficulty = String(formData.get("difficulty") ?? "") as Difficulty;
-  const targetLearnerId = String(formData.get("learnerId") ?? "").trim() || null;
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/studio/login");
-
-  // Homework targets a Ward Curriculum objective (the catalog is the single source).
-  const { data: profile } = await supabase.from("profiles").select("tenant_id").eq("id", user.id).single();
-  if (!profile) throw new Error("Objective not found");
-  const { data: obj, error } = await supabase
-    .from("curriculum_objectives")
-    .select("objective_id, descriptor_ar, skill, level")
-    .eq("objective_id", objectiveId)
-    .single();
-  if (error || !obj) throw new Error("Objective not found");
-
-  const gen = await generateItem({
-    objective: { description: obj.descriptor_ar, track: "cefr", level: obj.level },
-    format,
-    difficulty,
-  });
-
-  // Keep the answer key out of student-facing content (see migration 0008).
-  const { answer, explanation, rubric, ...studentContent } = (gen.content ?? {}) as Record<
-    string,
-    unknown
-  >;
-
-  // Inserted under the instructor's own session — RLS checks tenant + role.
-  const { data: item, error: insErr } = await supabase
-    .from("items")
-    .insert({
-      tenant_id: profile.tenant_id,
-      objective_id: obj.objective_id,
-      format,
-      difficulty,
-      prompt: gen.prompt,
-      content: studentContent,
-      origin: "ai",
-      status: "draft",
-      created_by: user.id,
-      target_learner_id: targetLearnerId,
-    })
-    .select("id")
-    .single();
-  if (insErr || !item) throw new Error(insErr?.message ?? "Failed to save item");
-
-  const { error: keyErr } = await supabase.from("item_keys").insert({
-    item_id: item.id,
-    tenant_id: profile.tenant_id,
-    answer: answer ?? null,
-    explanation: typeof explanation === "string" ? explanation : null,
-    rubric: typeof rubric === "string" ? rubric : null,
-  });
-  if (keyErr) throw new Error(keyErr.message);
-
-  revalidatePath("/studio", "layout");
 }
 
 export async function approveItem(formData: FormData) {
@@ -548,29 +479,35 @@ export async function removeAssessment(formData: FormData) {
 }
 
 /** Generate an AI unit assessment from the unit's objectives → a DRAFT the teacher reviews. */
-export async function generateAssessmentTest(formData: FormData) {
+/** AE-7: assemble a unit test by HAND-PICKING pre-built bank items (no AI generation).
+ *  Snapshots the chosen approved bank items into a draft assessment's assessment_questions —
+ *  copying each item's answer (from item_keys) into assessment_questions.answer, the store the
+ *  FROZEN auto-grade→objective_evidence path reads (R4), and carrying objective_id + grading='auto'
+ *  so the unit test feeds per-objective evidence UNCHANGED. */
+export async function assembleUnitTest(formData: FormData) {
   const learnerId = String(formData.get("learnerId") ?? "");
   const curriculumUnitId = String(formData.get("curriculumUnitId") ?? "").trim();
-  const count = Math.min(Math.max(Number(formData.get("count") ?? 8) || 8, 4), 15);
+  const itemIds = formData.getAll("itemIds").map((v) => String(v)).filter(Boolean);
   if (!learnerId || !curriculumUnitId) throw new Error(await studioErr("chooseUnit"));
+  if (itemIds.length === 0) throw new Error(await studioErr("pickQuestions"));
   const { supabase, user, tenantId } = await instructorCtx();
 
-  // Catalog-driven: the test is built from a curriculum unit's objectives, and is
-  // tagged with curriculum_unit_id so its result feeds objective_assessments(auto).
-  const { data: cUnit } = await supabase.from("curriculum_units").select("unit_id, title_ar, level").eq("unit_id", curriculumUnitId).single();
+  const { data: cUnit } = await supabase.from("curriculum_units").select("unit_id, title_ar, title_en").eq("unit_id", curriculumUnitId).single();
   if (!cUnit) throw new Error(await studioErr("unknownUnit"));
-  const { data: cObjectives } = await supabase
-    .from("curriculum_objectives").select("descriptor_ar, skill, cefr_level").eq("unit_id", curriculumUnitId).order("seq");
-  if (!cObjectives?.length) throw new Error(await studioErr("noObjectivesInUnit"));
-  const unit = cUnit.title_ar as string;
+  const unit = (cUnit.title_en ?? cUnit.title_ar) as string;
 
-  const { data: learner } = await supabase.from("profiles").select("full_name").eq("id", learnerId).single();
-  const questions = await generateAssessment({
-    learnerName: learner?.full_name ?? "the student",
-    unit,
-    objectives: (cObjectives as Array<{ descriptor_ar: string; skill?: string | null; cefr_level?: string | null }>).map((o) => ({ description: o.descriptor_ar, skill: o.skill, level: o.cefr_level })),
-    count,
-  });
+  // The chosen APPROVED bank items + their hidden answers (item_keys) — instructor-readable.
+  const { data: items } = await supabase
+    .from("items")
+    .select("id, prompt, content, format, objective_id, item_keys(answer)")
+    .in("id", itemIds)
+    .eq("status", "approved");
+  if (!items?.length) throw new Error(await studioErr("noBankItems"));
+
+  // The objective's skill → assessment_questions.skill (required, one of the four).
+  const objIds = [...new Set(items.map((it: any) => it.objective_id).filter(Boolean) as string[])];
+  const { data: objs } = await supabase.from("curriculum_objectives").select("objective_id, skill").in("objective_id", objIds.length ? objIds : ["—"]);
+  const skillByObj = new Map<string, string>((objs ?? []).map((o: any) => [o.objective_id, o.skill]));
 
   const { data: assessment, error } = await supabase
     .from("assessments")
@@ -579,16 +516,22 @@ export async function generateAssessmentTest(formData: FormData) {
     .single();
   if (error || !assessment) throw new Error(error?.message ?? (await studioErr("createTestFailed")));
 
-  const rows = questions.map((q, i) => ({
-    assessment_id: assessment.id,
-    tenant_id: tenantId,
-    skill: ["listening", "speaking", "reading", "writing"].includes(q.skill) ? q.skill : "reading",
-    format: "multiple_choice",
-    prompt: q.prompt,
-    content: { options: q.options },
-    answer: q.answer,
-    position: i,
-  }));
+  const rows = items.map((it: any, i: number) => {
+    const key = Array.isArray(it.item_keys) ? it.item_keys[0] : it.item_keys;
+    const skill = skillByObj.get(it.objective_id) ?? "reading";
+    return {
+      assessment_id: assessment.id,
+      tenant_id: tenantId,
+      skill: ["listening", "speaking", "reading", "writing"].includes(skill) ? skill : "reading",
+      format: it.format ?? "multiple_choice",
+      prompt: it.prompt,
+      content: it.content ?? {},
+      answer: key?.answer ?? null, // R4: answer where the grade path READS it (assessment_questions.answer)
+      objective_id: it.objective_id ?? null, // per-objective evidence (AE-1)
+      grading: "auto", // so buildAutoEvidence fires → objective_evidence(source auto_test)
+      position: i,
+    };
+  });
   const { error: qErr } = await supabase.from("assessment_questions").insert(rows);
   if (qErr) throw new Error(qErr.message);
   revalidatePath(`/studio/students/${learnerId}`);

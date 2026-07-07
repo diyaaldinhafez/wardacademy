@@ -1,127 +1,26 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
-import { ITEM_FORMATS, DIFFICULTIES, type ItemFormat, type Difficulty } from "@/lib/items";
 
 /**
  * Generation Service — the SINGLE server-side boundary through which every
- * Claude call passes (PRD §6). v1 produces *original* content targeting an
- * objective; nothing here reaches a student until an Instructor approves it
- * (the approval gate lives in the database — see migration 0005).
+ * Claude call passes (PRD §6). v1 AI scope (LOCKED, AE-7): placement test ·
+ * plan/diagnostic · session-report drafts ONLY. Homework/unit-test items are
+ * NOT generated here — they are served from the pre-built objective-tagged bank
+ * (`items`); see migration 0070. (generateItem/generateAssessment were retired
+ * in AE-7.) Nothing here reaches a student until an Instructor approves it.
  *
  * Keep all model access behind this module so caps, attribution hooks, and
  * model/version choices have exactly one place to live.
  */
 
-export type GenerateItemInput = {
-  objective: { description: string; track: "cefr" | "school"; level?: string | null };
-  format: ItemFormat;
-  difficulty: Difficulty;
-};
-
-export type GeneratedItem = {
-  prompt: string;
-  content: Record<string, unknown>; // format-specific (options, answer, explanation…)
-  usage: { input_tokens: number; output_tokens: number };
-};
-
 // Cost guardrails (the account-level spend cap is set in the Anthropic console).
 const MODEL = process.env.ANTHROPIC_GENERATION_MODEL ?? "claude-sonnet-4-6";
-const MAX_TOKENS = 1024;
 
 // Lazy so merely importing this module has no side effects (and never throws
 // for a missing key in contexts that don't call the model).
 let _client: Anthropic | null = null;
 function client() {
   return (_client ??= new Anthropic()); // reads ANTHROPIC_API_KEY
-}
-
-const SYSTEM = `You are an English-teaching content author for Ward Academy, a 1:1 tutoring platform for children aged 9–13.
-
-Rules:
-- Produce ONE original practice item. Never copy or paraphrase copyrighted textbooks, passages, or published exercises — invent fresh content.
-- Target the given learning objective and level, in the requested format and difficulty.
-- Keep language age-appropriate, clear, and encouraging. The item is reviewed by a teacher before any student sees it.
-- Write clean text only: no stray characters, trailing braces, code fences, or markdown artifacts.
-- For "multiple_choice", set "answer" to the EXACT text of the correct option (not an index).
-- For "audio", the student READS the given word/sentence aloud and records themselves — do NOT assume any audio is played to them (there is no playback); the teacher may model the pronunciation. Put a short marking "rubric" in content.
-- For "open", "answer" may be null; put a short marking "rubric" in content.
-- Return the item ONLY by calling the emit_item tool.`;
-
-const itemTool: Anthropic.Tool = {
-  name: "emit_item",
-  description: "Return exactly one original practice item targeting the objective.",
-  input_schema: {
-    type: "object",
-    properties: {
-      prompt: {
-        type: "string",
-        description: "The question or instruction shown to the student.",
-      },
-      content: {
-        type: "object",
-        description:
-          "Format-specific payload. multiple_choice: options[] + answer (the correct " +
-          "option's exact text). matching: options[] + answer[]. true_false: answer " +
-          "(boolean). fill_blank: answer (string). open/audio: answer null + a rubric. " +
-          "Always include a teacher explanation.",
-        properties: {
-          options: { type: "array", items: { type: "string" } },
-          answer: {
-            description: "Correct answer as text (option text for multiple_choice), boolean, string, or array; null for open/audio.",
-          },
-          rubric: { type: "string", description: "Short marking rubric (for open/audio items)." },
-          explanation: { type: "string", description: "Short rationale for the teacher." },
-        },
-        additionalProperties: true,
-      },
-    },
-    required: ["prompt", "content"],
-  },
-};
-
-function assertValid(input: GenerateItemInput) {
-  if (!ITEM_FORMATS.includes(input.format)) throw new Error(`Unknown format: ${input.format}`);
-  if (!DIFFICULTIES.includes(input.difficulty)) throw new Error(`Unknown difficulty: ${input.difficulty}`);
-  if (!input.objective?.description?.trim()) throw new Error("Objective description is required");
-}
-
-/** Generate one original draft item for an objective. Server-only. */
-export async function generateItem(input: GenerateItemInput): Promise<GeneratedItem> {
-  assertValid(input);
-
-  const { objective, format, difficulty } = input;
-  const levelLine = objective.level
-    ? `Level (${objective.track}): ${objective.level}`
-    : `Track: ${objective.track}`;
-
-  const userPrompt = [
-    `Objective: ${objective.description}`,
-    levelLine,
-    `Format: ${format}`,
-    `Difficulty: ${difficulty}`,
-    `Write one original item that practices this objective. Call emit_item with the result.`,
-  ].join("\n");
-
-  const res = await client().messages.create({
-    model: MODEL,
-    max_tokens: MAX_TOKENS,
-    system: SYSTEM,
-    tools: [itemTool],
-    tool_choice: { type: "tool", name: "emit_item" },
-    messages: [{ role: "user", content: userPrompt }],
-  });
-
-  const toolUse = res.content.find(
-    (b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === "emit_item",
-  );
-  if (!toolUse) throw new Error("Generation did not return an item");
-
-  const out = toolUse.input as { prompt: string; content: Record<string, unknown> };
-  return {
-    prompt: out.prompt,
-    content: out.content ?? {},
-    usage: { input_tokens: res.usage.input_tokens, output_tokens: res.usage.output_tokens },
-  };
 }
 
 export type ReportInput = {
@@ -268,81 +167,6 @@ export async function generateLeadTest(input: {
   if (!toolUse) throw new Error("Lead test generation returned nothing");
   const out = toolUse.input as { questions: PlacementQuestion[] };
   return out.questions ?? [];
-}
-
-export type AssessmentQuestion = { skill: string; prompt: string; options: string[]; answer: string };
-
-// The four assessed skills (catalog reality + the four-skills constitution). Per
-// call, the skill enum is narrowed further to the skills actually present in the
-// unit's objectives — a question can only be tagged with a skill the unit teaches.
-const ASSESSMENT_SKILLS = ["listening", "speaking", "reading", "writing"] as const;
-
-function buildAssessmentTool(skills: readonly string[]): Anthropic.Tool {
-  return {
-    name: "emit_assessment",
-    description: "Return original multiple-choice questions that check the given unit's lesson objectives.",
-    input_schema: {
-      type: "object",
-      properties: {
-        questions: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              skill: {
-                type: "string",
-                enum: [...skills],
-                description: "The single primary skill this question tests — one of the unit's own skills.",
-              },
-              prompt: { type: "string" },
-              options: { type: "array", items: { type: "string" }, description: "Exactly 4 options." },
-              answer: { type: "string", description: "The exact text of the correct option." },
-            },
-            required: ["skill", "prompt", "options", "answer"],
-          },
-        },
-      },
-      required: ["questions"],
-    },
-  };
-}
-
-/** Generate a unit assessment: original MCQs that check the unit's lesson objectives, skill-tagged. */
-export async function generateAssessment(opts: {
-  learnerName: string;
-  unit: string;
-  objectives: { description: string; skill?: string | null; level?: string | null }[];
-  count?: number;
-}): Promise<AssessmentQuestion[]> {
-  const count = opts.count ?? 8;
-  // Tag only with skills the unit actually teaches (one of the four assessed skills).
-  const unitSkills = [...new Set(opts.objectives.map((o) => o.skill).filter((s): s is string => !!s && (ASSESSMENT_SKILLS as readonly string[]).includes(s)))];
-  const skills = unitSkills.length ? unitSkills : ["reading"];
-  const objLines = opts.objectives
-    .map((o, i) => `${i + 1}. ${o.description}${o.skill ? ` [${o.skill}]` : ""}${o.level ? ` (${o.level})` : ""}`)
-    .join("\n");
-
-  const res = await client().messages.create({
-    model: MODEL,
-    max_tokens: 2800,
-    system:
-      "You write a short unit assessment for a child aged 9–13 learning English at Ward Academy. " +
-      `Produce ${count} ORIGINAL multiple-choice questions that CHECK MASTERY of the unit's lesson objectives listed below — ` +
-      "test nothing outside them. Spread the questions across the objectives and the skills they build. " +
-      "Each question has exactly 4 options, the correct option's exact text as the answer, and the single primary skill it tests " +
-      `(one of: ${skills.join(" | ")} — only the skills this unit teaches). Tag lexical/grammar-recognition items as reading where reading is available. ` +
-      "Since the test is auto-graded text, prefer reading/writing/listening-via-text and avoid pure speaking tasks. " +
-      "Invent fresh, age-appropriate content — never copy published material. Return everything via emit_assessment.",
-    tools: [buildAssessmentTool(skills)],
-    tool_choice: { type: "tool", name: "emit_assessment" },
-    messages: [{ role: "user", content: `Unit: ${opts.unit}\nStudent: ${opts.learnerName}\nObjectives:\n${objLines || "(none listed)"}\n\nWrite ${count} questions.` }],
-  });
-
-  const toolUse = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === "emit_assessment");
-  if (!toolUse) throw new Error("لم يُرجِع الذكاء أسئلة الاختبار");
-  const out = toolUse.input as { questions: AssessmentQuestion[] };
-  if (!out.questions?.length) throw new Error("تعذّر توليد أسئلة الاختبار — حاوِل مجدّداً.");
-  return out.questions;
 }
 
 export type DiagnosticInput = {
