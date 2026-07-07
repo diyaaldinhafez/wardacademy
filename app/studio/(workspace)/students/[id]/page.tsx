@@ -19,7 +19,7 @@ import ItemCard from "@/components/studio/ItemCard";
 import VideoCall from "@/components/VideoCall";
 import { Card, Badge, Avatar, AITrustBadge, Spark } from "@/components/ward/ui";
 import { SkillBars } from "@/components/bloom/SkillBars";
-import { SKILLS, stageForValue } from "@/lib/skills";
+import { SKILLS } from "@/lib/skills";
 import { getTranslations } from "next-intl/server";
 import { UnitBloom, FlowerProgress, ScopeChip } from "@/components/bloom/Bloom";
 import { fetchEvidenceBloom } from "@/lib/progress/bloom";
@@ -77,7 +77,6 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     evidenceByObjective.set(e.objective_id, arr);
   }
   const meanOf = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
-  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const evDate = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
   const petals = bloom.skills.map((s) => ({ name: s.skill, label: tc(`skills.${s.skill}`), value: s.fraction }));
   const overall = bloom.skills.length ? Math.round((bloom.skills.reduce((a, s) => a + s.fraction, 0) / bloom.skills.length) * 100) : 0;
@@ -878,14 +877,12 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
               const skillObjs = u.objectives.filter((o) => o.skill === skill);
               if (skillObjs.length === 0) return null;
               const skillVal = meanOf(skillObjs.map((o) => o.value));
-              const skillState = stageForValue(skillVal);
               return (
                 <details key={skill} style={{ borderTop: "1px solid var(--ink-100)", paddingTop: 6 }}>
                   <summary style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
                     <div style={{ flex: 1 }}>
                       <SkillBars skills={[{ key: skill, label: skillLabel(skill), fraction: Math.max(0, Math.min(1, skillVal / 10)), value: skillVal, total: skillObjs.length }]} />
                     </div>
-                    <span style={{ fontSize: 11, color: "var(--text-muted)", whiteSpace: "nowrap" }}>{t(`progress.state${cap(skillState)}`)}</span>
                   </summary>
                   <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: "6px 0 2px 10px" }}>
                     {skillObjs.map((o) => {
@@ -896,7 +893,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                             {/* descriptor shown ONCE (the previous double-render via the petal label was removed) */}
                             <span dir="auto" style={{ flex: 1, color: o.assessed ? "var(--text-body)" : "var(--text-muted)" }}>{o.descriptor_en ?? o.descriptor_ar}</span>
                             <span style={{ fontSize: 11.5, color: o.assessed ? "var(--text-muted)" : "var(--text-faint)", whiteSpace: "nowrap" }}>
-                              {o.assessed ? `${t("progress.current")}: ${t(`progress.state${cap(o.state)}`)} · ${o.value.toFixed(1)}/10` : t("progress.notAssessed")}
+                              {o.assessed ? `${t("progress.current")}: ${o.value.toFixed(1)}/10` : t("progress.notAssessed")}
                             </span>
                           </summary>
                           {ev.length === 0 ? (
@@ -904,10 +901,9 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                           ) : (
                             <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 3, padding: "4px 0 4px 8px", margin: 0 }}>
                               {ev.map((e, ei) => {
-                                const st = stageForValue(Number(e.value));
                                 return (
                                   <li key={ei} style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: 11.5, color: "var(--text-muted)" }}>
-                                    <span style={{ fontWeight: 700, color: "var(--text-brand)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{t(`progress.state${cap(st)}`)} · {Number(e.value).toFixed(1)}/10</span>
+                                    <span style={{ fontWeight: 700, color: "var(--text-brand)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{Number(e.value).toFixed(1)}/10</span>
                                     <span style={{ flex: 1 }}>{t(`progress.evidenceSource.${e.source}`)}</span>
                                     <span style={{ fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{evDate(e.created_at)}</span>
                                   </li>
