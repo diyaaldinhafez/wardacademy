@@ -4,8 +4,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getTranslations } from "next-intl/server";
-import { updateTeacherProfile, deactivateTeacher, reactivateTeacher } from "@/app/admin/actions";
+import { updateTeacherProfile } from "@/app/admin/actions";
 import SubmitButton from "@/components/studio/SubmitButton";
+import TeacherStatusToggle from "@/components/admin/TeacherStatusToggle";
+import ResendInviteButton from "@/components/admin/ResendInviteButton";
 import AvailabilityView from "@/components/admin/AvailabilityView";
 import { Card, Badge, Avatar } from "@/components/ward/ui";
 
@@ -60,19 +62,10 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
           <div dir="ltr" style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{teacher.login_email}</div>
         </div>
         <Badge tone={isActive ? "success" : "neutral"}>{isActive ? t("active") : t("inactive")}</Badge>
-        {isActive ? (
-          <form action={deactivateTeacher}>
-            <input type="hidden" name="instructorId" value={id} />
-            <SubmitButton pendingText="…" className={btn("danger")}>{t("deactivate")}</SubmitButton>
-          </form>
-        ) : (
-          <form action={reactivateTeacher}>
-            <input type="hidden" name="instructorId" value={id} />
-            <SubmitButton pendingText="…" className={btn("success")}>{t("reactivate")}</SubmitButton>
-          </form>
-        )}
+        <TeacherStatusToggle instructorId={id} isActive={isActive} labels={{ deactivate: t("deactivate"), reactivate: t("reactivate") }} />
       </div>
       {!isActive && <p style={{ fontSize: 12.5, color: "var(--text-muted)", margin: 0 }}>{t("deactivatedNote")}</p>}
+      {isActive && <ResendInviteButton instructorId={id} label={t("resendInvite")} sentLabel={t("inviteResent")} />}
 
       {/* Performance */}
       <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>

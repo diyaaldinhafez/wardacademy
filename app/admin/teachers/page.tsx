@@ -3,10 +3,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { Card, Badge, Avatar } from "@/components/ward/ui";
-import SubmitButton from "@/components/studio/SubmitButton";
-import { provisionTeacher, rejectApplication } from "@/app/admin/actions";
-
-const btn = (v: string) => `ward-btn ward-btn--${v} ward-btn--sm`;
+import PendingApplications from "@/components/admin/PendingApplications";
 
 export default async function TeachersPage() {
   const supabase = await createClient();
@@ -43,26 +40,7 @@ export default async function TeachersPage() {
         {apps.length === 0 ? (
           <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("applicationsEmpty")}</p>
         ) : (
-          apps.map((a) => (
-            <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", background: "var(--surface-card)", borderRadius: 12, padding: "10px 12px" }}>
-              <Avatar name={a.full_name ?? "?"} size={34} />
-              <div style={{ flex: 1, minWidth: 160 }}>
-                <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>{a.full_name}</div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)" }} dir="ltr">
-                  {a.email}{a.phone ? ` · ${a.phone}` : ""}{a.specialties ? ` · ${a.specialties}` : ""}
-                </div>
-                {(a.bio || a.note) && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{a.bio ?? a.note}</div>}
-              </div>
-              <form action={provisionTeacher}>
-                <input type="hidden" name="applicationId" value={a.id} />
-                <SubmitButton pendingText="…" className={btn("success")}>{t("approve")}</SubmitButton>
-              </form>
-              <form action={rejectApplication}>
-                <input type="hidden" name="applicationId" value={a.id} />
-                <SubmitButton pendingText="…" className={btn("ghost")}>{t("reject")}</SubmitButton>
-              </form>
-            </div>
-          ))
+          <PendingApplications apps={apps} labels={{ approve: t("approve"), reject: t("reject"), openTeacher: t("openTeacher") }} />
         )}
       </Card>
 
