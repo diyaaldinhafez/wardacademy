@@ -1,4 +1,44 @@
 {
+  "teach": {
+    "metaTitle": "Teach at Ward Academy",
+    "title": "Teach at Ward Academy",
+    "subtitle": "Apply to join our team of English teachers. We'll review your application and get in touch.",
+    "fullName": "Full name",
+    "fullNamePh": "Your full name",
+    "email": "Email",
+    "emailPh": "you@example.com",
+    "phone": "Phone / WhatsApp",
+    "phonePh": "Optional",
+    "languages": "Languages you speak",
+    "languagesPh": "e.g. English, Arabic",
+    "specialties": "Teaching specialties",
+    "specialtiesPh": "e.g. Conversation, beginner foundation",
+    "bio": "About you",
+    "bioPh": "A short introduction and your teaching experience",
+    "note": "Anything else?",
+    "notePh": "Optional",
+    "submit": "Submit application",
+    "submitting": "Submitting…",
+    "reviewNote": "Your application is reviewed by our team; approved teachers receive an email to set up their account.",
+    "thanksTitle": "Application received",
+    "thanksBody": "Thank you for applying to Ward Academy. Our team will review your application and email you if it's a match.",
+    "errors": {
+      "fillRequired": "Please fill in your name and email.",
+      "badEmail": "Please enter a valid email address.",
+      "closed": "Applications are closed right now — please try again later.",
+      "failed": "Couldn't submit your application. Please try again."
+    }
+  },
+  "teacherInvite": {
+    "brand": "Ward Academy",
+    "subject": "Your Ward Academy teacher account",
+    "heading": "Welcome to the Ward Academy team",
+    "greeting": "Hi {name},",
+    "body": "Your teacher account has been created. Click the button below to set your password and sign in to the Teacher Studio.",
+    "button": "Set your password",
+    "fallbackNote": "If the button doesn't work, copy this link into your browser:",
+    "footer": "Ward Academy — Teacher Studio"
+  },
   "common": {
     "appName": "Ward Academy",
     "language": {
@@ -1097,8 +1137,15 @@
       "logRequest": "Log request"
     },
     "teachers": {
-      "listIntro": "Teachers and their profiles. (Additional teachers can be added in a later version.)",
+      "listIntro": "Teachers and their profiles.",
       "listEmpty": "No teachers yet.",
+      "applicationsTitle": "Pending applications",
+      "applicationsEmpty": "No pending teacher applications.",
+      "approve": "Approve",
+      "reject": "Reject",
+      "deactivate": "Deactivate",
+      "reactivate": "Reactivate",
+      "deactivatedNote": "This teacher is deactivated — their instructor access is revoked and they cannot sign in until reactivated.",
       "studentsCount": "{n, plural, one {# student} other {# students}}",
       "active": "Active",
       "inactive": "Inactive",

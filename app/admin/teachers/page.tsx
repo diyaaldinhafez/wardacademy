@@ -3,16 +3,30 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { Card, Badge, Avatar } from "@/components/ward/ui";
+import SubmitButton from "@/components/studio/SubmitButton";
+import { provisionTeacher, rejectApplication } from "@/app/admin/actions";
+
+const btn = (v: string) => `ward-btn ward-btn--${v} ward-btn--sm`;
 
 export default async function TeachersPage() {
   const supabase = await createClient();
   const t = await getTranslations({ locale: "en", namespace: "admin.teachers" });
   const { data: people } = await supabase.from("profiles").select("id, full_name, roles, assigned_instructor_id");
   const all = (people ?? []) as any[];
-  const teachers = all.filter((p) => ((p.roles as string[]) ?? []).includes("instructor"));
   const { data: tprofiles } = await supabase.from("teacher_profiles").select("instructor_id, status, specialties");
   const profByTeacher = new Map<string, any>();
   for (const t of (tprofiles ?? []) as any[]) profByTeacher.set(t.instructor_id, t);
+  // Include DEACTIVATED teachers (a teacher_profiles row survives; the instructor role is removed on
+  // deactivate) so admin can still find + reactivate them — not just current instructor-role profiles.
+  const teachers = all.filter((p) => ((p.roles as string[]) ?? []).includes("instructor") || profByTeacher.has(p.id));
+
+  // §9(f): pending self-service applications awaiting review (the ADD-teacher entry point).
+  const { data: applications } = await supabase
+    .from("teacher_applications")
+    .select("id, full_name, email, phone, languages, specialties, bio, note, created_at")
+    .eq("status", "applied")
+    .order("created_at", { ascending: false });
+  const apps = (applications ?? []) as any[];
 
   const studentsByTeacher = new Map<string, number>();
   for (const p of all) if (((p.roles as string[]) ?? []).includes("learner") && p.assigned_instructor_id) {
@@ -21,7 +35,38 @@ export default async function TeachersPage() {
 
   return (
     <>
-      <p style={{ fontSize: 14, color: "var(--text-muted)" }}>{t("listIntro")}</p>
+      {/* Pending applications — Approve mints an instructor account (provisionTeacher); Reject sets status. */}
+      <Card variant="soft" style={{ display: "flex", flexDirection: "column", gap: 10, borderColor: "var(--ward-purple-200)" }}>
+        <div style={{ fontSize: 14.5, fontWeight: 700, color: "var(--ward-purple-800)", display: "flex", alignItems: "center", gap: 8 }}>
+          {t("applicationsTitle")} {apps.length > 0 && <Badge tone="brand">{apps.length}</Badge>}
+        </div>
+        {apps.length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("applicationsEmpty")}</p>
+        ) : (
+          apps.map((a) => (
+            <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", background: "var(--surface-card)", borderRadius: 12, padding: "10px 12px" }}>
+              <Avatar name={a.full_name ?? "?"} size={34} />
+              <div style={{ flex: 1, minWidth: 160 }}>
+                <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>{a.full_name}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }} dir="ltr">
+                  {a.email}{a.phone ? ` · ${a.phone}` : ""}{a.specialties ? ` · ${a.specialties}` : ""}
+                </div>
+                {(a.bio || a.note) && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{a.bio ?? a.note}</div>}
+              </div>
+              <form action={provisionTeacher}>
+                <input type="hidden" name="applicationId" value={a.id} />
+                <SubmitButton pendingText="…" className={btn("success")}>{t("approve")}</SubmitButton>
+              </form>
+              <form action={rejectApplication}>
+                <input type="hidden" name="applicationId" value={a.id} />
+                <SubmitButton pendingText="…" className={btn("ghost")}>{t("reject")}</SubmitButton>
+              </form>
+            </div>
+          ))
+        )}
+      </Card>
+
+      <p style={{ fontSize: 14, color: "var(--text-muted)", marginTop: 8 }}>{t("listIntro")}</p>
       {teachers.length === 0 && <p style={{ fontSize: 14, color: "var(--text-muted)" }}>{t("listEmpty")}</p>}
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {teachers.map((teacher) => {

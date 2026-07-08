@@ -52,6 +52,23 @@ function layout(_locale: string, brand: string, footer: string, heading: string,
 </div>`;
 }
 
+// LTR/English variant — for INTERNAL surfaces (e.g. the teacher account invite), which are English,
+// unlike the Arabic-only parent comms above.
+function layoutEn(brand: string, footer: string, heading: string, bodyHtml: string): string {
+  return `<div dir="ltr" lang="en" style="font-family:'Nunito',Arial,sans-serif;background:#F9F8FC;padding:24px;color:#221D33">
+  <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #E4E1EE;border-radius:16px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#9F7DE7,#6840BD);padding:20px 24px;color:#fff">
+      <div style="font-weight:700;font-size:18px">${brand}</div>
+    </div>
+    <div style="padding:24px">
+      <h1 style="font-size:18px;margin:0 0 12px">${heading}</h1>
+      ${bodyHtml}
+    </div>
+    <div style="padding:16px 24px;border-top:1px solid #F1EFF7;color:#767093;font-size:12px">${footer}</div>
+  </div>
+</div>`;
+}
+
 /** Confirmation to the guardian that the free intro session is booked. */
 export async function sendBookingConfirmation(opts: {
   to: string;
@@ -109,10 +126,25 @@ export async function sendIntroReport(opts: {
 export async function sendAccountInvite(opts: {
   to: string;
   name: string;
-  role: "guardian" | "student";
+  role: "guardian" | "student" | "teacher";
   link: string;
   locale?: string | null;
 }): Promise<SendResult> {
+  // Teacher = an INTERNAL surface → English, LTR (not the Arabic parent-comms path).
+  if (opts.role === "teacher") {
+    const tt = await getTranslations({ locale: "en", namespace: "teacherInvite" });
+    const html = layoutEn(
+      tt("brand"),
+      tt("footer"),
+      tt("heading"),
+      `<p style="margin:0 0 10px">${tt("greeting", { name: opts.name })}</p>
+       <p style="margin:0 0 14px">${tt("body")}</p>
+       <p style="margin:0 0 14px"><a href="${opts.link}" style="display:inline-block;background:#7F55D9;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:999px">${tt("button")}</a></p>
+       <p style="margin:0;color:#767093;font-size:12px">${tt("fallbackNote")}<br><span style="direction:ltr;display:inline-block">${opts.link}</span></p>`,
+    );
+    return sendEmail({ to: opts.to, subject: tt("subject"), html });
+  }
+
   const locale = norm(opts.locale);
   const t = await getTranslations({ locale, namespace: "comms" });
   const body = opts.role === "guardian" ? t("email.invite.bodyGuardian") : t("email.invite.bodyStudent");

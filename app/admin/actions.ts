@@ -756,6 +756,95 @@ export async function updateTeacherProfile(formData: FormData) {
   revalidatePath(`/admin/teachers/${instructorId}`);
 }
 
+// ── §9(f) Teacher Lifecycle Funnel — the ONLY place an instructor account is minted ──
+
+/** Approve a teacher application → mint an instructor account (mirrors provisionAccounts, role-agnostic).
+ *  R1: this is the sole account-creation point; a pending applicant has no auth user / no profiles row. */
+export async function provisionTeacher(formData: FormData) {
+  const applicationId = String(formData.get("applicationId") ?? "");
+  const { supabase, user, profile } = await assertAdmin();
+
+  const { data: app } = await supabase
+    .from("teacher_applications")
+    .select("id, tenant_id, full_name, email, phone, languages, specialties, bio, note, status")
+    .eq("id", applicationId)
+    .single();
+  if (!app) throw new Error("Application not found.");
+  if (app.status !== "applied") throw new Error("This application was already reviewed.");
+
+  const admin = createAdminClient();
+  // R4: passwordless auth user; a duplicate email is a clean error with NO partial state.
+  const { data: created, error: ce } = await admin.auth.admin.createUser({ email: app.email, email_confirm: true });
+  if (ce || !created?.user) {
+    if (ce && /already|exists|registered/i.test(ce.message)) throw new Error("A user with this email already exists.");
+    throw new Error(ce?.message ?? "Couldn't create the teacher account.");
+  }
+  const uid = created.user.id;
+  try {
+    // roles:['instructor'] + the reviewing admin's tenant → the 0003 hook grants the role on login.
+    const { error: pe } = await admin.from("profiles").insert({ id: uid, tenant_id: profile.tenant_id, full_name: app.full_name, roles: ["instructor"], login_email: app.email });
+    if (pe) throw new Error(pe.message);
+    const { error: te } = await admin.from("teacher_profiles").insert({
+      tenant_id: profile.tenant_id, instructor_id: uid, phone: app.phone, languages: app.languages,
+      specialties: app.specialties, bio: app.bio, notes: app.note, start_date: new Date().toISOString().slice(0, 10), status: "active",
+    });
+    if (te) throw new Error(te.message);
+  } catch (e) {
+    // Atomicity: undo the orphaned auth user; the application stays 'applied' to retry.
+    await admin.auth.admin.deleteUser(uid).catch(() => {});
+    throw e;
+  }
+
+  // Set-password (invite) link → English teacher email.
+  const { data: linkData, error: le } = await admin.auth.admin.generateLink({ type: "recovery", email: app.email, options: { redirectTo: `${SITE_URL}/set-password` } });
+  const link = linkData?.properties?.action_link ?? "";
+  if (!le && link) {
+    try { await sendAccountInvite({ to: app.email, name: app.full_name, role: "teacher", link }); } catch (err) { console.error("[provisionTeacher] invite email failed:", err); }
+  }
+
+  await admin.from("teacher_applications").update({ status: "approved", reviewed_by: user.id, reviewed_at: new Date().toISOString() }).eq("id", applicationId);
+  revalidatePath("/admin/teachers");
+}
+
+/** Reject a teacher application — status only, NO account is created. */
+export async function rejectApplication(formData: FormData) {
+  const applicationId = String(formData.get("applicationId") ?? "");
+  const { user } = await assertAdmin();
+  const admin = createAdminClient();
+  await admin.from("teacher_applications").update({ status: "rejected", reviewed_by: user.id, reviewed_at: new Date().toISOString() }).eq("id", applicationId).eq("status", "applied");
+  revalidatePath("/admin/teachers");
+}
+
+/** Deactivate a teacher — REVOKES access (Q3): removes the 'instructor' role from profiles.roles
+ *  (so assertInstructor + the RLS instructor policies deny) AND bans the auth user (kills any live
+ *  session immediately, since a cached JWT keeps the old roles until refresh). Reversible. */
+export async function deactivateTeacher(formData: FormData) {
+  const instructorId = String(formData.get("instructorId") ?? "");
+  const { profile } = await assertAdmin();
+  const admin = createAdminClient();
+  const { data: p } = await admin.from("profiles").select("roles").eq("id", instructorId).single();
+  const roles = (((p?.roles as string[]) ?? [])).filter((r) => r !== "instructor");
+  await admin.from("profiles").update({ roles }).eq("id", instructorId);
+  await admin.auth.admin.updateUserById(instructorId, { ban_duration: "876000h" });
+  await admin.from("teacher_profiles").update({ status: "inactive" }).eq("instructor_id", instructorId).eq("tenant_id", profile.tenant_id);
+  revalidatePath(`/admin/teachers/${instructorId}`);
+  revalidatePath("/admin/teachers");
+}
+
+/** Reactivate a teacher — restores the 'instructor' role + unbans the auth user. */
+export async function reactivateTeacher(formData: FormData) {
+  const instructorId = String(formData.get("instructorId") ?? "");
+  const { profile } = await assertAdmin();
+  const admin = createAdminClient();
+  const { data: p } = await admin.from("profiles").select("roles").eq("id", instructorId).single();
+  const roles = [...new Set([...(((p?.roles as string[]) ?? [])), "instructor"])];
+  await admin.from("profiles").update({ roles }).eq("id", instructorId);
+  await admin.auth.admin.updateUserById(instructorId, { ban_duration: "none" });
+  await admin.from("teacher_profiles").update({ status: "active" }).eq("instructor_id", instructorId).eq("tenant_id", profile.tenant_id);
+  revalidatePath(`/admin/teachers/${instructorId}`);
+  revalidatePath("/admin/teachers");
+}
+
 /** Admin sign-out. */
 export async function adminLogout() {
   const { supabase } = await assertAdmin();

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getTranslations } from "next-intl/server";
-import { updateTeacherProfile } from "@/app/admin/actions";
+import { updateTeacherProfile, deactivateTeacher, reactivateTeacher } from "@/app/admin/actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import AvailabilityView from "@/components/admin/AvailabilityView";
 import { Card, Badge, Avatar } from "@/components/ward/ui";
@@ -20,13 +20,16 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
   const t = await getTranslations({ locale: "en", namespace: "admin.teachers" });
 
   const { data: teacher } = await supabase.from("profiles").select("id, full_name, login_email, roles").eq("id", id).maybeSingle();
-  if (!teacher || !((teacher.roles as string[]) ?? []).includes("instructor")) notFound();
 
   const { data: tp } = await supabase
     .from("teacher_profiles")
     .select("bio, languages, specialties, phone, start_date, status, notes")
     .eq("instructor_id", id)
     .maybeSingle();
+
+  // A "teacher" is a current instructor OR a deactivated one (teacher_profiles survives, role removed).
+  const isActive = ((teacher?.roles as string[]) ?? []).includes("instructor");
+  if (!teacher || (!isActive && !tp)) notFound();
 
   const { data: people } = await supabase.from("profiles").select("id, full_name, roles, assigned_instructor_id");
   const students = (people ?? []).filter((p: any) => ((p.roles as string[]) ?? []).includes("learner") && p.assigned_instructor_id === id);
@@ -56,8 +59,20 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
           <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-strong)" }}>{teacher.full_name ?? teacher.id}</div>
           <div dir="ltr" style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{teacher.login_email}</div>
         </div>
-        <Badge tone={tp?.status === "inactive" ? "neutral" : "success"}>{tp?.status === "inactive" ? t("inactive") : t("active")}</Badge>
+        <Badge tone={isActive ? "success" : "neutral"}>{isActive ? t("active") : t("inactive")}</Badge>
+        {isActive ? (
+          <form action={deactivateTeacher}>
+            <input type="hidden" name="instructorId" value={id} />
+            <SubmitButton pendingText="…" className={btn("danger")}>{t("deactivate")}</SubmitButton>
+          </form>
+        ) : (
+          <form action={reactivateTeacher}>
+            <input type="hidden" name="instructorId" value={id} />
+            <SubmitButton pendingText="…" className={btn("success")}>{t("reactivate")}</SubmitButton>
+          </form>
+        )}
       </div>
+      {!isActive && <p style={{ fontSize: 12.5, color: "var(--text-muted)", margin: 0 }}>{t("deactivatedNote")}</p>}
 
       {/* Performance */}
       <Card style={{ display: "flex", flexDirection: "column", gap: 8 }}>
