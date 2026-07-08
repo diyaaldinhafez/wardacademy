@@ -215,7 +215,8 @@ export default async function GuardianPage({ searchParams }: { searchParams: Pro
                 )}
                 {/* Per-skill mastery bars — the SAME component the teacher studio uses,
                     shown to the parent in percent (round(fraction*100)%). Sits below the
-                    motivational line, fills the card. Apricot bar = a lagging skill. */}
+                    motivational line, fills the card. Parent = "growth" colorMode (default):
+                    flat brand purple, NO red/orange (performance colors are teacher-only). */}
                 {(bloom?.skills?.length ?? 0) > 0 && (
                   <div className="mt-1 flex w-full flex-col gap-1.5">
                     <SkillBars

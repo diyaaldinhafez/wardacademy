@@ -839,11 +839,11 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       <Card style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-            <FlowerProgress size={92} skills={skillStats.map((s) => ({ label: skillLabel(s.skill), value: s.fraction, detail: `${s.value.toFixed(1)}/10` }))} />
+            <FlowerProgress size={200} skills={skillStats.map((s) => ({ label: skillLabel(s.skill), value: s.fraction, detail: `${s.value.toFixed(1)}/10` }))} />
           </div>
           <div style={{ flex: 1, minWidth: 200, display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={secTitle}>{t("progress.skillsTitle")}</div>
-            <SkillBars skills={skillStats.map((s) => ({ key: s.skill, label: skillLabel(s.skill), fraction: s.fraction, value: s.value, total: s.total }))} />
+            <SkillBars colorMode="performance" skills={skillStats.map((s) => ({ key: s.skill, label: skillLabel(s.skill), fraction: s.fraction, value: s.value, total: s.total }))} />
           </div>
         </div>
         <p style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{t("progress.skillsNote")}</p>
@@ -881,7 +881,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                 <details key={skill} style={{ borderTop: "1px solid var(--ink-100)", paddingTop: 6 }}>
                   <summary style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
                     <div style={{ flex: 1 }}>
-                      <SkillBars skills={[{ key: skill, label: skillLabel(skill), fraction: Math.max(0, Math.min(1, skillVal / 10)), value: skillVal, total: skillObjs.length }]} />
+                      <SkillBars colorMode="performance" skills={[{ key: skill, label: skillLabel(skill), fraction: Math.max(0, Math.min(1, skillVal / 10)), value: skillVal, total: skillObjs.length }]} />
                     </div>
                   </summary>
                   <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: "6px 0 2px 10px" }}>
