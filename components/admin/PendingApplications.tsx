@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { provisionTeacher, rejectApplication } from "@/app/admin/actions";
+import { provisionTeacher, rejectApplication, archiveApplication } from "@/app/admin/actions";
 import { Avatar } from "@/components/ward/ui";
 
 type App = {
@@ -11,7 +11,7 @@ type App = {
   certifications?: string | null; english_level?: string | null; online_1to1_experience?: boolean | null;
   weekly_availability?: string | null; cv_url?: string | null; motivation?: string | null;
 };
-type Labels = { approve: string; reject: string; openTeacher: string };
+type Labels = { approve: string; reject: string; archive: string; openTeacher: string };
 const btn = (v: string) => `ward-btn ward-btn--${v} ward-btn--sm`;
 const yn = (b?: boolean | null) => (b == null ? "—" : b ? "Yes" : "No");
 
@@ -31,7 +31,8 @@ function Fact({ k, v }: { k: string; v?: string | number | null }) {
 function Row({ app, labels }: { app: App; labels: Labels }) {
   const [pState, pAction, pPending] = useActionState(provisionTeacher, undefined);
   const [rState, rAction, rPending] = useActionState(rejectApplication, undefined);
-  const err = pState?.error || rState?.error;
+  const [aState, aAction, aPending] = useActionState(archiveApplication, undefined);
+  const err = pState?.error || rState?.error || aState?.error;
   const warn = pState?.warning;
   const summary = [app.years_experience != null ? `${app.years_experience} yrs` : null, app.teaches_children ? "teaches 9–13" : null, app.english_level || null].filter(Boolean).join(" · ");
   return (
@@ -52,6 +53,10 @@ function Row({ app, labels }: { app: App; labels: Labels }) {
         <form action={rAction}>
           <input type="hidden" name="applicationId" value={app.id} />
           <button type="submit" disabled={rPending} className={btn("ghost")}>{rPending ? "…" : labels.reject}</button>
+        </form>
+        <form action={aAction}>
+          <input type="hidden" name="applicationId" value={app.id} />
+          <button type="submit" disabled={aPending} className={btn("ghost")}>{aPending ? "…" : labels.archive}</button>
         </form>
       </div>
 

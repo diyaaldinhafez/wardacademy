@@ -869,19 +869,27 @@ export async function rejectApplication(_prev: TeacherActionState | undefined, f
   }
 }
 
-/** Deactivate a teacher — REVOKES access (Q3): removes the 'instructor' role from profiles.roles
- *  (so assertInstructor + the RLS instructor policies deny) AND bans the auth user (kills any live
- *  session immediately, since a cached JWT keeps the old roles until refresh). Reversible. */
+/** Shared ACCESS-revocation core (the deactivate body): removes the 'instructor' role from
+ *  profiles.roles (so assertInstructor + the RLS instructor policies deny) AND bans the auth user
+ *  (kills any live session immediately, since a cached JWT keeps the old roles until refresh) AND
+ *  syncs teacher_profiles.status='inactive'. Used by deactivateTeacher AND archiveTeacher so
+ *  "archived ⟹ deactivated" is enforced by calling the exact same logic. */
+async function revokeTeacherAccess(admin: ReturnType<typeof createAdminClient>, tenantId: string, instructorId: string) {
+  const { data: p } = await admin.from("profiles").select("roles").eq("id", instructorId).single();
+  const roles = (((p?.roles as string[]) ?? [])).filter((r) => r !== "instructor");
+  await admin.from("profiles").update({ roles }).eq("id", instructorId);
+  await admin.auth.admin.updateUserById(instructorId, { ban_duration: "876000h" });
+  await admin.from("teacher_profiles").update({ status: "inactive" }).eq("instructor_id", instructorId).eq("tenant_id", tenantId);
+}
+
+/** Deactivate a teacher — REVOKES access (Q3). The ACCESS dimension; leaves VISIBILITY (archived_at)
+ *  untouched, so a deactivated teacher stays in the roster (greyed "Inactive"). Reversible. */
 export async function deactivateTeacher(_prev: TeacherActionState | undefined, formData: FormData): Promise<TeacherActionState> {
   const instructorId = String(formData.get("instructorId") ?? "");
   try {
     const { profile } = await assertAdmin();
     const admin = createAdminClient();
-    const { data: p } = await admin.from("profiles").select("roles").eq("id", instructorId).single();
-    const roles = (((p?.roles as string[]) ?? [])).filter((r) => r !== "instructor");
-    await admin.from("profiles").update({ roles }).eq("id", instructorId);
-    await admin.auth.admin.updateUserById(instructorId, { ban_duration: "876000h" });
-    await admin.from("teacher_profiles").update({ status: "inactive" }).eq("instructor_id", instructorId).eq("tenant_id", profile.tenant_id);
+    await revokeTeacherAccess(admin, profile.tenant_id, instructorId);
     revalidatePath(`/admin/teachers/${instructorId}`);
     revalidatePath("/admin/teachers");
     return { ok: true };
@@ -908,6 +916,105 @@ export async function reactivateTeacher(_prev: TeacherActionState | undefined, f
   } catch (e) {
     console.error("[reactivateTeacher] error:", e);
     return { error: e instanceof Error ? e.message : "Couldn't reactivate this teacher." };
+  }
+}
+
+// ── Archive / delete — the VISIBILITY dimension (teachers) + application lifecycle ──────────
+// Two dimensions kept independent: ACCESS (active/deactivated, above) and VISIBILITY (roster/archived).
+
+/** Archive a teacher — FORCES access revocation (calls the shared deactivate core) THEN hides them
+ *  from the roster (archived_at = now). archived ⟹ deactivated. NEVER deletes the account — the
+ *  teacher_profiles/profiles rows and all their students' session/report/evidence history survive. */
+export async function archiveTeacher(_prev: TeacherActionState | undefined, formData: FormData): Promise<TeacherActionState> {
+  const instructorId = String(formData.get("instructorId") ?? "");
+  try {
+    const { profile } = await assertAdmin();
+    const admin = createAdminClient();
+    await revokeTeacherAccess(admin, profile.tenant_id, instructorId); // access gone first
+    await admin.from("teacher_profiles").update({ archived_at: new Date().toISOString() }).eq("instructor_id", instructorId).eq("tenant_id", profile.tenant_id);
+    revalidatePath(`/admin/teachers/${instructorId}`);
+    revalidatePath("/admin/teachers");
+    return { ok: true };
+  } catch (e) {
+    console.error("[archiveTeacher] error:", e);
+    return { error: e instanceof Error ? e.message : "Couldn't archive this teacher." };
+  }
+}
+
+/** Restore a teacher from the archive — returns them to the roster (archived_at = NULL) but leaves
+ *  ACCESS revoked: does NOT re-add the instructor role and does NOT unban. The teacher reappears as
+ *  DEACTIVATED; admin must consciously Reactivate to restore access. */
+export async function restoreTeacher(_prev: TeacherActionState | undefined, formData: FormData): Promise<TeacherActionState> {
+  const instructorId = String(formData.get("instructorId") ?? "");
+  try {
+    const { profile } = await assertAdmin();
+    const admin = createAdminClient();
+    await admin.from("teacher_profiles").update({ archived_at: null }).eq("instructor_id", instructorId).eq("tenant_id", profile.tenant_id);
+    revalidatePath(`/admin/teachers/${instructorId}`);
+    revalidatePath("/admin/teachers");
+    return { ok: true };
+  } catch (e) {
+    console.error("[restoreTeacher] error:", e);
+    return { error: e instanceof Error ? e.message : "Couldn't restore this teacher." };
+  }
+}
+
+/** Archive a teacher APPLICATION — 'applied'/'rejected' → 'archived' (moves it out of Pending into
+ *  the Archived-applications view). Never touches an 'approved' application (a teacher exists). */
+export async function archiveApplication(_prev: TeacherActionState | undefined, formData: FormData): Promise<TeacherActionState> {
+  const applicationId = String(formData.get("applicationId") ?? "");
+  try {
+    await assertAdmin();
+    const admin = createAdminClient();
+    await admin.from("teacher_applications").update({ status: "archived" }).eq("id", applicationId).in("status", ["applied", "rejected"]);
+    revalidatePath("/admin/teachers");
+    return { ok: true };
+  } catch (e) {
+    console.error("[archiveApplication] error:", e);
+    return { error: e instanceof Error ? e.message : "Couldn't archive this application." };
+  }
+}
+
+/** Restore an application back to the Pending queue — 'archived'/'rejected' → 'applied'. Never an
+ *  'approved' one. */
+export async function restoreApplication(_prev: TeacherActionState | undefined, formData: FormData): Promise<TeacherActionState> {
+  const applicationId = String(formData.get("applicationId") ?? "");
+  try {
+    await assertAdmin();
+    const admin = createAdminClient();
+    await admin.from("teacher_applications").update({ status: "applied", reviewed_by: null, reviewed_at: null }).eq("id", applicationId).in("status", ["archived", "rejected"]);
+    revalidatePath("/admin/teachers");
+    return { ok: true };
+  } catch (e) {
+    console.error("[restoreApplication] error:", e);
+    return { error: e instanceof Error ? e.message : "Couldn't restore this application." };
+  }
+}
+
+/** PERMANENTLY hard-delete a teacher application. GUARD (security core, server-side): refuse if the
+ *  application is linked to a LIVE ACCOUNT — instructor_id set AND that profiles row still exists.
+ *  A never-approved application (instructor_id null, no account) deletes freely. Runs through the
+ *  service-role client (authenticated has no DELETE grant on teacher_applications). Irreversible. */
+export async function deleteApplication(_prev: TeacherActionState | undefined, formData: FormData): Promise<TeacherActionState> {
+  const applicationId = String(formData.get("applicationId") ?? "");
+  try {
+    await assertAdmin();
+    const admin = createAdminClient();
+    const { data: app } = await admin.from("teacher_applications").select("id, instructor_id").eq("id", applicationId).maybeSingle();
+    if (!app) return { error: "Application not found." };
+    if (app.instructor_id) {
+      // Linked — does that account still exist? If so, refuse (deleting would erase the archive
+      // behind a real teacher). Only a dangling link (account already gone) may be deleted.
+      const { data: acct } = await admin.from("profiles").select("id").eq("id", app.instructor_id).maybeSingle();
+      if (acct) return { error: "This application is linked to a live teacher account and cannot be deleted. Archive the teacher instead." };
+    }
+    const { error } = await admin.from("teacher_applications").delete().eq("id", applicationId);
+    if (error) return { error: error.message };
+    revalidatePath("/admin/teachers");
+    return { ok: true };
+  } catch (e) {
+    console.error("[deleteApplication] error:", e);
+    return { error: e instanceof Error ? e.message : "Couldn't delete this application." };
   }
 }
 

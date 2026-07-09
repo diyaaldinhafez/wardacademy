@@ -7,6 +7,7 @@ import { getTranslations } from "next-intl/server";
 import { updateTeacherProfile } from "@/app/admin/actions";
 import SubmitButton from "@/components/studio/SubmitButton";
 import TeacherStatusToggle from "@/components/admin/TeacherStatusToggle";
+import TeacherArchiveToggle from "@/components/admin/TeacherArchiveToggle";
 import ResendInviteButton from "@/components/admin/ResendInviteButton";
 import AvailabilityView from "@/components/admin/AvailabilityView";
 import { Card, Badge, Avatar } from "@/components/ward/ui";
@@ -36,7 +37,7 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
 
   const { data: tp } = await supabase
     .from("teacher_profiles")
-    .select("bio, phone, start_date, notes")
+    .select("bio, phone, start_date, notes, archived_at")
     .eq("instructor_id", id)
     .maybeSingle();
 
@@ -48,8 +49,11 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
     .eq("instructor_id", id)
     .maybeSingle();
 
-  // A "teacher" is a current instructor OR a deactivated one (teacher_profiles survives, role removed).
+  // Two independent dimensions: ACCESS (isActive ⇔ instructor role) and VISIBILITY (isArchived ⇔
+  // teacher_profiles.archived_at set). A "teacher" is a current instructor OR one with a surviving
+  // teacher_profiles row (deactivated/archived).
   const isActive = ((teacher?.roles as string[]) ?? []).includes("instructor");
+  const isArchived = !!tp?.archived_at;
   if (!teacher || (!isActive && !tp)) notFound();
 
   const { data: people } = await supabase.from("profiles").select("id, full_name, roles, assigned_instructor_id");
@@ -80,9 +84,17 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
           <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-strong)" }}>{teacher.full_name ?? teacher.id}</div>
           <div dir="ltr" style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{teacher.login_email}</div>
         </div>
-        <Badge tone={isActive ? "success" : "neutral"}>{isActive ? t("active") : t("inactive")}</Badge>
-        <TeacherStatusToggle instructorId={id} isActive={isActive} labels={{ deactivate: t("deactivate"), reactivate: t("reactivate") }} />
+        <div style={{ display: "flex", gap: 6 }}>
+          <Badge tone={isActive ? "success" : "neutral"}>{isActive ? t("active") : t("inactive")}</Badge>
+          {isArchived && <Badge tone="neutral">{t("archivedBadge")}</Badge>}
+        </div>
       </div>
+      {/* Two-dimension controls: ACCESS (deactivate/reactivate) vs VISIBILITY (archive/restore). */}
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-start" }}>
+        <TeacherStatusToggle instructorId={id} isActive={isActive} labels={{ deactivate: t("deactivate"), reactivate: t("reactivate") }} />
+        <TeacherArchiveToggle instructorId={id} isArchived={isArchived} labels={{ archive: t("archive"), restore: t("restore") }} />
+      </div>
+      <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{t("accessVsVisibilityLegend")}</p>
       {!isActive && <p style={{ fontSize: 12.5, color: "var(--text-muted)", margin: 0 }}>{t("deactivatedNote")}</p>}
       {isActive && <ResendInviteButton instructorId={id} label={t("resendInvite")} sentLabel={t("inviteResent")} />}
 
