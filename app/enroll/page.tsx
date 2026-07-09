@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/purity -- server component: date math per request is intentional */
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { NextIntlClientProvider } from "next-intl";
 import arMessages from "@/messages/ar.json";
@@ -33,10 +34,14 @@ export default async function EnrollPage() {
     slots = data ?? [];
   }
 
+  const t = await getTranslations({ locale: "ar", namespace: "enrollForm" });
   return (
     <NextIntlClientProvider locale="ar" messages={arMessages}>
-      <div dir="rtl" lang="ar" className="min-h-screen bg-cream">
-        <main className="flex items-center justify-center px-5 pb-12 pt-4">
+      <div dir="rtl" lang="ar" className="min-h-screen bg-cream px-5 pt-4">
+        <Link href="/" className="text-sm font-semibold text-brand transition-colors hover:text-brand-800">
+          {t("backHome")}
+        </Link>
+        <main className="flex items-center justify-center pb-12 pt-2">
           <EnrollFlow slots={slots} />
         </main>
       </div>

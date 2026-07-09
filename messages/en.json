@@ -1,6 +1,7 @@
 {
   "teach": {
     "metaTitle": "Teach at Ward Academy",
+    "backHome": "← Back to home",
     "title": "Teach at Ward Academy",
     "subtitle": "Apply to join our team of English teachers. We'll review your application and get in touch.",
     "fullName": "Full name",
@@ -879,6 +880,7 @@
       "tagline": "Confident English for ages 9–13 — teacher-led, AI-supported.",
       "exploreTitle": "Explore",
       "accountTitle": "Account",
+      "teach": "Teach with us",
       "copyright": "Ward Academy © 2026 · Parental consent required for every account"
     }
   },

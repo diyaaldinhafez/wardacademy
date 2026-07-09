@@ -517,6 +517,9 @@ export default function Landing() {
             <Link href={ENROLL} className="text-sm font-semibold text-ink-soft transition-colors hover:text-brand">
               {L.cta}
             </Link>
+            <Link href="/teach" className="text-sm font-semibold text-ink-soft transition-colors hover:text-brand">
+              {L.footer.teach}
+            </Link>
           </nav>
         </div>
         <div className={`${shell} border-t border-ink/8 py-5`}>
