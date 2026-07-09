@@ -6,6 +6,7 @@ import { DateTime } from "luxon";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { assertInstructor } from "@/lib/auth";
 import {
   generateSessionReportDraft,
   generatePlacementQuestions,
@@ -36,6 +37,26 @@ export async function logout() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/studio/login");
+}
+
+/** Teacher self-edit of the ONE field she owns: her bio. Coherence redesign (0073) — the write goes
+ *  through set_my_teacher_bio (SECURITY DEFINER, bio-only, own-row-only); the teacher has no direct
+ *  write access to teacher_profiles, so she cannot touch status/phone/notes or another teacher's row.
+ *  useActionState → inline ok/error, never a 500. */
+export async function updateMyBio(
+  _prev: { ok?: boolean; error?: string } | undefined,
+  formData: FormData,
+): Promise<{ ok?: boolean; error?: string }> {
+  const bio = String(formData.get("bio") ?? "").trim();
+  try {
+    const { supabase } = await assertInstructor();
+    const { error } = await supabase.rpc("set_my_teacher_bio", { p_bio: bio || null });
+    if (error) return { error: error.message };
+    revalidatePath("/studio/profile");
+    return { ok: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Couldn't save your bio." };
+  }
 }
 
 export async function approveItem(formData: FormData) {

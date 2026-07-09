@@ -6,7 +6,7 @@ import { provisionTeacher, rejectApplication } from "@/app/admin/actions";
 import { Avatar } from "@/components/ward/ui";
 
 type App = {
-  id: string; full_name: string; email: string; phone?: string | null; bio?: string | null; specialties?: string | null;
+  id: string; full_name: string; email: string; phone?: string | null; bio?: string | null;
   timezone?: string | null; years_experience?: number | null; teaches_children?: boolean | null;
   certifications?: string | null; english_level?: string | null; online_1to1_experience?: boolean | null;
   weekly_availability?: string | null; cv_url?: string | null; motivation?: string | null;
@@ -62,7 +62,6 @@ function Row({ app, labels }: { app: App; labels: Labels }) {
           <Fact k="Teaches 9–13" v={app.teaches_children == null ? null : yn(app.teaches_children)} />
           <Fact k="English" v={app.english_level} />
           <Fact k="Certifications" v={app.certifications} />
-          <Fact k="Specialties" v={app.specialties} />
           <Fact k="Online 1:1" v={app.online_1to1_experience == null ? null : yn(app.online_1to1_experience)} />
           <Fact k="Availability" v={app.weekly_availability} />
           {app.cv_url && (

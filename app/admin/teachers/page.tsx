@@ -10,7 +10,7 @@ export default async function TeachersPage() {
   const t = await getTranslations({ locale: "en", namespace: "admin.teachers" });
   const { data: people } = await supabase.from("profiles").select("id, full_name, roles, assigned_instructor_id");
   const all = (people ?? []) as any[];
-  const { data: tprofiles } = await supabase.from("teacher_profiles").select("instructor_id, status, specialties");
+  const { data: tprofiles } = await supabase.from("teacher_profiles").select("instructor_id");
   const profByTeacher = new Map<string, any>();
   for (const t of (tprofiles ?? []) as any[]) profByTeacher.set(t.instructor_id, t);
   // Include DEACTIVATED teachers (a teacher_profiles row survives; the instructor role is removed on
@@ -20,7 +20,7 @@ export default async function TeachersPage() {
   // §9(f): pending self-service applications awaiting review (the ADD-teacher entry point).
   const { data: applications } = await supabase
     .from("teacher_applications")
-    .select("id, full_name, email, phone, bio, specialties, timezone, years_experience, teaches_children, certifications, english_level, online_1to1_experience, weekly_availability, cv_url, motivation, created_at")
+    .select("id, full_name, email, phone, bio, timezone, years_experience, teaches_children, certifications, english_level, online_1to1_experience, weekly_availability, cv_url, motivation, created_at")
     .eq("status", "applied")
     .order("created_at", { ascending: false });
   const apps = (applications ?? []) as any[];
@@ -48,8 +48,9 @@ export default async function TeachersPage() {
       {teachers.length === 0 && <p style={{ fontSize: 14, color: "var(--text-muted)" }}>{t("listEmpty")}</p>}
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {teachers.map((teacher) => {
-          const tp = profByTeacher.get(teacher.id);
-          const inactive = tp?.status === "inactive";
+          // Single status source (coherence redesign): active ⇔ the instructor role is present
+          // (the Deactivate button removes it). No longer reads teacher_profiles.status.
+          const inactive = !((teacher.roles as string[]) ?? []).includes("instructor");
           return (
             <Card key={teacher.id} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <Link href={`/admin/teachers/${teacher.id}`} style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 160, textDecoration: "none" }}>
@@ -57,7 +58,7 @@ export default async function TeachersPage() {
                 <div>
                   <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>{teacher.full_name ?? teacher.id}</div>
                   <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
-                    {t("studentsCount", { n: studentsByTeacher.get(teacher.id) ?? 0 })}{tp?.specialties ? ` · ${tp.specialties}` : ""}
+                    {t("studentsCount", { n: studentsByTeacher.get(teacher.id) ?? 0 })}
                   </div>
                 </div>
               </Link>

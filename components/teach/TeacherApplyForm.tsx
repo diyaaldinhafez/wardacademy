@@ -98,7 +98,6 @@ export default function TeacherApplyForm() {
           <label><span className={label}>{t("yearsExperience")} *</span><input name="yearsExperience" type="number" min={0} required inputMode="numeric" className={ctl} placeholder={t("yearsExperiencePh")} /></label>
           <div><span className={label}>{t("teachesChildren")} *</span><YesNo name="teachesChildren" yes={t("yes")} no={t("no")} /></div>
           <label><span className={label}>{t("certifications")} *</span><input name="certifications" required className={ctl} placeholder={t("certificationsPh")} /></label>
-          <label><span className={label}>{t("specialties")} *</span><input name="specialties" required className={ctl} placeholder={t("specialtiesPh")} /></label>
           <div><span className={label}>{t("englishLevel")} *</span>
             <div className="flex flex-wrap gap-2">
               {Object.entries(levels).map(([v, l]) => (

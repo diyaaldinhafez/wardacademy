@@ -13,6 +13,7 @@ const NAV = [
   { href: "/studio/students", key: "students", d: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21v-1a6 6 0 0112 0v1" },
   { href: "/studio/curriculum", key: "curriculum", d: "M4 5a2 2 0 012-2h5v16H6a2 2 0 00-2 2V5zm16 0a2 2 0 00-2-2h-5v16h5a2 2 0 012 2V5z" },
   { href: "/studio/availability", key: "availability", d: "M7 3v3m10-3v3M4 8h16M5 6h14a1 1 0 011 1v12a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1z" },
+  { href: "/studio/profile", key: "profile", d: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21v-1a6 6 0 0112 0v1M19 8v6M22 11h-6" },
 ] as const;
 
 function NavIcon({ d, size = 17 }: { d: string; size?: number }) {

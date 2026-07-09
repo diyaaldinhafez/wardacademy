@@ -19,8 +19,6 @@ export async function submitTeacherApplication(_prev: TeacherApplyState | undefi
   const full_name = get("fullName");
   const email = get("email").toLowerCase();
   const phone = get("phone");
-  const languages = get("languages");
-  const specialties = get("specialties");
   const bio = get("bio");
   const note = get("note");
   // Step 1–3 fit-screen fields (all optional). Booleans are tri-state: "yes"→true, "no"→false, ""→null.
@@ -39,7 +37,7 @@ export async function submitTeacherApplication(_prev: TeacherApplyState | undefi
   // FIX 3 (server backstop): every field is required — reject an incomplete submit so nothing partial is stored.
   if (
     !full_name || !email || !phone ||
-    years_experience === null || teaches_children === null || !certifications || !specialties ||
+    years_experience === null || teaches_children === null || !certifications ||
     !english_level || online_1to1_experience === null || !weekly_availability ||
     !bio || !cv_url || !motivation
   ) {
@@ -57,8 +55,6 @@ export async function submitTeacherApplication(_prev: TeacherApplyState | undefi
     full_name,
     email,
     phone: phone || null,
-    languages: languages || null,
-    specialties: specialties || null,
     bio: bio || null,
     note: note || null,
     timezone: timezone || null,

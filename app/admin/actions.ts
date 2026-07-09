@@ -733,7 +733,10 @@ export async function saveEvaluation(formData: FormData) {
   revalidatePath(`/admin/students/${learnerId}`);
 }
 
-/** Update (upsert) a teacher's profile metadata. */
+/** Update a teacher's ADMIN-OWNED profile metadata: phone, start_date, internal notes.
+ *  Coherence redesign: this writes NEITHER status (the Deactivate/Reactivate button is the sole
+ *  status source — no more dropdown desync) NOR bio (the teacher owns bio via set_my_teacher_bio in
+ *  /studio). specialties/languages were dropped (0073). */
 export async function updateTeacherProfile(formData: FormData) {
   const instructorId = String(formData.get("instructorId") ?? "");
   const get = (k: string) => String(formData.get(k) ?? "").trim() || null;
@@ -742,12 +745,8 @@ export async function updateTeacherProfile(formData: FormData) {
     {
       tenant_id: profile.tenant_id,
       instructor_id: instructorId,
-      bio: get("bio"),
-      languages: get("languages"),
-      specialties: get("specialties"),
       phone: get("phone"),
       start_date: get("startDate"),
-      status: get("status") === "inactive" ? "inactive" : "active",
       notes: get("notes"),
     },
     { onConflict: "instructor_id" },
@@ -772,7 +771,7 @@ export async function provisionTeacher(_prev: TeacherActionState | undefined, fo
 
     const { data: app } = await supabase
       .from("teacher_applications")
-      .select("id, tenant_id, full_name, email, phone, languages, specialties, bio, note, status")
+      .select("id, tenant_id, full_name, email, phone, bio, note, status")
       .eq("id", applicationId)
       .single();
     if (!app) return { error: "Application not found." };
@@ -793,8 +792,8 @@ export async function provisionTeacher(_prev: TeacherActionState | undefined, fo
       const { error: pe } = await admin.from("profiles").insert({ id: uid, tenant_id: profile.tenant_id, full_name: app.full_name, roles: ["instructor"], login_email: app.email });
       if (pe) throw new Error(pe.message);
       const { error: te } = await admin.from("teacher_profiles").insert({
-        tenant_id: profile.tenant_id, instructor_id: uid, phone: app.phone, languages: app.languages,
-        specialties: app.specialties, bio: app.bio, notes: app.note, start_date: new Date().toISOString().slice(0, 10), status: "active",
+        tenant_id: profile.tenant_id, instructor_id: uid, phone: app.phone,
+        bio: app.bio, notes: app.note, start_date: new Date().toISOString().slice(0, 10), status: "active",
       });
       if (te) throw new Error(te.message);
     } catch (e) {
@@ -816,8 +815,10 @@ export async function provisionTeacher(_prev: TeacherActionState | undefined, fo
       console.error("[provisionTeacher] invite email failed:", err);
     }
 
-    // The account exists → the application IS approved regardless of the invite email.
-    await admin.from("teacher_applications").update({ status: "approved", reviewed_by: user.id, reviewed_at: new Date().toISOString() }).eq("id", applicationId);
+    // The account exists → the application IS approved regardless of the invite email. Stamp the
+    // durable link (instructor_id, mirroring leads.converted_learner_id) so the admin can resolve
+    // this teacher's original application without email-matching. Email is retired as the join.
+    await admin.from("teacher_applications").update({ status: "approved", reviewed_by: user.id, reviewed_at: new Date().toISOString(), instructor_id: uid }).eq("id", applicationId);
 
     if (inviteSent) {
       revalidatePath("/admin/teachers");
