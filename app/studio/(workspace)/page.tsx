@@ -89,12 +89,12 @@ export default async function TodayPage() {
   }
 
   const { data: toGrade } = await supabase.from("manual_homework").select("id, learner_id, title").eq("instructor_id", user?.id ?? "").eq("status", "submitted").order("submitted_at", { ascending: false });
-  for (const h of (toGrade ?? []) as any[]) tasks.push({ key: `hw-${h.id}`, label: t("task.gradeHomework", { title: h.title, name: nm(h.learner_id) }), learnerId: h.learner_id, tone: "brand", href: `/studio/students/${h.learner_id}?tab=homework` });
+  for (const h of (toGrade ?? []) as any[]) tasks.push({ key: `hw-${h.id}`, label: t("task.gradeHomework", { name: nm(h.learner_id) }), learnerId: h.learner_id, tone: "brand", href: `/studio/students/${h.learner_id}?tab=homework` });
 
   const { data: assessmentDrafts } = myLearnerIds.length
     ? await supabase.from("assessments").select("id, learner_id, title").eq("status", "draft").in("learner_id", myLearnerIds)
     : { data: [] as any[] };
-  for (const a of (assessmentDrafts ?? []) as any[]) tasks.push({ key: `as-${a.id}`, label: t("task.approveAssessment", { title: a.title, name: nm(a.learner_id) }), learnerId: a.learner_id, tone: "neutral", href: `/studio/students/${a.learner_id}?tab=assessments` });
+  for (const a of (assessmentDrafts ?? []) as any[]) tasks.push({ key: `as-${a.id}`, label: t("task.approveAssessment", { name: nm(a.learner_id) }), learnerId: a.learner_id, tone: "neutral", href: `/studio/students/${a.learner_id}?tab=assessments` });
 
   const { data: itemDrafts } = await supabase.from("items").select("id, target_learner_id").eq("created_by", user?.id ?? "").eq("status", "draft").order("created_at", { ascending: false }).limit(30);
   for (const it of (itemDrafts ?? []) as any[]) tasks.push({ key: `it-${it.id}`, label: it.target_learner_id ? t("task.reviewItem", { name: nm(it.target_learner_id) }) : t("task.reviewItemGeneric"), learnerId: it.target_learner_id, tone: "neutral", href: it.target_learner_id ? `/studio/students/${it.target_learner_id}?tab=homework` : "/studio/students" });

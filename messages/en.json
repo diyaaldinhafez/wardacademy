@@ -251,8 +251,8 @@
       "task": {
         "writeReport": "Write session report — ⁨{name}⁩",
         "approveReport": "Approve session report — ⁨{name}⁩",
-        "gradeHomework": "Grade homework: ⁨{title}⁩ — ⁨{name}⁩",
-        "approveAssessment": "Approve assessment: ⁨{title}⁩ — ⁨{name}⁩",
+        "gradeHomework": "Grade homework — ⁨{name}⁩",
+        "approveAssessment": "Approve assessment — ⁨{name}⁩",
         "reviewItem": "Review a digital task — ⁨{name}⁩",
         "reviewItemGeneric": "Review a digital task",
         "studentFallback": "student"
