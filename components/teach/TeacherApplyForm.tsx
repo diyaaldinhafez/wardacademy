@@ -28,11 +28,12 @@ function Steps({ current, labels }: { current: number; labels: string[] }) {
   );
 }
 
+// Required yes/no radio group (the group is required → the applicant must pick one).
 function YesNo({ name, yes, no }: { name: string; yes: string; no: string }) {
   return (
     <div className="flex gap-2">
-      <label className={pill}><input type="radio" name={name} value="yes" className="sr-only" /> {yes}</label>
-      <label className={pill}><input type="radio" name={name} value="no" className="sr-only" /> {no}</label>
+      <label className={pill}><input type="radio" name={name} value="yes" required className="sr-only" /> {yes}</label>
+      <label className={pill}><input type="radio" name={name} value="no" required className="sr-only" /> {no}</label>
     </div>
   );
 }
@@ -41,7 +42,7 @@ export default function TeacherApplyForm() {
   const t = useTranslations("teach");
   const [state, action, pending] = useActionState(submitTeacherApplication, undefined);
   const [step, setStep] = useState(1);
-  const formRef = useRef<HTMLFormElement>(null);
+  const stepRefs = [useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null)];
   const steps = t.raw("steps") as string[];
   const levels = t.raw("levels") as Record<string, string>;
 
@@ -55,16 +56,17 @@ export default function TeacherApplyForm() {
     );
   }
 
-  // Gate leaving Step 1 on the two required fields (they stay mounted/hidden for the single submit).
-  const next = () => {
-    if (step === 1) {
-      const f = formRef.current;
-      const nameOk = !!f?.elements.namedItem("fullName") && (f.elements.namedItem("fullName") as HTMLInputElement).value.trim();
-      const emailInput = f?.elements.namedItem("email") as HTMLInputElement | null;
-      if (!nameOk || !emailInput?.value.trim()) { emailInput?.reportValidity?.(); (f?.elements.namedItem("fullName") as HTMLInputElement)?.reportValidity?.(); return; }
-    }
-    setStep((s) => Math.min(3, s + 1));
+  // Gate each step: only advance when EVERY field on the current step is valid (native constraint
+  // validation — required text/email/url/number + required radio groups). The first invalid control
+  // shows its native message. All inputs stay mounted (hidden) so the single submit carries everything.
+  const validateCurrent = () => {
+    const el = stepRefs[step - 1].current;
+    if (!el) return true;
+    const invalid = el.querySelector<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(":invalid");
+    if (invalid) { invalid.reportValidity(); return false; }
+    return true;
   };
+  const next = () => { if (validateCurrent()) setStep((s) => Math.min(3, s + 1)); };
 
   return (
     <div className="mx-auto w-full max-w-lg">
@@ -75,40 +77,44 @@ export default function TeacherApplyForm() {
       </div>
       <Steps current={step} labels={steps} />
 
-      <form ref={formRef} action={action} className="flex flex-col gap-3">
+      <form
+        action={action}
+        className="flex flex-col gap-3"
+        // FIX 1: Enter never implicitly submits from a text/number/url INPUT (only the Step-3 button submits);
+        // textareas keep normal newline behavior.
+        onKeyDown={(e) => { if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") e.preventDefault(); }}
+      >
         <input type="text" name="company" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden />
 
         {/* Step 1 — About you */}
-        <div hidden={step !== 1} className="flex flex-col gap-3">
+        <div ref={stepRefs[0]} hidden={step !== 1} className="flex flex-col gap-3">
           <label><span className={label}>{t("fullName")} *</span><input name="fullName" required className={ctl} placeholder={t("fullNamePh")} /></label>
           <label><span className={label}>{t("email")} *</span><input name="email" type="email" required dir="ltr" className={ctl} placeholder={t("emailPh")} /></label>
-          <label><span className={label}>{t("phone")}</span><input name="phone" type="tel" dir="ltr" className={ctl} placeholder={t("phonePh")} /></label>
-          <label><span className={label}>{t("timezone")}</span><input name="timezone" className={ctl} placeholder={t("timezonePh")} /></label>
+          <label><span className={label}>{t("phone")} *</span><input name="phone" type="tel" required dir="ltr" className={ctl} placeholder={t("phonePh")} /></label>
         </div>
 
         {/* Step 2 — Qualifications & experience */}
-        <div hidden={step !== 2} className="flex flex-col gap-3">
-          <p className="text-xs text-ink-soft">{t("step2Hint")}</p>
-          <label><span className={label}>{t("yearsExperience")}</span><input name="yearsExperience" type="number" min={0} inputMode="numeric" className={ctl} placeholder={t("yearsExperiencePh")} /></label>
-          <div><span className={label}>{t("teachesChildren")}</span><YesNo name="teachesChildren" yes={t("yes")} no={t("no")} /></div>
-          <label><span className={label}>{t("certifications")}</span><input name="certifications" className={ctl} placeholder={t("certificationsPh")} /></label>
-          <label><span className={label}>{t("specialties")}</span><input name="specialties" className={ctl} placeholder={t("specialtiesPh")} /></label>
-          <div><span className={label}>{t("englishLevel")}</span>
+        <div ref={stepRefs[1]} hidden={step !== 2} className="flex flex-col gap-3">
+          <label><span className={label}>{t("yearsExperience")} *</span><input name="yearsExperience" type="number" min={0} required inputMode="numeric" className={ctl} placeholder={t("yearsExperiencePh")} /></label>
+          <div><span className={label}>{t("teachesChildren")} *</span><YesNo name="teachesChildren" yes={t("yes")} no={t("no")} /></div>
+          <label><span className={label}>{t("certifications")} *</span><input name="certifications" required className={ctl} placeholder={t("certificationsPh")} /></label>
+          <label><span className={label}>{t("specialties")} *</span><input name="specialties" required className={ctl} placeholder={t("specialtiesPh")} /></label>
+          <div><span className={label}>{t("englishLevel")} *</span>
             <div className="flex flex-wrap gap-2">
               {Object.entries(levels).map(([v, l]) => (
-                <label key={v} className={pill}><input type="radio" name="englishLevel" value={v} className="sr-only" /> {l}</label>
+                <label key={v} className={pill}><input type="radio" name="englishLevel" value={v} required className="sr-only" /> {l}</label>
               ))}
             </div>
           </div>
-          <div><span className={label}>{t("online1to1")}</span><YesNo name="online1to1" yes={t("yes")} no={t("no")} /></div>
-          <label><span className={label}>{t("weeklyAvailability")}</span><input name="weeklyAvailability" className={ctl} placeholder={t("weeklyAvailabilityPh")} /></label>
+          <div><span className={label}>{t("online1to1")} *</span><YesNo name="online1to1" yes={t("yes")} no={t("no")} /></div>
+          <label><span className={label}>{t("weeklyAvailability")} *</span><input name="weeklyAvailability" required className={ctl} placeholder={t("weeklyAvailabilityPh")} /></label>
         </div>
 
         {/* Step 3 — Presence & motivation */}
-        <div hidden={step !== 3} className="flex flex-col gap-3">
-          <label><span className={label}>{t("bio")}</span><textarea name="bio" rows={3} className={ctl} placeholder={t("bioPh")} /></label>
-          <label><span className={label}>{t("cvUrl")}</span><input name="cvUrl" type="url" dir="ltr" className={ctl} placeholder={t("cvUrlPh")} /></label>
-          <label><span className={label}>{t("motivation")}</span><textarea name="motivation" rows={3} className={ctl} placeholder={t("motivationPh")} /></label>
+        <div ref={stepRefs[2]} hidden={step !== 3} className="flex flex-col gap-3">
+          <label><span className={label}>{t("bio")} *</span><textarea name="bio" rows={3} required className={ctl} placeholder={t("bioPh")} /></label>
+          <label><span className={label}>{t("cvUrl")} *</span><input name="cvUrl" type="url" required dir="ltr" className={ctl} placeholder={t("cvUrlPh")} /></label>
+          <label><span className={label}>{t("motivation")} *</span><textarea name="motivation" rows={3} required className={ctl} placeholder={t("motivationPh")} /></label>
         </div>
 
         {state?.error && <p className="text-sm font-medium text-rose-600">{state.error}</p>}

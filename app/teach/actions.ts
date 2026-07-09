@@ -36,8 +36,17 @@ export async function submitTeacherApplication(_prev: TeacherApplyState | undefi
   const cv_url = get("cvUrl");
   const motivation = get("motivation");
 
-  if (!full_name || !email) return { error: await err("fillRequired") };
+  // FIX 3 (server backstop): every field is required — reject an incomplete submit so nothing partial is stored.
+  if (
+    !full_name || !email || !phone ||
+    years_experience === null || teaches_children === null || !certifications || !specialties ||
+    !english_level || online_1to1_experience === null || !weekly_availability ||
+    !bio || !cv_url || !motivation
+  ) {
+    return { error: await err("incomplete") };
+  }
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: await err("badEmail") };
+  try { new URL(cv_url); } catch { return { error: await err("badUrl") }; }
 
   const admin = createAdminClient();
   const { data: tenant } = await admin.from("tenants").select("id").eq("is_default", true).single();

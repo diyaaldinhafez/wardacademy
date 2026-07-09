@@ -41,7 +41,9 @@
     "thanksBody": "Thank you for applying to Ward Academy. Our team will review your application and email you if it's a match.",
     "errors": {
       "fillRequired": "Please fill in your name and email.",
+      "incomplete": "Please complete every field before submitting.",
       "badEmail": "Please enter a valid email address.",
+      "badUrl": "Please enter a valid link (e.g. https://…) for your CV / LinkedIn.",
       "closed": "Applications are closed right now — please try again later.",
       "failed": "Couldn't submit your application. Please try again."
     }
