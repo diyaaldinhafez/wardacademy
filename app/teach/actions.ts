@@ -23,6 +23,18 @@ export async function submitTeacherApplication(_prev: TeacherApplyState | undefi
   const specialties = get("specialties");
   const bio = get("bio");
   const note = get("note");
+  // Step 1–3 fit-screen fields (all optional). Booleans are tri-state: "yes"→true, "no"→false, ""→null.
+  const timezone = get("timezone");
+  const yearsRaw = get("yearsExperience");
+  const years_experience = yearsRaw && !Number.isNaN(Number(yearsRaw)) ? Math.max(0, Math.trunc(Number(yearsRaw))) : null;
+  const bool = (k: string) => { const v = get(k); return v === "yes" ? true : v === "no" ? false : null; };
+  const teaches_children = bool("teachesChildren");
+  const certifications = get("certifications");
+  const english_level = get("englishLevel");
+  const online_1to1_experience = bool("online1to1");
+  const weekly_availability = get("weeklyAvailability");
+  const cv_url = get("cvUrl");
+  const motivation = get("motivation");
 
   if (!full_name || !email) return { error: await err("fillRequired") };
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: await err("badEmail") };
@@ -40,6 +52,15 @@ export async function submitTeacherApplication(_prev: TeacherApplyState | undefi
     specialties: specialties || null,
     bio: bio || null,
     note: note || null,
+    timezone: timezone || null,
+    years_experience,
+    teaches_children,
+    certifications: certifications || null,
+    english_level: english_level || null,
+    online_1to1_experience,
+    weekly_availability: weekly_availability || null,
+    cv_url: cv_url || null,
+    motivation: motivation || null,
     status: "applied",
   });
   if (error) return { error: await err("failed") };

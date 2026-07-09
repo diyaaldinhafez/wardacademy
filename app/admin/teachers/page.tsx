@@ -20,7 +20,7 @@ export default async function TeachersPage() {
   // §9(f): pending self-service applications awaiting review (the ADD-teacher entry point).
   const { data: applications } = await supabase
     .from("teacher_applications")
-    .select("id, full_name, email, phone, languages, specialties, bio, note, created_at")
+    .select("id, full_name, email, phone, bio, specialties, timezone, years_experience, teaches_children, certifications, english_level, online_1to1_experience, weekly_availability, cv_url, motivation, created_at")
     .eq("status", "applied")
     .order("created_at", { ascending: false });
   const apps = (applications ?? []) as any[];
